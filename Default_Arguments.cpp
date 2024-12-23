@@ -81,7 +81,7 @@ struct Base
 };
 struct Derived : Base
 {
-    void f(int a) override { std::cout << "Derived " << a << std::endl; }
+    void f(int a = 8) override { std::cout << "Derived " << a << std::endl; }
 };
 
 int main()
