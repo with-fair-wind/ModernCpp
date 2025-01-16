@@ -2,7 +2,7 @@
 
 // C++11 lambda 类类型 (无名的非联合(union)非聚合类 类型)
 
-#define Version_2
+#define Version_3
 #ifdef Version_1
 // 重载了一个 operator() 的类 (const 修饰, 除非使用 mutable)
 struct X : decltype([]
@@ -52,4 +52,21 @@ int main()
 auto *p = +[]
 { return 6; };
 
+#elif defined(Version_3)
+// 如果变量满足下列条件，那么 lambda 表达式在使用它前不需要先捕获：
+/*
+1: 非局部变量，
+2: 具有静态或线程局部存储期
+3: 以常量表达式初始化的引用
+*/
+
+int main()
+{
+    static int a = 42;
+    auto p = [=]
+    { ++a; };
+    std::cout << sizeof p << '\n';
+    p();
+    std::cout << a << '\n';
+}
 #endif
