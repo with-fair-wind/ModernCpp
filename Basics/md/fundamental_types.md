@@ -99,7 +99,7 @@ Since **C++20**, you can use `std::endian` to check the endianness of platform
 
 - `std::endian::little/big/native`, where native is the endianness of current platform.
 If the current platform is mixed endian, then `native != little && native != big`
-<img src="endian.png" alt="endian" style="display:block; margin:auto;" />
+<img src="img/endian.png" alt="endian" style="display:block; margin:auto;" />
 
 - Since **C++23**, you can use `std::byteswap` to swap an integer byte by byte.
 
