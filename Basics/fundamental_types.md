@@ -110,3 +110,34 @@ If the current platform is mixed endian, then `native != little && native != big
 functions in **`<bit>`** are all for unsigned integers
 for floating point, need `std::bit_cast<ToType>(fromVal)` to cast a value to another type with the same bit contents.
 **Only if sizeof(fromType) == sizeof(toType) can it succeed**
+
+## Literal Prefix and Suffix
+
+For literals, prefix(前缀) is used to identify format, and suffix(后缀) is used to identify type
+
+### Notes
+  
+- 1 – int; 1l/1L – long; 1ll/1LL-long long
+  Add a u/U will make them unsigned, e.g. 1u, 1ull, 1llu
+- 10 – decimal(十进制); 0x10 – hexadecimal(16进制) (get 16); 010 – octal(8进制) (get 8)
+- Since **C++14**
+  - Binary(二进制) is supported, i.e. 0b10 (get 2).
+  - Separator is supported, i.e. 0x11FF’3344; 0b0011’0100 (分隔符被支持)
+
+## Final word
+
+### Notes
+
+- If you want to get special values for an arithmetic type, you may
+use **`<limits>`**
+  - e.g. **`std::numeric_limits<int>::max()`** get 0x7FFFFFFF (assuming 32 bit)
+  **`std::numeric_limits<float>::max()`** get the maximum finite number
+- There are lots of other limits like **`denorm_min`**
+- You may also use things like **`INT32_MAX`** defined in **`<cstdint>`**; it’s more like a C-style way
+
+### bool
+
+special integer, only true (non-zero, not definitely 1) or false. But convert it to other integer types will get 1/0
+
+- **`sizeof(bool)`** is not necessarily 1
+- `bool` is not allowed to `++/--` since **C++17**
