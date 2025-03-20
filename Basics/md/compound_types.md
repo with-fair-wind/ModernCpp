@@ -461,3 +461,108 @@ But the type of operands are not required to be same
   - It’s also legal to add attributes **between** **`[] and ()`**.
     Since **C++23**, if **`()`** is omitted, it’s legal to add attributes and specifiers
   
+## Basic Control Flow
+
+- Particularly, you can **`switch enumeration`** since it’s also kind of integer
+  - **`BasicBufferType::xxx`** is the complete name, and it would be miserable to write it all in the switch statement!
+    You may use **`using enum`** since **C++20**
+    ***Example:***
+
+    ```cpp
+    enum class BasicBufferType {OnlyColorBuffer, OnlyReadableDepthBuffer,
+      ColorBufferAndWriteOnlyDepthBuffer, ColorBufferAndReadableDepthBuffer}
+    switch (type)
+    {
+        using enum BasicBufferType;
+    case OnlyColorBuffer:
+        // ...
+        break;
+    case OnlyReadableDepthBuffer:
+        // ...
+        break;
+    // ...
+    }
+    ```
+
+  - **`case xx:{}`** : {} is only necessary if you need to declare new variables in the scope.
+  - **`break`** : Don’t forget to break every **`case`**!
+    Sometimes you don’t break deliberately, e.g. two cases do the same thing.
+    - This is called **fall through**.
+    - To show that you’re deliberate and don’t forget it (also disable compiler warning), you may use the attribute **`[[fallthrough]]`** since **C++17**.
+    ***Example:***
+  
+    ```cpp
+    case 0:
+        [[fallthrough]]
+    case 1:
+    {
+        // ...
+        break;
+    }
+    ```
+
+- Since **C++20**, **`[[likely]]`** and **`[[unlikely]]`** are added
+  - These two attributes are added for such optimization.
+  - Usually, you only need to add them in hot spots found by profiling; otherwise it’s very likely to reduce performance (compilers / processors are smart enough!).
+  ***Example:***
+  
+  ```cpp
+  if(flag) [[likely]]{}
+  switch(num)
+  {
+  [[likely]]
+  case 0:
+  {
+      break;
+  }
+  }
+  for(int i = 0; flag; ++i) [[likely]];
+  ```
+
+- You may want to give more hints than only branch prediction…
+  - E.g. in loop unrolling, how many loops are combined together?
+  - If the compiler can assume loop times % 32 is always 0, it may choose 32 so that no trailing process is needed!
+  - Since **C++23**, you may use **`[[assume(…)]]`** to denote that!
+    - You must ensure expression in assume is always true, otherwise UB.
+      - So, use assume carefully! You shouldn’t use them to check or document preconditions, but use them to **utilize known preconditions**
+      ***Example***
+
+      ```cpp
+      [[assume(times % 32 == 0)]]
+      for(int i = 0; i < times; ++i>){}
+      ```
+
+    - There may also be many other possible optimizations,
+      e.g. for **signed integer**, **`[[assume(x >= 0)]]`** may accelerate **`x / 2`** since positive ones can be **`x >> 1`** directly while negative ones need more concerns.
+    - Particularly, **`[[assume(false)]]`** means here won’t be reached, same as **`std::unreachable()`** in **C++23** defined in **`<utility>`**
+
+## Code Block With Initializer
+
+Since C++17, you may code like:
+
+```cpp
+if(auto it = table.find(1); it == table.end())
+  ; // do something
+else
+  ; // do something
+```
+
+- it is only valid in the if clause (including **`else-if, else`**)
+  - You can also use **`auto x = …, y = …; x != y`** if they’re of the same type.
+  - Notice that if initialized variable can be converted to **`bool`** implicitly, then it’s Okay not to write condition
+- This is also available in **`switch-clause`** since **C++17**.
+  You can also use e.g. **`auto p = xx; p[0] to switch p[0]`**.
+- Since **C++20**, **range-based for loop** can also add an additional initializer, e.g. **`for(auto vec = GetVec(); auto& m : vec);`**
+- Since **C++23**, type alias declaration can also be initializer, e.g. **`if(using T = xx; …)`**
+
+## Template
+
+- Lambda expression can also use template:
+  <img src="img/lambda_template.png" alt="lambda_template" style="display:block; margin:auto;" />
+  [编译解构](https://cppinsights.io/s/013b1882)
+  - This is same as an **anonymous struct**, with **`static operator()`** that is a **template function**
+- Since **C++20**, abbreviated function template is introduced like: **`void Func(const auot& v){}`**
+  - Every **`auto`** implicitly means **a new template parameter**, so you can also e.g. **`Func<int>`**
+  - This is **different** from **generic lambda expression**, since the functor itself is not template, but its operator() is. You can pass the functor as parameter, but template cannot (and needs instantiation!).
+  - It’s **strongly recommended** not mixing abbreviated template with **`template<typename T>`**, which will cause many subtle problems
+  
