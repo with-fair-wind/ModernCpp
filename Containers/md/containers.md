@@ -111,8 +111,7 @@ Beyond iterators of containers, stream iterators and iterator adaptors are also 
 
 - There are two kinds of iterator adaptors:
   - One is created from iterators to perform different utilities:
-  <img src="img/iterator_adaptor.png" alt="iterator_adaptor" style="display:block; margin:auto;" />
-  
+    <img src="img/iterator_adaptor.png" alt="iterator_adaptor" style="display:block; margin:auto;" />
     - E.g. reversed iterators, i.e. the underlying type is also iterators, while **`++`** is in fact **`--`**.
       - You can construct from an iterator, i.e. **`std::reverse_iterator r{ p.begin() }`**.
     - You can get the underlying iterator by **`.base()`**, which actually returns the iterator that points to the elements after the referred one.
