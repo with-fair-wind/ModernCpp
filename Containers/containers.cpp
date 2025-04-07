@@ -48,8 +48,15 @@ void demo_v4()
     std::copy(vec.begin(), vec.end(), std::ostream_iterator<int>(std::cout, "\n"));
 }
 
+void demo_v5()
+{
+    std::vector<int> vec;
+    std::copy(std::istream_iterator<int>{std::cin}, std::istream_iterator<int>(), std::back_insert_iterator{vec});
+    std::copy(vec.begin(), vec.end(), std::ostream_iterator<int>(std::cout, "\n"));
+}
+
 int main()
 {
-    demo_v4();
+    demo_v5();
     return 0;
 }
