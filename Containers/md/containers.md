@@ -117,3 +117,22 @@ Beyond iterators of containers, stream iterators and iterator adaptors are also 
     - You can get the underlying iterator by **`.base()`**, which actually returns the iterator that points to the elements after the referred one.
       - E.g. **`rbegin().base() == end()`**
     - There is another adaptor called move iterator, which will be covered in ***Move Semantics***
+- Another is created from containers to work more than “iterate”.
+  - **`std::back_insert_iterator{container}`**: **`*it = val`** will call **`push_back(val)`** to insert.
+  - **`std::front_insert_iterator{container}`**: call **`push_front(val)`** to insert.
+  - **`std::insert_iterator{container, pos}`**: call **`insert(pos, val)`** to insert, where **pos** should be an iterator in the container.
+  - They are all output iterators, and **val** is provided by assignment
+  ***Example:***
+
+  ```cpp
+  std::vector<int> vec;
+  std::copy(std::istream_iterator<int>{std::cin}, std::istream_iterator<int>(), std::back_insert_iterator{vec});
+  std::copy(vec.begin(), vec.end(), std::ostream_iterator<int>(std::cout, "\n"));
+  ```
+
+- Notice that inserting/assigning a range directly is usually better than inserting one by one (as done in **inserter**) for **`vector/deque`**.
+  - Or at least “reserve” it before (we’ll learn them sooner).
+- Final word: there are methods like **`std::make_xxx`** or **`std::xxx`** (e.g.**`std::back_inserter()`**, **`std::make_reverse_inserter()`**);
+  You can also use these methods to get the corresponding iterator adaptors.
+  - Before **C++17**, you have to specify the type parameter for template of class, so if you don’t use these functions, you have to write tedious **`std::back_inserter_iterator<std::vector<int>>(vec)`**.
+  - Since **C++17**, **CTAD** (***Class Template Automatic Deduction***) will deduce it, so methods are generally not shorter than object initializations.
