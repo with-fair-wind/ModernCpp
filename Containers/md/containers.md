@@ -40,3 +40,80 @@ These iterators don’t have inheritance hierarchy, though the requirements are 
   - They can be invalid, e.g. exceed bound.
   - Even if they’re from different containers, they may be mixed up!
   - Some may be checked by high iterator debug level
+- All containers can get their iterators by:
+  - **`.begin(), .end()`**
+  - **`.cbegin(), .cend()`**: read-only access.
+- Except for forward-iterator containers (e.g. single linked list):
+  - **`.rbegin(), .rend(), .crbegin(), .crend()`**: reversed iterator, i.e. iterate backwards
+- You can also use global functions to get iterators:
+  - E.g. **`std::begin(vec), std::end(vec)`**.
+  - They are defined in any container header.
+- Notice that **pointers are also iterators!**
+  - So, for **array type** (not pointer type), e.g. **`int arr[5]`**, you can also use **`std::begin(), std::end()`**, etc.
+    - We just get two pointers, e.g. here **`arr`** and **`arr + 5`**.
+- There are also general methods of iterator operations, defined in **`<iterator>`**.
+  - **`std::advance(InputIt& it, n)`**: **`it += n`**(for non-random, just increase by **`n`** times). **`n`** can be negative, but it should be bidirectional.
+  - **`std::next(InputIt it, n = 1)`**: return **`it + n`**, not change original one.
+  - **`std::prev(BidirIt it, n = 1)`**: return **`it - n`**, not change original one.
+  - **`std::distance(InputIt it1, InputIt it2)`**: return **`it2 – it1`**(for non random access, just iterate **`it1`** until **`it1 == it2`**)
+
+> They have **ranges-version**, e.g. **`std::ranges::begin`**; use them since **C++20**
+
+### Traits
+
+- Iterators provide some types to show their information:
+  - **`value_type`**: The type of elements referred to.
+  - **`difference_type`**: The type that can be used to represent the distance between elements (usually **`ptrdiff_t`**).
+  - **`iterator_category`**: e.g. **`input_iterator_tag`**. **`continuous_iterator_tag`** is added since **C++20**.
+    - It’s recommended to use **`iterator_concept`** when it’s available instead of category in **C++20**, which has more precise description of the iterator, especially for iterator of **C++20 ranges**.
+  - **`pointer`**: the type of pointer to the referred element, only available in container iterators.
+  - **`reference`**: the type of reference to the referred element, only available in container iterators.
+  - You may use **`std::iterator_traits<IteratorType>::xxx`** (defined in **`<iterator>`**) to get them (absent ones will be **`void`**)
+- Since C++20, you can directly get them by:
+  - **`std::iter_value_t<IteratorType> / std::iter_reference_t<IteratorType> / std::iter_const_reference_t<IteratorType> / std::iter_difference_t<IteratorType>`**
+  - **pointer** and **category** are not provided directly.
+
+### Stream Iterator
+
+Beyond iterators of containers, stream iterators and iterator adaptors are also provided in standard library.
+
+- When reading from input stream/writing to output stream in a simple and fixed pattern, you can use **`std::istream_iterator<T>`** and **`std::ostream_iterator<T>`** (respectively input and output iterator).
+- They are **initialized** by the stream, e.g. **`std::cin/std::cout`**.
+- The **initialization of istream_iterator** will **cause the first read**, **`*`** will get the value, **`++`** will trigger the **next read**.
+***Example:***
+
+```cpp
+    std::vector<int> vec(5);
+    std::istream_iterator<int> it{std::cin};
+    vec[0] = *it;
+    // output with \n as the separator
+    std::ostream_iterator<int> out{std::cout, "\n"};
+    for (int i = 1; i < 5; ++i)
+        vec[i] = *(++it);
+    for (auto &ele : vec)
+        *(out++) = ele;
+```
+
+- However, they are mostly used with **`std::(ranges::)copy`**.
+
+```cpp
+    std::vector<int> vec(5);
+    std::copy(std::istream_iterator<int>(std::cin), std::istream_iterator<int>(), vec.begin());
+    std::copy(vec.begin(), vec.end(), std::ostream_iterator<int>(std::cout, "\n"));
+```
+
+- The default constructed **`istream_iterator`** is “end”; this means to terminate until the input stream cannot be parsed as **`int`** (e.g. input a non-digit character) or encounter with stream error (e.g. end of file for file stream).
+  - So it’s dangerous because you may not assume the input of users, and the vector iterator may exceed its bound…
+  - Some may hope to use **`std::copy_n(std::istream_iterator<int>{std::cin}, vec.size(), vec.begin())`**, but if the input stream reaches its end, the dereference is invalid too…
+    - There is no **`copy_until`**!
+
+### Iterator adaptor
+
+- There are two kinds of iterator adaptors:
+  - One is created from iterators to perform different utilities:
+  <img src="img/iterator_adaptor.png" alt="iterator_adaptor" style="display:block; margin:auto;" />
+    - E.g. reversed iterators, i.e. the underlying type is also iterators, while **`++`** is in fact **`--`**.
+      - You can construct from an iterator, i.e. **`std::reverse_iterator r{ p.begin() }`**.
+    - You can get the underlying iterator by **`.base()`**, which actually returns the iterator that points to the elements after the referred one.
+      - E.g. **`rbegin().base() == end()`**
+    - There is another adaptor called move iterator, which will be covered in ***Move Semantics***

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <print>
 #include <vector>
+#include <iterator>
 
 void demo_v1()
 {
@@ -27,8 +28,28 @@ void demo_v2()
 }
 #endif
 
+void demo_v3()
+{
+    std::vector<int> vec(5);
+    std::istream_iterator<int> it{std::cin};
+    vec[0] = *it;
+    // output with \n as the separator
+    std::ostream_iterator<int> out{std::cout, "\n"};
+    for (int i = 1; i < 5; ++i)
+        vec[i] = *(++it);
+    for (auto &ele : vec)
+        *(out++) = ele;
+}
+
+void demo_v4()
+{
+    std::vector<int> vec(5);
+    std::copy(std::istream_iterator<int>(std::cin), std::istream_iterator<int>(), vec.begin());
+    std::copy(vec.begin(), vec.end(), std::ostream_iterator<int>(std::cout, "\n"));
+}
+
 int main()
 {
-    demo_v1();
+    demo_v4();
     return 0;
 }
