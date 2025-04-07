@@ -170,6 +170,8 @@ Beyond iterators of containers, stream iterators and iterator adaptors are also 
 
 ### vector
 
+#### base
+
 - To be exact, vector is dynamic array which can be resized.
   - It supports random access and occupies contiguous space.
   - When inserting and removing elements at the end (i.e. pushing / popping back), the complexity is **amortized 𝑂(1)**.
@@ -202,5 +204,51 @@ Beyond iterators of containers, stream iterators and iterator adaptors are also 
   - So more than one elements may be inserted.
 - Considering that some insertion will make >2x growth.
   - You may calculate the smallest capacity that is larger than needed.
-  - In MS, it directly allocates needed space, which is cheaper
-  
+  - In **MSVC**, it directly allocates needed space, which is cheaper
+- Finally, why is the exponent 2?
+  - You can prove that for any **exponent > 1**, the amortized complexity is **𝑂(1)**.
+  - This is a trade-off between **space** and **time**.
+    - If the exponent is too low, reallocation will happen more frequently so that the constant of **𝑂(1)** is larger.
+    - If it’s too high, the space will be consumed quickly so that you may waste a lot.
+  - This is just one practical choice (e.g. in **gcc**).
+- In **MSVC**, it’s **1.5**.
+  - This considers more than trade off.
+  - Facebook Folly Doc: *Despite other compilers reducing the growth factor to 1.5, gcc has staunchly maintained its factor of 2. This makes std::vector cache-unfriendly and memory manager unfriendly.*
+- if **`exponent == 2`**
+  - You will find that reallocation will never utilize the freed space!
+  $\left(1+2+\cdots+2^{k-1}\right)<2^{k+1}$
+- if **`exponent == 1.5`**
+  - $\begin{pmatrix}1.5+1.5^2+\cdots+1.5^{k-1}\end{pmatrix}=2*(1.5^k-1.5)>1.5^{k+1}$ may be true.
+  - Practically friendly to memory management and cache.
+- To sum up,
+  - Vector is just a dynamic array.
+    - It occupies contiguous space and can be random accessed by **`[]`**.
+    - It has members as: **pointer to content**, **size** and **capacity**.
+      - In implementation, they are **first pointer**, **last pointer** and **end pointer**.
+  - When the vector is full, it’s basically reallocated exponentially so that **`push_back`** is **𝑂(1)**
+- Obviously, **popping back** is **𝑂(1)**.
+  - You may think the vector will shrink when $\frac{size}{capacity}$ is too low!
+    - The analysis is similar to appending, you can prove it’s **amortized 𝑂(1)**.
+  - However, practically, vector doesn’t shrink automatically for efficiency, but it gives you ways to shrink it manually.
+  - Besides, automatic shrink will violates regulation on iterator invalidation, which will be covered sooner
+- For insertion, implementation you may have learnt is:
+  - Move backwards (prevent overwriting) from the **final element**.
+  - Insert into the empty positions.
+  - Removal is similar, but move forwards from the end of deletion to the deletion point, and finally destruct the last several elements.
+  - If reallocation is needed, operations of copying from old to new and copying in insertion can be merged
+- However, **MS-STL**’s implementation of insertion doesn’t use this way (we’ll tell you why in the future); It is:
+  - Reallocate if needed (same as normal insertion).
+  - push_back all elements one by one.
+  - **Rotate** them to the insertion point.
+
+#### methods
+
+let’s have a look on methods provided by vector (return **`void`** if unspecified)
+
+- For ctor:
+  - Default ctor.
+  - Copy ctor & Move Ctor.
+  - **`(size_t count, const T& elem = T{})`**: construct a vector with **count** copies of **elem**.
+  - **`(InputIt first, InputIt last)`**: copy elements from **`[first, last)`** into the vector.
+  - **`(std::initializer_list<T>)`**: copy all elements from **`initializer_list`** into the vector.
+  - All ctors have an optional allocator parameter.
