@@ -342,3 +342,26 @@ let’s have a look on methods provided by vector (return **`void`** if unspecif
     - You may just use **`std::erase(vec, val)/std::erase_if(vec, func)`** since **C++20**; they return number of removed elements
   
 #### vector<bool>
+
+- **`vector<bool>`** is a weird specialization of vector…
+  - **Boolean** can be represented by only **1 bit**, so **`vector<bool>`** is regulated to be compacted as “dynamic array of bit”.
+  - However, the smallest unit that can be directly operated is byte, and you cannot return **`bool&`** for **`operator[]`** here!
+    - What is returned is **a proxy class of the bit**.
+      - For **const method**, it still returns **`bool`**.
+  - You can get/set the bit through this proxy, just like normal reference.
+  - This may be confusing sometimes, e.g.
+    - For **`vector<int>`**, auto **`a = vec[1]; a = 1;`** will not change the vector since auto will not deduce reference.
+    - However, for **`vector<bool>`** , **`auto`** is **proxy**, and this proxy holds the reference of the bit, so this will change the vector!
+    - Range-based for may use **`auto`**, so pay attention if you’re doing so!
+- Besides, since the returned proxy is a value type instead of reference, so the returned object is temporary!
+  - Then, you cannot use **`auto&`** when iterating **`vector<bool>`**, though it’s right for other types…
+  - To **`sum up`**, use **`auto`** rather than **`auto&`** if you want to change elements of **`vector<bool>`**, use **`const auto&`** or **`bool`** if you don’t want to change.
+- Specialization also brings more methods…
+  - proxy supports **`operator~`** and **`flip()`**, which will flip the referred bit;
+  - **`vector<bool>`** supports **`flip()`**, which will flip all elements in the vector.
+  - **`vector<bool>`** is supported by **`std::hash`**, which will be covered in the unordered map(i.e. hash table).
+- Final word
+  - For its unfriendly properties for generic code and novices, **`vector<bool>`** is discouraged by many. Besides, operating bits is also slower than bytes, and reducing the memory seems unnecessary in the modern computers.
+  - Its iterator is also not seen as contiguous.
+  - So, be cautious and careful if you want to use/process this type!
+  
