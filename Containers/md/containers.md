@@ -136,3 +136,71 @@ Beyond iterators of containers, stream iterators and iterator adaptors are also 
   You can also use these methods to get the corresponding iterator adaptors.
   - Before **C++17**, you have to specify the type parameter for template of class, so if you don’t use these functions, you have to write tedious **`std::back_inserter_iterator<std::vector<int>>(vec)`**.
   - Since **C++17**, **CTAD** (***Class Template Automatic Deduction***) will deduce it, so methods are generally not shorter than object initializations.
+
+## Sequential Containers
+
+### array
+
+- We’ve learnt **C-style** array, e.g. **`int a[5]`**;
+  - However, it will *decay* to **`int*`** when passing to function, and the size information is dropped.
+    - i.e. the first dimension of the array parameter is meaningless, void func(**`int a[5]`**) is just same as **`void func(int a[])`** or **`void func(int* a)`**.
+    - So, **`sizeof(a)`** is different inside and outside the function…
+    - The **return type** cannot be **`int[5]`**, too…
+  - For int **`a[5], b[5], a = b`** is invalid.
+  - The bound is never check so invalid memory may be accessed…
+- All in all, we need a safer array! **`std::array<T, size>`** is for you.
+  - It’s same as **`T[size]`**, except that it always preserves size, can copy from another array, and can do more things like bound check.
+- For ctor: just initialize **`std::array`** in the same way as **`C-style`** array (may need adding an additional pair of paratheses).
+  - For example, **`struct S {int i; int j;};`**, **`std::array<S,2> arr{{ {1,2}, {3,4} }}`**.
+- For member accessing:
+  - **`operator[]/at()`**: accessing by index; **`at()`** will check the bound, i.e. if the index is greater than size, **`std::out_of_range`** will be thrown.
+  - **`front()/back()`**: get the first/last element of vector.
+  - Contiguous iterators, as we stated.
+  - If you want to get the raw pointer of array content, you can use **`.data()`**.
+- You can also use some additional methods:
+  - **`.swap()`**: same as **`std::swap(arr1, arr2)`**.
+  - **`operator=`**, **`operator<=>`**.
+  - All these methods need same array size!
+  - **`.fill(val)`**: fill all elements as val.
+  - **`std::to_array(C-style array)`**: since **C++20**, get a **`std::array`** from a C style array.
+- For size operations:
+  - **`.size()`**: get size (return **`size_t`**).
+  - **`.empty()`**: get a bool denoting whether **`size == 0`**.
+  - **`.max_size()`**: get maximum possible size in this system(usually useless).
+
+### vector
+
+- To be exact, vector is dynamic array which can be resized.
+  - It supports random access and occupies contiguous space.
+  - When inserting and removing elements at the end (i.e. pushing / popping back), the complexity is **amortized 𝑂(1)**.
+    - If not at end, it’ll be **𝑂(𝑛)**.
+- This container is so important that we’ll spend lots of time on it.
+  - It’s the most commonly used containers in all containers.
+  - Though sometimes its theoretical complexity may be higher than other containers (e.g. list), it may still be a better choice since it significantly **utilizes cache**.
+    - We’ve learnt in ICS that a cache-friendly program may consume hundreds or even thousands times less time than a bad one.
+    - Use a profiler if you cannot determine which one is better!
+- the most naïve version of vector is:
+  - When pushing back, allocate continuous space with one more, copy* all and add the new one to the new space, finally freeing the original.
+    - You cannot directly allocate one new space since it cannot guarantee the property of array - “contiguous space”.
+  - When popping back, shrink the space by one and copy all rest to the new one, finally freeing the original.
+- Obviously, you need **𝑂(𝑛)** on every pushing or popping…
+  - So, what if we “prepare” more space than needed in allocation, so that pushing will only construct new object at back?
+  - This is **𝑂(1)**, and we just need to control **reallocation** to happen only rarely so that copying will be **amortized 𝑂(1)**.
+  - The element number is called **size**; total space is called **capacity**
+- The easiest strategy is increasing space linearly.
+  - E.g. 0->4->8->12->16…
+  - Every `𝑘` operations will trigger reallocation and copy **`𝑛 = 𝑘𝑚`** elements.
+  - So, the amortized complexity is $:\Theta\left(\frac{\sum_{i=1}^{m}ki}{km}\right)=\Theta(m)=\Theta(n/k)$
+  - Considering that 𝑘 is an constant, this is still **𝑂(𝑛)**.
+  - This means “linear” is not “rare”!
+- So, what about exponentially?
+  - E.g. 1->2->4->8->16->32…
+  - Every $2^{k}$ operations will trigger reallocation and copy $n=2^{k}$ elements
+    - So, the amortized complexity is $\Theta\left(\frac{\sum_{i=1}^{k}2^{i}}{2^{k}}\right)=\Theta(1)$
+    - Summation of arithmetic progression v.s. geometric progression.
+- vector also supports insertion of a range.
+  - So more than one elements may be inserted.
+- Considering that some insertion will make >2x growth.
+  - You may calculate the smallest capacity that is larger than needed.
+  - In MS, it directly allocates needed space, which is cheaper
+  
