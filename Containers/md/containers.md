@@ -241,6 +241,19 @@ Beyond iterators of containers, stream iterators and iterator adaptors are also 
   - push_back all elements one by one.
   - **Rotate** them to the insertion point.
 
+#### Initializer list
+
+- In list initialization, we may use { 1, 2 } to pass params to ctor/function.
+- However, how is it possible to unify the initialization of vector and C array?
+  - All in all, we need to pass “a list of elements” to ctor! How is it represented?
+  - By **`std::initializer_list`**.
+- So, when a class accepts **`std::initializer_list<T>`**, { … } **whose elements are of type** **`T`** **or can be converted to** **`T`** will be regarded as **`std::initializer_list<T>`** rather than separate params!
+  - Then, you can use **`std::vector<int> v{1,2,3,4}`** to initialize the vector (**Uniform**).
+  - So, when you actually want to use **`(size_t count, const T& elem = T{})`**,
+  when **`T`** is e.g. **`int`**, you cannot use **`v{10, 1}`** to construct a vector with 10 elements that are all 1.
+    - You have to use **`v(10, 1)`**.
+- Finally, **`std::initializer_list<T>`** can be roughly seen to have underlying **`const T[N]`**, with methods **`begin`**, **`end`** and **`size`**
+
 #### methods
 
 let’s have a look on methods provided by vector (return **`void`** if unspecified)
@@ -252,3 +265,80 @@ let’s have a look on methods provided by vector (return **`void`** if unspecif
   - **`(InputIt first, InputIt last)`**: copy elements from **`[first, last)`** into the vector.
   - **`(std::initializer_list<T>)`**: copy all elements from **`initializer_list`** into the vector.
   - All ctors have an optional allocator parameter.
+- For member accessing (same as array):
+  - **`operator[]/at()`**: accessing by index; **`at()`** will check the bound, i.e. if the index is greater than size, **`std::out_of_range`** will be thrown.
+  - **`front()/back()`**: get the first/last element of vector.(**vector cannot be empty**)
+  - Contiguous iterators, as we stated.
+  - If you want to get the raw pointer of vector content, you can use **`.data()`**.
+- For capacity operations (i.e. adjust memory):
+  - **`.capacity()`**: get capacity (return **`size_t`**).
+  - **`.reserve(n)`**: expand the memory to make **`capacity = n`** if it’s greater than the current capacity (else do nothing); but the **size** is not changed.
+    - You may prevent reallocation over and over again (especially push_back many times) by **`reserve`** first!
+      - This is dramatically important in some parallel programs because of iterator invalidation; we’ll talk about this sooner.
+  - **`.shrink_to_fit`**: request to shrink the capacity so that **`capacity == size`**.
+    - This is the general way for you to shrink; request may or may not be accepted.
+    - For mainstream implementation (**libc++/libstdc++/MS STL**), shrink will happen basically as long as your class can be copied or moved without exception and space is enough for a new vector. This is because of exception guarantee, which will be covered in the following lectures!
+- For size operations (i.e. operate on elements, possibly influence capacity implicitly)
+  - **`.size()`**: get size, return **`size_t`**.
+  - **`.empty()`**: get a bool denoting whether **`size == 0`**.
+  - **`.max_size()`**: get maximum possible size in this system (usually useless).
+  - **`.resize(n, obj=Object{})`**: make the size = n;
+    - If the original size is n, nothing happens.
+    - If greater than n, elements in **`[n, end)`** will be removed.
+    - If less than n, new elements will be inserted, and their values are all **`obj`**.
+  - **`.clear()`**: remove all things; size will be 0 after this.
+    - But the capacity is usually not changed! You need to use capacity-related operations explicitly if you want to clear memory as well.
+  - **`.push_back(obj)`**: insert an element at the end.
+  - **`.emplace_back(params)`**: insert an element **constructed** by **`params`** at the end.
+    - Since **C++17**, it returns reference of inserted element (before it’s **`void`**).
+  - **`.pop_back()`**: remove an element from the end.
+  - **`.insert(const_iterator pos, xxx)`**: insert element(s) into pos, so that **`vec[pos – begin]`** is the first inserted element. **`xxx`** is similar to params of ctor:
+    - **`(value)`**: insert a single element.
+    - **`(size_t count, value)`**: insert count copies of **`value`**.
+    - **`(InputIt first, InputIt last)`**: insert contents from **`[first, last)`**.
+    - **`(std::initializer_list<T>)`**: insert contents of initializer list.
+  - **`.emplace(const_iterator pos, params)`**: insert an element **constructed** by **`params`** into pos.
+  - **`.erase(const_iterator pos)/.erase(const_iterator first, const_iterator last)`**:
+  erase a single element/ elements from **`[first, last)`**. **`first`**, **`last`** should be iterators of this vector.
+    - insert/erase will return next valid iterator of inserted/erased elements, so you can continue to iterate by **`it = vec.erase(…)`**. We’ll tell you reason sooner.
+- Interact with another vector:
+  - **`.assign`**: also similar to ctor
+    - **`(vec)`**: same as **`operator=`**, assign another vector
+    - **`(count, const T& value)`**
+    - **`(InputIt first, InputIt last)`**
+    - **`(std::initializer_list<T>)`**.
+  - **`.swap(vec)`**: swap with another vector, same as **`std::swap(vec1, vec2)`**
+- Since **C++23**, ranges-related methods are added.
+  - **`.assign_range(Range)`**: can copy any range to the vector.
+  - **`.insert_range(const_iterator pos, Range)`**
+  - **`.append_range(Range)`**: insert range from the end.
+
+#### Iterator Invalidation
+
+- Obviously, the iterator is designed as a wrapper of the pointer to the element.
+  - All operations are just for pointers, e.g. **`+/-`** is just moving pointers.
+  - But pointers are **unsafe**!
+- An iterator may be unsafe because it may not correctly represent the state of the object it is iterating. This may be caused by:
+  - **`reallocation`**, the original pointer is dangling; dereferencing the iterator will access unknown memory.
+  - **`On insertion & removal`**, so the original pointer points to an element that it may not intend to refer.
+    - e.g. **`1 2 3 4`** and **`it`** points to 3; after removing 2, **`it`** points to 4, which is in fact **`it + 1`** in the original context!
+  - This is called **iterator invalidation**.
+- For vector:
+  - If the **capacity changes**, **all iterators** are **invalid**.
+  - If the **capacity doesn’t change**, but some elements are moved, iterators **after the changed points** are **invalid**.
+    - i.e. inserting/removing will make iterators after the insertion/removal point invalid.
+    - That’s why insert/emplace will return a new iterator referring to the inserted element, and erase will return one after the final removed element.
+      - You may use them to continue to iterate the vector.
+- We say vector is thread-unsafe because:
+  - It is only safe when two threads are reading the vector.
+  - If one is writing, the other may read inconsistent content (e.g. for a vector of pair, you may read an old first and a new second…).
+  - When the internal structure of the container changes (e.g. vector reallocated when inserting), another thread will access invalid memory (i.e. unexpected iterator invalidation)…
+- But if you can ensure that threads are just writing different elements, it’s basically OK.
+  - Particularly, since **`vector<bool>`** is still dangerous if two bits are in e.g. the same byte (you’ll understand it in the next page)…
+- Final words:
+  - vector supports comparison, as we stated in **`operator<=>`**.
+  - If you just want to remove all elements that equals to XXX in a vector, it’s costly to use erase repeatedly ($O(n^{2})$ obviously)…
+    - We’ll teach you **𝑂(𝑛)** method in the next lecture.
+    - You may just use **`std::erase(vec, val)/std::erase_if(vec, func)`** since **C++20**; they return number of removed elements
+  
+#### vector<bool>
