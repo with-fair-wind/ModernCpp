@@ -341,7 +341,7 @@ let’s have a look on methods provided by vector (return **`void`** if unspecif
     - We’ll teach you **𝑂(𝑛)** method in the next lecture.
     - You may just use **`std::erase(vec, val)/std::erase_if(vec, func)`** since **C++20**; they return number of removed elements
   
-#### vector<bool>
+#### **`vector<bool>`**
 
 - **`vector<bool>`** is a weird specialization of vector…
   - **Boolean** can be represented by only **1 bit**, so **`vector<bool>`** is regulated to be compacted as “dynamic array of bit”.
