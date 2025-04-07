@@ -218,7 +218,7 @@ Beyond iterators of containers, stream iterators and iterator adaptors are also 
   - You will find that reallocation will never utilize the freed space!
   $\left(1+2+\cdots+2^{k-1}\right)<2^{k+1}$
 - if **`exponent == 1.5`**
-  - $\begin{pmatrix}1.5+1.5^2+\cdots+1.5^{k-1}\end{pmatrix}=2*(1.5^k-1.5)>1.5^{k+1}$ may be true.
+  - $\left(1.5+1.5^2+\cdotp\cdotp\cdotp+1.5^{k-1}\right)=2*(1.5^k-1.5)>1.5^{k+1}$ may be true.
   - Practically friendly to memory management and cache.
 - To sum up,
   - Vector is just a dynamic array.
@@ -352,7 +352,7 @@ let’s have a look on methods provided by vector (return **`void`** if unspecif
   - This may be confusing sometimes, e.g.
     - For **`vector<int>`**, auto **`a = vec[1]; a = 1;`** will not change the vector since auto will not deduce reference.
     - However, for **`vector<bool>`** , **`auto`** is **proxy**, and this proxy holds the reference of the bit, so this will change the vector!
-    - Range-based for may use **`auto`**, so pay attention if you’re doing so!
+    - **`Range-based for`** may use **`auto`**, so pay attention if you’re doing so!
 - Besides, since the returned proxy is a value type instead of reference, so the returned object is temporary!
   - Then, you cannot use **`auto&`** when iterating **`vector<bool>`**, though it’s right for other types…
   - To **`sum up`**, use **`auto`** rather than **`auto&`** if you want to change elements of **`vector<bool>`**, use **`const auto&`** or **`bool`** if you don’t want to change.
@@ -364,4 +364,18 @@ let’s have a look on methods provided by vector (return **`void`** if unspecif
   - For its unfriendly properties for generic code and novices, **`vector<bool>`** is discouraged by many. Besides, operating bits is also slower than bytes, and reducing the memory seems unnecessary in the modern computers.
   - Its iterator is also not seen as contiguous.
   - So, be cautious and careful if you want to use/process this type!
+
+### Bitset
+
+- **`bitset`** is in fact not a container, and we cover it here just because it also has many bits like vector<bool>…
+  - However, the size is determined at compile time, i.e. you need to specify **`bitset<size>`**.
+  - **`vector<bool>`** to **`bitset`** is similar (**not same**) to **`vector`** to **`array`**!
+- Difference:
+  - **`bitset`** doesn’t provide iterators.
+  - **`bitset`** provides more methods, which makes it a more proper way to manipulate bits.
+    - You may use **`&,|,^,~,<<,>>`**, just like operating binary series.
+    - You can use **`set(), set(pos, val = true), reset(), reset(pos), flip(), flip(pos)`** to make all bits 1/0/flipped or set bit at pos val/0/flipped.
+      - **`pos`** is index (**`size_t`**) since **`bitset`** doesn’t support iterator.
+    - You can use **`all(), any(), none(), count()`** to check whether all/if any/whether none of bits are set / get number of set bits.
+    - It can also be input/output by **`>>/<<`**
   
