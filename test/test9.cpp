@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <memory>
+#include <functional>
+#include <any>
 
 void teset1()
 {
@@ -50,8 +52,44 @@ void test3()
     std::unordered_set<Student, decltype(hash), decltype(equal)> set;
 }
 
+template <typename Func, typename... Args>
+void test4(Func &&func, Args &&...args)
+{
+    std::cout << "test4" << std::endl;
+    func(std::forward<Args>(args)...);
+}
+
+void test5()
+{
+    int a = 10;
+    int b = 20;
+
+    int &c = b;
+    std::reference_wrapper<int> ref = a;       // ref 引用 a
+    std::cout << "ref = " << ref << std::endl; // 输出 10
+
+    ref = b;                                   // ref 现在引用 b
+    std::cout << "ref = " << ref << std::endl; // 输出 20
+
+    // 修改 ref 会修改 b（现在引用的是 b）
+    ref.get() = 99;
+    std::cout << "b = " << b << std::endl; // 输出 99
+
+    ref = c;
+    std::cout << "ref = " << ref << std::endl;
+    ref.get() = 100;
+    std::cout << "c = " << c << std::endl;
+    std::cout << "b = " << b << std::endl; // 输出 99
+}
+
+void test6()
+{
+    static_assert(sizeof(long) == 4, "错误, 不是32位平台...");
+    std::cout << sizeof(long) << std::endl;
+}
+
 int main()
 {
-    test2();
+    test6();
     return 0;
 }

@@ -378,4 +378,113 @@ let’s have a look on methods provided by vector (return **`void`** if unspecif
       - **`pos`** is index (**`size_t`**) since **`bitset`** doesn’t support iterator.
     - You can use **`all(), any(), none(), count()`** to check whether all/if any/whether none of bits are set / get number of set bits.
     - It can also be input/output by **`>>/<<`**
+- Besides, **`bitset`** can be converted to **`std::string/unsigned long long`** by **`.to_string(zero = ‘0’, one = ‘1’)/to_ullong()`**.
+  - The former may throw **`std::bad_alloc`** for allocation error on string
+  - The latter may throw **`std::overflow_error`** if the value is unrepresentable by **`unsigned long long`**.
+  - **`bitset`** can also be constructed by a **`string/unsigned long long`**, i.e. **`(str, start_pos = 0, len = std::string::npos, zero = ‘0’, one = ‘1’)`**.
+    - No need to remember; check in cppreference when needed.
+- Similarity:
+  - You can access the bit by **`operator[]`**, which returns a proxy class too (for const methods, **`bool`** too).
+    - There is no **`at(pos)`** in **`bitset`**, but a **`bool test(pos)`**, which will do bound check.
+  - You can compare two bitsets (only in the same size, and only **`==`** and **`!=`**)
+  - You can get size by **`.size()`**.
+  - You can hash it by **`std::hash`**.
   
+### span
+
+- Since **C++17**, more and more view-like things are provided.
+  - View means that it doesn’t actually hold the data; it observes the data.
+  - So, their construction and copy are much cheaper than traditional containers.
+- Span is a view for contiguous memory (e.g. **vector, array, string, C-style array, initializer list, etc**.).
+- Before, you may have written things like **`void func(int* ptr, int size)`**.
+  - Even if there are things like **`vector`** and you may use their references as parameters, what if you only want to operate on e.g. a sub-vector?
+    - You have to copy it to a new container, which is costly…
+  - Span is for this case; you can code **`void func(std::span<int> s);`**.
+- You can just operate span almost as if operate on an array.
+  - You can use random access iterators.
+  - You can use **`front()/back()/operator[]/data()`**.
+  - You can use **`size()/empty()`**.
+- You can also use **`size_bytes()`** to get size in byte.
+- You can create new sub-spans in span cheaply:
+  - **`.first(N)/.last(N)`**: make a new subspan with the first **`N`**/the last **`N`** elements.
+  - **`.subspan(beginPos(, size))`**: make a new subspan begin at **`beginPos`** with **`size`** (by default until the last one).
+- Remember: **span is just a pointer with a size!** All copy-like operations are cheap.
+  You can also use **`std::as_bytes`** and **`std::as_writable_bytes`** that convert a **span** to a **span of bytes**.
+***Example***
+
+```cpp
+void printInfo(std::span<int> span)
+{
+    auto size = span.size();
+    for (size_t i = 0; i < size / 2; ++i)
+        span[i] *= 2;
+    for (size_t i = size / 2; i < size; ++i)
+        span[i] *= 3;
+    for (auto it = span.begin(); it != span.end(); ++it)
+        std::cout << *it << " ";
+    std::cout << std::endl;
+}
+
+void demo_v6()
+{
+    std::vector<int> a{1, 2, 3, 4, 5};
+    std::array<int, 4> b{1, 2, 3, 4};
+    int c[]{1, 2, 3};
+    printInfo(a);
+    printInfo(b);
+    printInfo(c);
+}
+```
+
+- You can also create a span with a **`[begin, end)`** iterator pair or **`(begin, size)`** pair.
+- Notice that spans will ~~never~~(**C++26** adds **`.at()`**) check whether the accessed position is valid!
+  - E.g. You can use **out-of-range** index for **`operator[]`**.
+  - You should carefully manage it!
+- Span is in fact **`std::span<T, extent>`**, but the **`extent`** is **`std::dynamic_extent`** by default.
+  - For **fixed extent**, it’s even more dangerous since you can assign a range that in fact doesn’t have extent elements (but they need explicit construction).
+    - Only **C-style array** (i.e. **`T[extent]`**) and **`std::array<T, extent>`** can implicitly construct it.
+    - Also, you need **`.first/last<N>()`**, **`.subspan<offs, N>()`** to create subspan with fixed extent (.subspan<offs>() will create fixeddynamic one for fixed/dynamic span).
+  - You can get the extent by the static member extent.
+- Notice that since **C++17/20**, **`std::data()/empty()/size()/ssize()`** can be used to get the raw pointer, etc., just like **`std::begin`** to extract the iterator.
+  - However, in **C++20**, you should prefer **`std::range::data()/begin()/…`**, which is safer and has many other advantages;
+- Final word: if you hope the **`span`** has **read-only** access, you need to use **`std::span<const T>`**.
+  - This actually makes the pointer **`const T*`**, so it’s read-only.
+  - However, for containers, you need to specify as **`const std::vector<int>`**.
+    - That’s because spans are observer, and containers are the owner!
+
+### mdspan*
+
+- Since **C++23**, a multi-dimensional span is also provided.
+  - It’s still a **non-owning view**, providing a multi-dimensional **`operator[]`**!
+  - For owning one, mdarray may be provided in **C++26**…
+
+- There are three components for mdspan:
+  - Extent: We need a multi-dimensional extent, too; so it’s written as **`std::extent<IndexType, sizes…>`**.
+  E.g. **`std::extent<std::size_t, 3, 2, 4>`**.
+  - Similarly, you may hope to make some dimensions dynamic, then you can still use **`std::dynamic_extent`**, e.g. **`std::extent<std::size_t, std::dynamic_extent, 2, std::dynamic_extent>`**.
+  - Obviously, the **most frequently** used one is that all dimensions are dynamic, so you can abbreviate it as **`std::dextent<IndexType, dimensionNum>`**.
+- Layout: By default **`std::layout_right`**.
+  - You may know that **Fortran** and **C/C++** have different layouts in array.
+    - In **C/C++**, the last dimension(i.e. the rightmost one) is contiguous.
+      - Row major, i.e. rows are stored one by one.
+    - In **Fortran**, the first dimension(i.e. the leftmost one) is contiguous.
+      - Column major, i.e. columns are stored on by one.
+  <img src="img/layouts_in_array.png" alt="layouts_in_array" style="display:block; margin:auto;" />
+- The final component is accessor, which is std::default_accessor by default.
+  - That is, when you get index, how do you access the memory?
+    - The default one is just **`eturn mem[i]`**, but E.g. you may want to add a lock…
+  - So, you need to define **`access(pointer, index)`** that returns a **reference** to the element and **`offset(pointer, index)`** that returns a **pointer** to the element.
+ • This is rarely used, and default one is enough.
+**But all in all, the most frequently-used is just** **`std::mdspan<T, std::dextent<IndexType, DimNum>>`**.
+
+### Deque
+
+Double-Ended Queue
+
+- The most significant requirement of deque is:
+  - **𝑂(1)** on insertion & removal of elements at the front or the back.
+  - Random access.
+- Other properties are just like **`vector`**, e.g. **𝑂(𝑛)** insertion & removal.
+  - For methods, except that it provides **`push_front, emplace_front, pop_front`** (and prepend_range since **C++23**), all things (including **ctors**) are the same as a normal **`vector`**, so we’ll not repeat it.
+- What is important is how it’s implemented.
+
