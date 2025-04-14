@@ -2,6 +2,7 @@
 #include <print>
 #include <vector>
 #include <iterator>
+#include <span>
 
 void demo_v1()
 {
@@ -55,8 +56,30 @@ void demo_v5()
     std::copy(vec.begin(), vec.end(), std::ostream_iterator<int>(std::cout, "\n"));
 }
 
+void printInfo(std::span<int> span)
+{
+    auto size = span.size();
+    for (size_t i = 0; i < size / 2; ++i)
+        span[i] *= 2;
+    for (size_t i = size / 2; i < size; ++i)
+        span[i] *= 3;
+    for (auto it = span.begin(); it != span.end(); ++it)
+        std::cout << *it << " ";
+    std::cout << std::endl;
+}
+
+void demo_v6()
+{
+    std::vector<int> a{1, 2, 3, 4, 5};
+    std::array<int, 4> b{1, 2, 3, 4};
+    int c[]{1, 2, 3};
+    printInfo(a);
+    printInfo(b);
+    printInfo(c);
+}
+
 int main()
 {
-    demo_v5();
+    demo_v6();
     return 0;
 }
