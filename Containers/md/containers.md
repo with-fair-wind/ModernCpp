@@ -503,9 +503,44 @@ Double-Ended Queue
 - Before introducing the implementation of deque, we need a new data structure called **`circular queue`**.
   - Queue is **FIFO**.
   - But in practice, usually the space is limited so we cannot always push into queue…
-  - Circular queue allocates a fixed-size buffer, records a head and a tail.
-    - When enqueue, tail moves forward.
-    - When dequeue, head moves forward.
-    - If tail == head i.e. the queue is full, overwrite the element at head, both tail and head move forward.
+  - **`Circular queue`** allocates a fixed-size buffer, records a head and a tail.
+    - When **enqueue**, **`tail`** moves forward.
+    - When **dequeue**, **`head`** moves forward.
+    - If **`tail == head`** i.e. the queue is **full**, **overwrite** the element at **`head`**, both **`tail`** and **`head`** move forward.
   - This is used widely, e.g. for prefetching prediction in hardware. If there are too many predictions, the oldest will be dropped
+   <img src="img/circular_queue.png" alt="circular_queue" style="display:block; margin:auto;" />
+- So, can we use **`circular queue`** to emulate **`deque`**?
+  - We’ve said how to enqueue from tail; you can easily know how to enqueue from head.
+  - So obviously **𝑂(1) insertion** and **removal**!
+  - However, **`deque`** **shouldn’t drop elements when full**.
+- So we can use **dynamic circular queue**; when it’s full, the space should be enlarged and used to make a new circular queue.
+  - Similar to **`vector`**, you need to expand space exponentially.
+  - When you **enqueue** continuously, the **amortized complexity** is **𝑂(1)**; **dequeue** is obviously **𝑂(1)**.
+  - You can also random access, e.g. **`deque[i]`** is just **`vec[(head + i) % size]`**.
+- But **`deque`** expects **true 𝑂(1)** rather than **amortized 𝑂(1)**…
+  - That seems quite **impossible**!
+  - What **`deque`** implementation does is “For expensive copy of objects, the complexity is approximately 𝑂(1)”.
+  - If we only use **`dynamic circular queue`**, we need to copy all elements when resizing; that won’t satisfy it.
+  - The solution is to lower down the copy cost…But how is it possible?
+- The typical implementation is using a **dynamic circular queue** (called **map**) whose elements are **pointers**.
+  - **Each pointer points to a block, with many objects stored there**
+  - The block size is fixed, e.g. in **`libc++`**, that’s **`max(16*sizeof(obj), 4096)`**; in **`libstdc++`**, that’s **`8*sizeof(obj)`**.
+  - **You may think it as a big circular queue as a whole!**
+  <img src="img/deque_1.png" alt="deque_1" style="display:block; margin:auto;" />
+- What deque needs to record/know is:
+  - The **`map`** and its **size**.
+  - The **block size**.
+  - The **global offset** of the **first element off**.
+  - Element numbers.
+- We can use **off / block_size** to know the **position of head**.
+- When **resizing**, we just need to **copy all pointers!**
+  - The number of pointers is **`𝑛 / 𝑘`**, and copying them is very **cheap**…
+  - If object copy is expensive, this cost can be approximately seen **𝑂(1)**.
+  - Even if in the context of amortized complexity, it is **𝑂(1) + 𝑂(𝑝𝑜𝑖𝑛𝑡𝑒𝑟 𝑐𝑜𝑝𝑦 𝑐𝑜𝑠𝑡 / 𝑘)** rather than **𝑂(1) +𝑂(𝑜𝑏𝑗𝑒𝑐𝑡𝑐𝑜𝑝𝑦𝑐𝑜𝑠𝑡)**, which is still cheaper.
+  <img src="img/deque_2.png" alt="deque_2" style="display:block; margin:auto;" />
+  <img src="img/deque_3.png" alt="deque_3" style="display:block; margin:auto;" />
+  <img src="img/deque_4.png" alt="deque_4" style="display:block; margin:auto;" />
+  <img src="img/deque_5.png" alt="deque_5" style="display:block; margin:auto;" />
+  <img src="img/deque_6.png" alt="deque_6" style="display:block; margin:auto;" />
+  <img src="img/deque_7.png" alt="deque_7" style="display:block; margin:auto;" />
   
