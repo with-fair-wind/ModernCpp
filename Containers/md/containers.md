@@ -492,7 +492,7 @@ void demo_v6()
 
 ### Deque
 
-Double-Ended Queue
+#### Double-Ended Queue
 
 - The most significant requirement of deque is:
   - **𝑂(1)** on insertion & removal of elements at the front or the back.
@@ -543,4 +543,49 @@ Double-Ended Queue
   <img src="img/deque_5.png" alt="deque_5" style="display:block; margin:auto;" />
   <img src="img/deque_6.png" alt="deque_6" style="display:block; margin:auto;" />
   <img src="img/deque_7.png" alt="deque_7" style="display:block; margin:auto;" />
-  
+- Notice that it’s **not forced to free the space of block** (e.g. in **MSVC** implementation).
+  - We just move **`tail & head`**.
+  - This is kind of **“lazy load”**; resources are allocated only when we need, but may not be released.
+  - When you find an element of map is not nullptr, you can directly use the block it points to.
+    - Our strategy guarantees that valid data will not be overwritten.
+  - You may use **`shrink_to_fit`**, just like vector, to free those unused blocks.
+    - It may also shrink map, just like **`vector`**.
+- When the **`map`** is **full**, it should be reallocated…
+  - We assume that newly added block number is **`count`**.
+- Now, we just need to make the **circular queue** still continuous in the new vector.
+- Procedures:
+  - First, copy all elements from **`vec[head, vecEnd)`** to **`newVec[head, currEnd)`**;
+    - Then, if **`head <= count`**, copy **`[0, head)`** to **`[currEnd, …)`**.
+    - Else, copy after **`currEnd`** as much as possible, and the rest is arranged to the **`newVecBegin`**.
+  - Finally, set all the rest to **`nullptr`**.
+  - It’s kind of abstract, let me show you…
+  <img src="img/map_reallocation_in_deque_1.png" alt="map_reallocation_in_deque_1" style="display:block; margin:auto;" />
+  <img src="img/map_reallocation_in_deque_2.png" alt="map_reallocation_in_deque_2" style="display:block; margin:auto;" />
+  <img src="img/map_reallocation_in_deque_3.png" alt="map_reallocation_in_deque_3" style="display:block; margin:auto;" />
+  <img src="img/map_reallocation_in_deque_4.png" alt="map_reallocation_in_deque_4" style="display:block; margin:auto;" />
+  <img src="img/map_reallocation_in_deque_5.png" alt="map_reallocation_in_deque_5" style="display:block; margin:auto;" />
+- **Insertion** and **erasure** are all **𝑂(𝑛)** :
+  - Their implementation is also similar to **`vector`**.
+  - Insert by pushing and rotating.
+  - Erase by moving and popping.
+  - Particularly, since deque can be pushed in both sides, the closer one will be chosen to push/pop. So to be exact, the complexity is **𝑂(𝑐𝑙𝑜𝑠𝑒𝑟_𝑑𝑖𝑠𝑡𝑎𝑛𝑐𝑒)**.
+- The iterator is just a deque pointer with an offset.
+  - **`*`** is **`deque->map_[offset / block_size][offset % block_size]`**
+  - **`+/-/++/--`** is just operating offset (need to round back to 0 when reaching the total end). It may also be checked whether it exceeds tail/head to see the validity of iterator.
+
+#### Iterator Invalidation
+
+- From the view of **`vector`**, **insertion** will only invalidate elements “after” the insertion point.
+  - However, that’s because **`vector`** is always inserted with **`push_back`**; **`deque`** may use **`push_front`** to reduce complexity. You cannot assume the invalidation happens before or after the insertion point.
+  - Besides, the map may be resized, so even if only push_back/front, the original offset is also not guaranteed to be corrected.
+    - E.g. tail < head before, but after resizing, the tail is copied beyond head so that tail > head then.
+  - **Thus, all iterators are seen as invalid after insertion.**
+    - This includes **`resize`** when the size is growing; also includes **`shrink_to_fit`** and **`clear`** since it may change map size (e.g. in MS, clear will drop both elements and map)…
+- Erasing from the **front** and **back** will only invalidate the erased elements, **otherwise all iterators are also invalidated**.
+  - This includes **`resize`** when the size is reducing.
+
+#### Final
+
+- References to elements are not invalidated when operating from front/back (including e.g. insert(end)) since blocks always remain unchanged. The only changed part is map.
+  - Of course, references to removed elements are invalidated; this is necessary and obvious.
+  - **`vector`** cannot keep references since the buffer itself has changed.
