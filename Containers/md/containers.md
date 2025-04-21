@@ -301,6 +301,19 @@ let’s have a look on methods provided by vector (return **`void`** if unspecif
   - **`.erase(const_iterator pos)/.erase(const_iterator first, const_iterator last)`**:
   erase a single element/ elements from **`[first, last)`**. **`first`**, **`last`** should be iterators of this vector.
     - insert/erase will return next valid iterator of inserted/erased elements, so you can continue to iterate by **`it = vec.erase(…)`**. We’ll tell you reason sooner.
+    - ***Example***
+
+    ```cpp
+    std::vector v{1, 2, 3, 4, 5, 6};
+    for (auto it = v.begin(); it != v.end();)
+    {
+        if (*it == 3)
+            it = v.erase(it); // 删除元素后，返回下一个迭代器
+        else
+            ++it; // 继续迭代
+    }
+    ```
+
 - Interact with another vector:
   - **`.assign`**: also similar to ctor
     - **`(vec)`**: same as **`operator=`**, assign another vector
@@ -487,4 +500,12 @@ Double-Ended Queue
 - Other properties are just like **`vector`**, e.g. **𝑂(𝑛)** insertion & removal.
   - For methods, except that it provides **`push_front, emplace_front, pop_front`** (and prepend_range since **C++23**), all things (including **ctors**) are the same as a normal **`vector`**, so we’ll not repeat it.
 - What is important is how it’s implemented.
-
+- Before introducing the implementation of deque, we need a new data structure called **`circular queue`**.
+  - Queue is **FIFO**.
+  - But in practice, usually the space is limited so we cannot always push into queue…
+  - Circular queue allocates a fixed-size buffer, records a head and a tail.
+    - When enqueue, tail moves forward.
+    - When dequeue, head moves forward.
+    - If tail == head i.e. the queue is full, overwrite the element at head, both tail and head move forward.
+  - This is used widely, e.g. for prefetching prediction in hardware. If there are too many predictions, the oldest will be dropped
+  
