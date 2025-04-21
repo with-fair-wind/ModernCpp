@@ -3,6 +3,9 @@
 #include <vector>
 #include <iterator>
 #include <span>
+#include <list>
+#include <cassert>
+#include <algorithm>
 
 void demo_v1()
 {
@@ -78,8 +81,46 @@ void demo_v6()
     printInfo(c);
 }
 
+void demo_v7()
+{
+    std::vector<int> src = {2, 7, 1};
+    std::list<int> dst = {3, 1, 4};
+#ifdef __cpp_lib_containers_ranges
+    dst.assign_range(src);
+#else
+    dst.assign(src.cbegin(), src.cend());
+#endif
+    assert(std::ranges::equal(src, dst));
+}
+
+template <typename T>
+    requires requires(T val) { std::cout << val; }
+void printList(const std::string str, const std::list<T> list)
+{
+
+    std::cout << str;
+    for (const auto &val : list)
+        std::cout << val << " ";
+    std::cout << "\n";
+}
+
+void demo_v8()
+{
+    std::list<int> list1{1, 2, 3, 4, 5};
+    std::list<int> list2{10, 80, 30, 40, 50};
+    auto it = list1.begin();
+    std::advance(it, 2);
+    list1.splice(it, list2);
+    printList("list1: ", list1);
+    printList("list2: ", list2);
+
+    list2.splice(list2.begin(), list1, it, list1.end());
+    printList("list1: ", list1);
+    printList("list2: ", list2);
+}
+
 int main()
 {
-    demo_v6();
+    demo_v8();
     return 0;
 }
