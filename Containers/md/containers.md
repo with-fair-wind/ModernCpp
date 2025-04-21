@@ -578,9 +578,9 @@ void demo_v6()
 - From the view of **`vector`**, **insertion** will only invalidate elements “after” the insertion point.
   - However, that’s because **`vector`** is always inserted with **`push_back`**; **`deque`** may use **`push_front`** to reduce complexity. You cannot assume the invalidation happens before or after the insertion point.
   - Besides, the map may be resized, so even if only push_back/front, the original offset is also not guaranteed to be corrected.
-    - E.g. tail < head before, but after resizing, the tail is copied beyond head so that tail > head then.
+    - E.g. **`tail < head`** before, but after resizing, the **`tail`** is copied beyond **`head`** so that **`tail > head`** then.
   - **Thus, all iterators are seen as invalid after insertion.**
-    - This includes **`resize`** when the size is growing; also includes **`shrink_to_fit`** and **`clear`** since it may change map size (e.g. in MS, clear will drop both elements and map)…
+    - This includes **`resize`** when the size is growing; also includes **`shrink_to_fit`** and **`clear`** since it may change map size (e.g. in **MSVC**, **`clear`** will drop both elements and map)…
 - Erasing from the **front** and **back** will only invalidate the erased elements, **otherwise all iterators are also invalidated**.
   - This includes **`resize`** when the size is reducing.
 
