@@ -17,6 +17,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 project(ModernCPP LANGUAGES CXX)
 
+link_libraries(stdc++exp)
+
 # add_executable(Container Containers/containers.cpp)
 add_executable(containers Containers/containers.cpp)
 add_executable(fundamental_types Basics/fundamental_types.cpp)
@@ -24,4 +26,4 @@ add_executable(compound_types Basics/compound_types.cpp)
 add_executable(test9 Test/test9.cpp)
 add_executable(test10 Test/test10.cpp)
 
-target_link_libraries(test9 PUBLIC stdc++exp)
+# target_link_libraries(test9 PUBLIC stdc++exp)

@@ -589,3 +589,135 @@ void demo_v6()
 - References to elements are not invalidated when operating from front/back (including e.g. insert(end)) since blocks always remain unchanged. The only changed part is map.
   - Of course, references to removed elements are invalidated; this is necessary and obvious.
   - **`vector`** cannot keep references since the buffer itself has changed.
+
+### List
+
+#### Double linked list
+
+- List has these properties:
+  - 𝑂(1) insertion and removal.
+  - 𝑂(1) splice.
+  - No random access.
+- The implementation is just similar as we’ve learnt, so we mainly cover APIs.
+- We know that **double linked list** is consisted of **nodes**.
+  - Each node has a **`T data`**, a pointer to the previous node **`prev`** and a pointer to the next node **`next`**.
+  - Particularly, **`prev`** of the first node is **`nullptr`**, and **`next`** of the last node is **`nullptr`**.
+    - If you’ve written a double linked list before, you’ll find that it’s really annoying to process corner case…
+- So in **MSVC** implementation, list is implemented as a **circular list**.
+  - That is, we introduce **a sentinel node**, which is **`prev`** of the first node and **`next`** of the last node.
+  - This will unify corner case and reduce code difficulty hugely, because it’s not **`nullptr`**, but a virtual node that can be operated.
+  - So totally, **`list`** stores the sentinel node(or its pointer) and size(to make **`size()`** 𝑂(1), though you can count it in 𝑂(𝑛)). Other nodes are dynamically allocated and linked together.
+
+<img src="img/list.png" alt="list" style="display:block; margin:auto;" />
+
+- The iterator is just a wrapper of the node.
+  - **`--/++`** is going to **`prev/next`**.
+  - **`end()`** is the sentinel node.
+
+#### Iterator invalidation
+
+- Only erasure, and it only invalidates the erased node.
+- However, it’s still thread-unsafe, e.g. erase two adjacent nodes.
+
+#### methods
+
+- For member accessing:
+  - **`.front()/back()`**: get the first/last element of list.
+  - Bidirectional iterators, as we stated.
+- For size operations:
+  - **`.size()`**: get size, return **`size_t`**.
+  - **`.empty()`**: get a **`bool`** denoting whether **`size == 0`**.
+  - **`.max_size()`**: get maximum possible size in this system (usually useless).
+  - **`.resize(n, obj=Object{})`**: make the **`size = n`**;
+    - If the original size is **`n`**, nothing happens.
+    - If greater than **`n`**, elements in **`[n, end)`** will be removed.
+    - If less than **`n`**, new elements will be inserted at back, and they are all **`obj`**.
+  - **`.clear()`**: remove all things; size will be 0 after this
+- Here is same as deque, all 𝑂(1):
+  - **`.push_back(obj)`**: insert an element at the end.
+  - **`.emplace_back(params)`**: insert an element constructed by params at the end.
+    - Since **C++17**, it returns reference of inserted element(before it’s void).
+  - **`.pop_back()`**: remove an element from the end.
+  - **`.push_front(obj)`**
+  - **`.emplace_front(params)`**
+  - **`.pop_front()`**
+- Since **C++23**, 𝑂(𝑙𝑒𝑛(𝑟𝑎𝑛𝑔𝑒))
+  - **`.assign_range(Range)`**
+  - **`.append_range(Range)`**
+  - **`.prepend_range(Range)`**
+  - **`.insert_range(const_iterator pos, Range)`**
+- Same as **`vector`**:
+  - **`.insert(const_iterator pos, xxx)`**: **`xxx`** is similar to params of ctor:
+    - **`(value)`**: insert a single element.
+    - **`(size_t count, value)`**: insert **`count`** copies of **`value`**.
+    - **`(InputIt first, InputIt last)`**: insert contents from **`[first, last)`**.
+    - **`(std::initializer_list<T>)`**: insert contents of initializer list.
+  - **`.erase(const_iterator pos)/.erase(const_iterator first, const_iterator last)`**: erase a single element/ elements from **`[first, last)`**. **`first, last`** should be iterators of this vector.
+  - Insertion returns the iterator referring to the first inserted element, and removal returns the one for the next element of the erased element, too
+- Ctor:
+  - Default ctor.
+  - Copy ctor & Move Ctor.
+  - **`(size_t count, const T& elem = T{})`**: construct a vector with **`count`** copies of **`elem`**.
+  - **`(InputIt first, InputIt last)`**: copy elements from **`[first, last)`** into the vector.
+  - **`(std::initializer_list<T>)`**: copy all elements from **`initializer_list`** into the vector.
+  - All elements have an optional allocator parameter.
+- Interact with another list:
+  - **`.assign`**: also similar to ctor
+    - **`(count, const T& value)`**
+    - **`(InputIt first, InputIt last)`**
+    - **`(std::initializer_list<T>)`**
+  - **`.swap(list)`**: swap with another list, same as **`std::swap(list1, list2)`**.
+  - **`operator<=>`**.
+- Now we finally introduce some unique APIs for list…
+  - **`.remove(val)/.remove_if(func)`**: remove all elements that is **`val`** or can make **`func`** return **`true`**.
+  - **`.unique()/.unique(func)`**: remove equal (judged by **`==/func`**) **adjacent** elements.
+  <img src="img/list_unique_api.png" alt="list_unique_api" style="display:block; margin:auto;" />
+  - They will return number of removed elements since **C++20**.
+  - **`.reverse()`**: reverse the whole list.
+  - **`<algorithm>`** also has these methods, but they don’t erase nodes from the list, and are less efficient.
+- **`.sort/.sort(cmp)`**: stable sort.
+  - **MSVC** implementation is **merge sort**, 𝑂(1) space complexity and 𝑂(𝑛log𝑛) time complexity.
+  - **`sort`** in **`<algorithm>`** needs random iterator, and usually not merge sort because its bad space complexity for vector (𝑂(𝑛)).
+- There are two methods to move nodes from another list:
+  - That means, another list will not own these nodes anymore.
+    - **`.insert(pos, it1, it2)`** will not change the ownership of nodes; it’s just copy!
+  - **`.merge(list2)/.merge(list2, cmp)`**: same procedure of merge in merge sort, so usually used in sorted list.
+    - Two sorted list will be merged into a single sorted list.
+  - **`.splice(pos, list2, …)`**:
+    - **`()`**: insert the total **`list2`** to **`pos`**.
+    - **`(it2)`**: insert **`it2`** to **`pos`** (and remove it from **`list2`**).
+      - **`it2`** should come from **`list2`**.
+    - **`(first, last)`**: insert **`[first, last)`** to **`pos`** (and remove them from **`list2`**).
+      - **`first, last`** should come from **`list2`**.
+    - You may notice that just removing some nodes from a list and moving them to another doesn’t need **`list`** itself!
+      - Then why the last two need to provide a **`list2`** param?
+      - Because **`list2`** records **size**!
+  ***Example***
+
+  ```cpp
+  template <typename T>
+    requires requires(T val) { std::cout << val; }
+  void printList(const std::string str, const std::list<T> list)
+  {
+
+      std::cout << str;
+      for (const auto &val : list)
+          std::cout << val << " ";
+      std::cout << "\n";
+  }
+
+  void demo()
+  {
+      std::list<int> list1{1, 2, 3, 4, 5};
+      std::list<int> list2{10, 80, 30, 40, 50};
+      auto it = list1.begin();
+      std::advance(it, 2);
+      list1.splice(it, list2);
+      printList("list1: ", list1);
+      printList("list2: ", list2);
+
+      list2.splice(list2.begin(), list1, it, list1.end());
+      printList("list1: ", list1);
+      printList("list2: ", list2);
+  }
+  ```
