@@ -7,6 +7,9 @@
 #include <memory>
 #include <functional>
 #include <any>
+#include <print>
+#include <ranges>
+#include <set>
 
 void teset1()
 {
@@ -88,8 +91,91 @@ void test6()
     std::cout << sizeof(long) << std::endl;
 }
 
+void test7()
+{
+    std::vector v{1, 2, 3, 4, 5, 6};
+    for (auto it = v.begin(); it != v.end();)
+    {
+        if (*it == 3)
+            it = v.erase(it); // 删除元素后，返回下一个迭代器
+        else
+            ++it; // 继续迭代
+    }
+}
+
+void test8()
+{
+    std::map<int, int> map;
+    auto ret = map.insert({1, 1});
+    map.lower_bound(1); // 返回第一个大于等于 1 的元素的迭代器
+    map.upper_bound(1); // 返回第一个大于 1 的元素的迭代器
+}
+
+struct A
+{
+};
+
+struct B : A
+{
+};
+
+void f(A a)
+{
+    std::cout << "A" << std::endl;
+}
+
+void test9()
+{
+    B b;
+    f(b); // 调用 A::f(A a)，会发生 slicing
+}
+
+struct X
+{
+    int a = 0;
+    ~X()
+    {
+        std::cout << "X destructor" << std::endl;
+    }
+};
+
+void test10()
+{
+    std::map<int, X> map;
+    map.emplace(0, X{1}); // 直接在 map 中构造 X 对象
+    map[0] = X{2};        // 替换 map[0] 的值
+}
+
+#include <ranges>
+
+void test11()
+{
+    namespace stdv = std::views;
+    for (const auto oddNum : stdv::iota(1, 10) | stdv::filter([](int num)
+                                                              { return num % 2 == 1; }) |
+                                 stdv::take(3))
+        std::cout << oddNum << ' ';
+}
+
+namespace stdr = std::ranges;
+namespace stdv = std::views;
+
+void test12()
+{
+    std::set<std::string, std::less<>> set;
+}
+
+void test13()
+{
+    std::map<int, double> m{{1, 2.0}, {3, 4.0}};
+    // 如果是auto&：由于map的key是const的，key的类型为const int&
+    for (auto key : m | stdv::keys)
+        // std::cout << key << " "; // 修复 std::print 调用错误，改为 std::cout
+        std::print("{} ", key);
+}
+
 int main()
 {
-    test6();
+    test13();
     return 0;
 }
