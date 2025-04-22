@@ -721,3 +721,46 @@ void demo_v6()
       printList("list2: ", list2);
   }
   ```
+
+### Forward list
+
+#### Single linked list
+
+- The purpose of **`forward list`** is **reducing space**, so it doesn’t record an additional **size** and doesn’t provide **`.size()`**.
+  - If you really need it, you can use **`std::(ranges::)distance(l.begin(), l.end())`**, but remember it’s 𝑂(𝑛).
+  - It’s implemented in the same way as we’ve learnt; the node has **`T data`** and pointer to the next node **`next`**.
+    - It doesn’t have a sentinel; next of the last node is nullptr.
+  - Its APIs are almost same as **`list`**.
+    - But, considering that **`prev`** doesn’t exist in **`forward_list`**, **you cannot go to the previous node (forward iterator)**, so many APIs are changed to **`xxx_after`**!
+- **Iterator invalidation is same, too**
+- Difference:
+  - There is no **`.back()/.pop_back()/.push_back()/.append_range()`** in forward list.
+  - **`.insert_after()/.erase_after()/.emplace_after()/.insert_range_after()/.splice_after()`**: the position parameter accepts **the iterator before the insertion position**, so you can insert after it.
+  - Particularly, iterators from another list in **`.splice_after()`** is also **`(first, last)`** instead of **`[first, last)`**!
+    - But **`.insert_after()`** is still **`[first, last)`**, since it doesn’t need to go back and may come from any container.
+  - It’s impossible for you to provide the position instead of the one before, since it cannot go backward…
+  - So, there is a **`.before_begin()/.cbefore_begin()`** iterator in forward list, so that you can insert at the head.
+  - Finally, since forward list doesn’t record size separately, **`list2`** in **`splice_after`** is in fact redundant…
+  - It may be used in debug mode to check whether it’s a node in the **`list2`**
+  ***Example***
+  
+  ```cpp
+  std::forward_list<int> a = {100, 200};
+    std::forward_list<int> b = {10, 20, 30, 40, 50};
+
+    auto before_first = std::next(b.before_begin(), 1); // 指向元素 10
+    auto last = std::next(before_first, 4);             // 指向元素 50
+    auto before_end_a = a.before_begin();
+    while (std::next(before_end_a) != a.end())
+        ++before_end_a;
+
+    a.splice_after(before_end_a, b, before_first, last);
+
+    std::cout << "a: ";
+    for (int x : a)
+        std::cout << x << ' ';
+    std::cout << "\nb: ";
+    for (int x : b)
+        std::cout << x << ' ';
+    std::cout << '\n';
+  ```
