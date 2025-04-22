@@ -6,6 +6,7 @@
 #include <list>
 #include <cassert>
 #include <algorithm>
+#include <forward_list>
 
 void demo_v1()
 {
@@ -119,8 +120,30 @@ void demo_v8()
     printList("list2: ", list2);
 }
 
+void demo_v9()
+{
+    std::forward_list<int> a = {100, 200};
+    std::forward_list<int> b = {10, 20, 30, 40, 50};
+
+    auto before_first = std::next(b.before_begin(), 1); // 指向元素 10
+    auto last = std::next(before_first, 4);             // 指向元素 50
+    auto before_end_a = a.before_begin();
+    while (std::next(before_end_a) != a.end())
+        ++before_end_a;
+
+    a.splice_after(before_end_a, b, before_first, last);
+
+    std::cout << "a: ";
+    for (int x : a)
+        std::cout << x << ' ';
+    std::cout << "\nb: ";
+    for (int x : b)
+        std::cout << x << ' ';
+    std::cout << '\n';
+}
+
 int main()
 {
-    demo_v8();
+    demo_v9();
     return 0;
 }
