@@ -743,7 +743,7 @@ void demo_v6()
   - Finally, since forward list doesn’t record size separately, **`list2`** in **`splice_after`** is in fact redundant…
   - It may be used in debug mode to check whether it’s a node in the **`list2`**
   ***Example***
-  
+
   ```cpp
   std::forward_list<int> a = {100, 200};
     std::forward_list<int> b = {10, 20, 30, 40, 50};
@@ -764,3 +764,98 @@ void demo_v6()
         std::cout << x << ' ';
     std::cout << '\n';
   ```
+
+## Container adaptors
+
+- Container adaptors are a wrapper of existing containers; it transforms their interfaces to a new interface of another data structure.
+  - They usually don’t provide iterators.
+- So, their template parameters are always **`<T, Container, …>`**.
+
+### stack
+
+Stack is a LIFO data structure
+
+- The provided container should have **`push_back, emplace_back, pop_back`**, so **`vector`**, **`deque`** and **`list`** are all OK.
+  - The default one is **`deque`**, but personally I think vector is better.
+    - As we stated, cache efficiency of **`vector`** is better; but **`deque`** may win when the data size is huge because its reallocation efficiency is better (anyway, profile it if it’s important).
+    - So you may hope to reserve the capacity of stack when using vector, but you can’t do it easily.
+    ***Example***
+
+    ```cpp
+    std::vector<int> vec;
+    vec.reserve(10);                                      // 预留空间
+    std::stack<int, std::vector<int>> s1(std::move(vec)); // 传递 vec 的所有权
+    std::stack<int, std::vector<int>> s2{[]()
+                                          {
+                                              std::vector<int> vec;
+                                              vec.reserve(100); // 预留空间
+                                              return vec;
+                                          }()};
+    ```
+
+  - For **ctor**, besides default ctor & copy ctor, you can only construct from a container.
+  - Since **C++23**, you can construct from **`[first, last)`**.
+  - You can optionally provide an allocator as the last param, too.
+
+#### methods
+
+- APIs provided by stack:
+  - **`.pop()`**: pop from back, **return void**;
+  - **`.push(val)/.emplace(params)`**: push to back.
+    - Since **C++17**, **`emplace`** will **return the reference to the inserted element**.
+  - **`.push_range(Range)`**: since **C++23**.
+  - **`.top()`**: the element at back.
+- These are basic functionality of stack; some others are:
+  - **`.empty()/.size()`**
+  - **`.swap(s2)`**
+  - **`operator=`**
+  - **`operator<=>`**
+  - These should be provided by the container, too.
+  
+### queue
+
+Queue is a FIFO data structure
+
+- The provided container should have **`push_back, emplace_back, pop_front`**, so **`deque`**, **`list`** are all OK.
+  - The default one is **`deque`**.
+  - If you want to use **`list`**, **`forward_list`** is obviously better; but it doesn’t provide **`size()`** and **`push_back()`**, so you may write a small wrapper yourself.
+    - Notice that you can choose to not provide **`size()`** if you don’t use it in **`queue`**; this is benefited from selective instantiation, which will be covered in Template.
+- All member functions are same as **`stack`**, except that:
+  - You should use **`.front()`** to check the next-popped object (i.e. the oldest data) instead of using **`.top()`**.
+  - **`.back()`** is also provided to check newly inserted elements.
+
+### Priority queue
+
+It’s defined in **`<queue>`**! It’s in fact **max heap**(大根堆/大顶堆);
+
+- it can always provide the current maximum element in **𝑂(log𝑛)** after inserting a new element/popping the last max one.
+  - Constructing the heap needs only **𝑂(𝑛)**, which is cheaper than **sort**.
+  - It only needs the container to be **random-access**, so **`vector`** (default) and **`deque`** is all OK.
+- Since comparing is needed, you can provide a template parameter as comparison method.
+  - E.g. if you want the **min heap**, you can use **`std::priority_queue<T, std::vector<T>, std::greater<T>>`** (yes, min heap needs **`greater`**!).
+  - There is a weird thing in ctor of priority queue; that is, the method is the first param, so if you want to provide a vector that has been reserved, you have to use e.g. **`std::priority_queue q{ std::less<int>{}, vec }`**.
+    - **CTAD** will help you to fill in all template parameters.
+    - And then, you can provide input **iterator pair** since **C++11** (instead of **C++23** for **`stack & queue`**).
+      - i.e.**`(first, last, cmp = CMP{}, container = Container{})`**
+- Let’s quickly review algorithms about heap.
+  - It’s in fact a binary tree, with restriction that children are less than the parent(in array, that is **`𝑎𝑟𝑟[𝑖] ≤𝑎𝑟𝑟[(𝑖 −1)/2]`**).
+  - Percolation is the core algorithm.
+    - When a new element is inserted at the back of array, we need to **percolate up** to maintain the restriction of heap.
+      - That is, swap with the parent until it’s not greater than parent; obviously 𝑂(log𝑛).
+    - When the max element is removed from the top of array, we need to **percolate down**.
+      - That is, use the last element to fill in the top, and swap with the bigger child until it’s greater than both children.
+    - For constructing the heap, Floyd algorithm; that is, percolate down from the last non-leaf node to the root.
+      - The higher it is, the higher percolation complexity is, but the less nodes it need to percolate.
+      - So the total complexity is $$\sum O(\log n-\log i)=O\left(\sum \log \frac{n^n}{n!}\right)$$; Stirling approx. tells us it’s 𝑂(𝑛).
+
+## Associative containers
+
+- They’re called associative because they associate *key* with *value*.
+  - The value can also be omitted, so that you can only check whether the key exists.
+- There exist ordered one and unordered one.
+  - Ordered one needs a compare function for “less than”.
+    - Iterating over the ordered one will also get elements in “ascending order”.
+      - Similarly, you can designate compare function.
+  - It’s **BBST** (balanced binary search tree), and **search, insertion, removal** are all **𝑂(log𝑛)**.
+    - It’s usually **RB tree**, though e.g. **AVL tree** can also satisfy the requirement.
+      - RB tree will cause less reordering than AVL tree when removing in topology.

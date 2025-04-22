@@ -7,6 +7,7 @@
 #include <cassert>
 #include <algorithm>
 #include <forward_list>
+#include <stack>
 
 void demo_v1()
 {
@@ -140,6 +141,19 @@ void demo_v9()
     for (int x : b)
         std::cout << x << ' ';
     std::cout << '\n';
+}
+
+void demo_v10()
+{
+    std::vector<int> vec;
+    vec.reserve(10);                                      // 预留空间
+    std::stack<int, std::vector<int>> s1(std::move(vec)); // 传递 vec 的所有权
+    std::stack<int, std::vector<int>> s2{[]()
+                                         {
+                                             std::vector<int> vec;
+                                             vec.reserve(100); // 预留空间
+                                             return vec;
+                                         }()};
 }
 
 int main()
