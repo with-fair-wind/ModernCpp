@@ -158,6 +158,9 @@ void demo_v10()
 
 int main()
 {
+    std::tuple<int, float> a{1, 1.0f};
+    const auto &[b, c] = a;
+    decltype(b) m = 0;
     demo_v9();
     return 0;
 }
