@@ -174,6 +174,14 @@ void test13()
         std::print("{} ", key);
 }
 
+void test14()
+{
+    int a;
+    double b;
+    std::pair<int, double> pair{1, 2.};
+    std::tie(a, b) = pair;
+}
+
 int main()
 {
     test13();

@@ -853,9 +853,88 @@ It’s defined in **`<queue>`**! It’s in fact **max heap**(大根堆/大顶堆
 - They’re called associative because they associate *key* with *value*.
   - The value can also be omitted, so that you can only check whether the key exists.
 - There exist ordered one and unordered one.
-  - Ordered one needs a compare function for “less than”.
+  - **Ordered one** needs **a compare function** for “less than”.
     - Iterating over the ordered one will also get elements in “ascending order”.
       - Similarly, you can designate compare function.
   - It’s **BBST** (balanced binary search tree), and **search, insertion, removal** are all **𝑂(log𝑛)**.
     - It’s usually **RB tree**, though e.g. **AVL tree** can also satisfy the requirement.
       - RB tree will cause less reordering than AVL tree when removing in topology.
+- **Unordered one** needs **a hash function** and **a compare function** for “equal”.
+  - It’s (open) hash table, and **search, insertion, removal** are all expected 𝑂(1) while the worst is 𝑂(𝑛), if all keys are hashed as the same key.
+- They’re all node-based containers, i.e. every element is stored in a node separately (similar to linked list).
+  - Thus, nodes can be extracted and inserted to reduce complexity of moving between containers.
+  
+### Ordered containers
+
+#### map
+
+##### Base
+
+- Map is a container that maps key to value.
+  - The key is unique; a single key cannot be mapped to multiple values.
+- **`std::map<Key, Value, CMPForKey = std::less<Key>>`**.
+  - You should implement an **`operator<`**(or **`<=>`**) or provide a compare function.
+  - **`CMPForKey`** should be able to accept **`const Key`**;
+    - If it’s a member function, it should be **`const`**.
+    - For example, you may define auto **`operator<=>(const Key&) const`**
+- For member accessing:
+  - **`operator[]/at()`**: accessing by index; **`at()`** will check whether the index exists; if not, **`std::out_of_range`** will be thrown.
+  - Bidirectional iterators, as we stated.
+  - Notice that the worst complexity of **`++/--`** is **𝑂(log𝑁)** since you may **go from the rightmost child of the left subtree to the right subtree**.
+- Note1: **`operator[]`** will insert a default-constructed value if the key doesn’t exist, so:
+  - If the key doesn’t exist and the default value isn’t needed, **`insert_xxx`**
+ (covered later) is more efficient (construct + assign v.s. construct only).
+  - It may insert new values, so it’s not a **`const`** method, and you cannot use it in **`const map`**.
+  - You cannot use it if the value cannot be default-constructed (i.e. no default ctor for class).
+- Note2: key-value pair is stored in RB tree, so iterator also points to the pair.
+- Note3: you can use **structured binding** (since **C++17**) to facilitate iteration.
+
+#### structured binding
+
+- As you’ve seen, structured binding is just **`auto& […]{xx}`**.
+  - **`{xx}`** can be **`(xx)`** or **`= xx`**.
+  - **`auto&`** can be anything, as long as it has **`auto`**.
+    - E.g. **`auto`** means copy by value; **`const auto&`** is also valid; etc.
+- We’ve seen that **`xx`** can be a **`pair`**; it can also be:
+  - An object with all public data members, which will be bound on them.
+  - A C-style array or **`std::array`**, which will be bound on elements **`arr[i]`**.
+  - A **tuple-like** thing, which will be bound on every element.
+- **`Pair`** is just a tuple-like thing; so what’s tuple?
+  - It’s a generalization of **`pair`**; you can have multiple instead of two members.
+  - E.g. **`std::tuple<int, float, double> t{1, 2.0f, 3.0}`**;
+- Note1: **`pair`** and **`std::array`** is also somewhat **tuple-like** thing and can use some tuple methods, e.g. **`std::get`**.
+  - We’ll give precise definition of “tuple-like” in the future.
+- Note2: Structured binding is **declaration**, so you **cannot bind on existing variables**.
+  - Instead, for **`tuple`** and **`pair`**, you can use **`std::tie(name, score) = pair`** to assign.
+- Personally, I prefer to use **`_`** as variable name to denote **“it is dropped and never used except for constructing it”**.
+  - E.g. **`auto& [_, score] : scoreTable`**.
+  - Since **C++26**, **`_`** is preserved to be “discarded value”; you can **redeclare** **`_`** in a function scope without reporting redefinition error (but you cannot use it after redeclaration; it’s discarded.).
+  - For **`std::tie`**, you can use **`std::ignore`**, e.g. **`std::tie(std::ignore, score) = pair`**
+- Note3: the structured binding is equivalent to use an anonymous struct, with its members aliased.
+
+  ```cpp
+  std::tuple<int, float> a{ 1, 1.0f };
+  const auto& [b, c] = a;
+  decltype(b) m = 0;
+  ```
+
+  - E.g. **`b`** is of type **`const int`** instead of **`&`**, because it’s **`const auto& anonymous`**, and **`anonymous.b`** is not **`reference`** (i.e. here it’s **`std::tuple<int,float>&`** instead of **`std::tuple<int&,float&>`**).
+  - But, **`anonymous.b`** still **references the original data**, since the **anonymous** is **reference**.
+- Note4: structured binding is usually more efficient than novice/ careless programmers.
+  - For example, you can code like: **`for (const std::pair<std::string, int>& p : m)`**
+  - However, **`map`** stores **`std::pair<const std::string, int>`**, so iterate by **`std::pair<std::string, int>`** will lead to unnecessary **copy**.
+    - Of course, **`const auto& p`** can eliminate this problem too.
+
+#### tuple
+
+**`std::tuple<int, float, double> t{1, 2.0f, 3.0}`**
+
+- It can only be accessed by an index that can be determined in compile time (unlike tuple in python)!
+  - So, you can use **`std::get<0>(tuple)`** to get the **`int`**.
+  - Since **C++14**, you can also use type-based index when the type occurs only once in the tuple, e.g. **`std::get<int>(tuple)`**.
+  - You can use **`operator=`**, **`swap`** and **`operator<=>`**, just like **`pair`**.
+  - You can also use **`std::tuple_size<YourTupleType>::value`** to get the **size** and **`std::tuple_element<index, YourTupleType>::type`** to get the type of indexth element, **`std::tuple_size<YourTupleType>::value`** to get the size of tuple.
+    - The type of tuple can be got by e.g. **`decltype(t)`**, which will be further discussed in the future!
+  - You can concatenate two tuples to get a new tuple by **`std::tuple_cat`**.
+  - NOTICE: **`tuple`** is discouraged to use in normal programming because the elements don’t specify their names and can be obscure for maintenance.
+  It’s usually used in ***metaprogramming***, which will be covered in *Template*.
