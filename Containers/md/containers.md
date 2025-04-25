@@ -938,3 +938,61 @@ It’s defined in **`<queue>`**! It’s in fact **max heap**(大根堆/大顶堆
   - You can concatenate two tuples to get a new tuple by **`std::tuple_cat`**.
   - NOTICE: **`tuple`** is discouraged to use in normal programming because the elements don’t specify their names and can be obscure for maintenance.
   It’s usually used in ***metaprogramming***, which will be covered in *Template*.
+- Final word: for **`operator<=>`** that cannot be default while you still want some form of lexicographical comparison, you can utilize **`operator<=>`** of **`tuple`**!
+***Example***
+
+```cpp
+class Person
+{
+public:
+    enum class Gender
+    {
+        Male,
+        Female
+    } gender;
+    std::string name;
+    int age;
+    // … 你想比较 age，然后比较 name，但根本不想比较 gender！
+    std::weak_ordering operator<=>(const Person &other) const
+    {
+        return std::tie(age, name) <=> std::tie(other.age, other.name);
+    }
+};
+```
+
+#### methods
+
+- For size operations:
+  - **`.size()`**: get size, return **`size_t`**.
+  - **`.empty()`**: get a **`bool`** denoting whether **`size == 0`**.
+  - **`.max_size()`**: get maximum possible size in this system (usually useless).
+  - **`.clear()`**: remove all things; size will be 0 after this.
+- For lookup:
+  - **`.find(key)`**: get the iterator of key-value pair; if key doesn’t exist, return **`end()`**.
+    - Remember **`if(auto it = map.find(key); it != map.end()){ … }`** !
+  - **`.contains(key)`**: since **C++20**, return a **`bool`** to denote whether the key exist.
+  - **`.count(key)`**: get the number of key-value pair referred by key; in map, it can only be 0 or 1.
+  - **`.lower_bound(key)`**: find **`it`** that **`prev(it)->key < key <= it->key`**.
+    - As its name, use key as a lower bound to make **`[it, end) >= key`**.
+    - Return **`end()`** if key is the biggest.
+  - **`.upper_bound(key)`**: find **`it`** that **`prev(it)->key <= key < it->key`**.
+    - As its name, use key as a upper bound to make **`[begin, it) <= key`**.
+    - Return **`end()`** if key is the smallest.
+  - **`.equal_range(key)`**: find **`it`** pair with the same key as **`key`** in range.
+    - It’s equivalent to **`[lower_bound(key), upper_bound(key))`**, but more efficient.
+    - Particularly, when this key exists in the map, it will return **`[it, it + 1)`**; else, it will return **`[it, it)`**.
+- **`operator=`**, **`operator<=>`**, **`swap`**, **`std::erase_if`** are all available.
+  - **`operator<=>`** compares pair one by one from begin.
+- Insertion
+  - Since map regulates the uniqueness of key, insertion may fail if the key exists. **`pair<iterator, bool>`** will be returned;
+    - If succeed, **`iterator`** refers to the inserted element and **`bool`** is **`true`**;
+    - If fail, **`iterator`** refers to the element with the same key and **`bool`** is **`false`**.
+  - But, different methods may process this failure differently:
+    - Leave it unchanged:
+      - **`.insert({key, value})`**
+      - **`.emplace(params)`**: same as insert, except that the params are used to construct pair.
+  - Overwrite it (**C++17**):
+    - **`.insert_or_assign(key, value)`**: return **`pair<iterator, bool>`**;
+      - Difference: **overwrite**; provide key and value separately instead of providing a **`std::pair`**.
+  - Leave it unchanged and even not construct the inserted value (**C++17**):
+    - **`.try_emplace(key, params)`**: same as **`emplace`**, except that the params are used to construct **value**, and **`emplace`** is not forbidden to construct the pair in failure
