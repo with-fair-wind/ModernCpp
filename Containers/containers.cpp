@@ -156,6 +156,23 @@ void demo_v10()
                                          }()};
 }
 
+class Person
+{
+public:
+    enum class Gender
+    {
+        Male,
+        Female
+    } gender;
+    std::string name;
+    int age;
+    // … 你想比较 age，然后比较 name，但根本不想比较 gender！
+    std::weak_ordering operator<=>(const Person &other) const
+    {
+        return std::tie(age, name) <=> std::tie(other.age, other.name);
+    }
+};
+
 int main()
 {
     std::tuple<int, float> a{1, 1.0f};

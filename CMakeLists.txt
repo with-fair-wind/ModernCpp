@@ -25,5 +25,8 @@ add_executable(fundamental_types Basics/fundamental_types.cpp)
 add_executable(compound_types Basics/compound_types.cpp)
 add_executable(test9 Test/test9.cpp)
 add_executable(test10 Test/test10.cpp)
+add_executable(test11 Test/test11.cpp)
+add_executable(test12 Test/test12.cpp)
+add_executable(test13 Test/test13.cpp)
 
 # target_link_libraries(test9 PUBLIC stdc++exp)
