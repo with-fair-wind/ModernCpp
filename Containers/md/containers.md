@@ -864,11 +864,11 @@ It’s defined in **`<queue>`**! It’s in fact **max heap**(大根堆/大顶堆
 - They’re all node-based containers, i.e. every element is stored in a node separately (similar to linked list).
   - Thus, nodes can be extracted and inserted to reduce complexity of moving between containers.
   
-## Ordered containers
+### Ordered containers
 
-### map
+#### map
 
-#### Base
+##### Base
 
 - Map is a container that maps key to value.
   - The key is unique; a single key cannot be mapped to multiple values.
@@ -889,7 +889,7 @@ It’s defined in **`<queue>`**! It’s in fact **max heap**(大根堆/大顶堆
 - Note2: key-value pair is stored in RB tree, so iterator also points to the pair.
 - Note3: you can use **structured binding** (since **C++17**) to facilitate iteration.
 
-#### structured binding
+##### structured binding
 
 - As you’ve seen, structured binding is just **`auto& […]{xx}`**.
   - **`{xx}`** can be **`(xx)`** or **`= xx`**.
@@ -925,7 +925,7 @@ It’s defined in **`<queue>`**! It’s in fact **max heap**(大根堆/大顶堆
   - However, **`map`** stores **`std::pair<const std::string, int>`**, so iterate by **`std::pair<std::string, int>`** will lead to unnecessary **copy**.
     - Of course, **`const auto& p`** can eliminate this problem too.
 
-#### tuple
+##### tuple
 
 **`std::tuple<int, float, double> t{1, 2.0f, 3.0}`**
 
@@ -960,7 +960,7 @@ public:
 };
 ```
 
-#### methods
+##### methods
 
 - For size operations:
   - **`.size()`**: get size, return **`size_t`**.
@@ -1089,14 +1089,14 @@ public:
 - For iterator invalidation, since map is **node-based**, and **iterators are just pointer to the node**, so **only erasure** will invalidate the iterators of erased elements.
   - This is **same as linked list**.
 
-### set
+#### set
 
 - Set is just a map without value; that is, you can only insert/remove/check whether an element exist in 𝑂(log𝑁).
   - The key is still unique; this is same as the definition of set in math.
 - So, the only difference with map is that it doesn’t have **`operator[]`** and **`.at()`**; the iterator points to only key instead of key-value pair.
   - And that’s all!
   
-### multimap
+#### multimap
 
 - Multimap cancels the uniqueness of key, i.e. a key can be mapped to multiple values.
   - So, you cannot use **`operator[]`** and **`at()`** too.
@@ -1127,18 +1127,18 @@ public:
 - Finally, nodes of multimap and map can be exchanged, e.g. you can insert node into multimap extracted from map and vice versa.
   - Multimap into map will only reserve the first element in the equal range to maintain uniqueness.
 
-### multiset
+#### multiset
 
 - Except for only key and no value, same as multimap.
   - That’s all!
 - You can also exchange nodes of multiset and set.
 - In fact, **`map`** is just almost like **`set<pair>`**, and **`multimap`** is almost like **`multiset<pair>`** (with the first element as compare standard).
 
-## Unordered containers
+### Unordered containers
 
-### unordered_map
+#### unordered_map
 
-#### Base
+##### Base
 
 - **`std::unordered_map<Key, Value, Hash = std::hash<Key>, Equal = std::equal_to<Key>>`**
 - Many types have **`std::hash<Type>`**, e.g. **`std::string`**, **`float`**, etc., so you can use them as key directly.
@@ -1175,7 +1175,7 @@ public:
   - Since it’s node-based, references will always be valid.
   - MSVC doc: inserting an element invalidates no iterators, and removing an element invalidates only those iterators that point at the removed element.
 
-#### methods
+##### methods
 
 - So, as a hash table, it provides many related methods:
   - **`.bucket_count()`**: size of bucket **array**.
@@ -1237,6 +1237,6 @@ public:
 - We use xor to combine two hash values of members.
   - This is just a common way; but designing a good hash function to reduce conflict is quite difficult, and we’ll not cover them here.
 
-### unordered_set/unordered_multimap/unordered_multiset
+#### unordered_set/unordered_multimap/unordered_multiset
 
 The relation of unordered ones are same as ordered ones
