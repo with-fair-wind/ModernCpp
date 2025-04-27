@@ -1133,3 +1133,106 @@ public:
   - That’s all!
 - You can also exchange nodes of multiset and set.
 - In fact, **`map`** is just almost like **`set<pair>`**, and **`multimap`** is almost like **`multiset<pair>`** (with the first element as compare standard).
+
+### Unordered containers
+
+#### unordered_map
+
+##### Base
+
+- **`std::unordered_map<Key, Value, Hash = std::hash<Key>, Equal = std::equal_to<Key>>`**
+- Many types have **`std::hash<Type>`**, e.g. **`std::string`**, **`float`**, etc., so you can use them as key directly.
+  - Similar to **`map`**, **`Hash`** and **`Equal`** should be like (**`const Key&) const`**.
+- The hash value of different keys may be same, so we need **`Equal`** to judge which key is wanted.
+  - In open hash table, elements with the same key is stored in a “bucket”.
+    - Usually the bucket is stored as single linked list for 𝑂(1) random removal.
+    - C++ just requires **forward iterator**, so it’s possible.
+  - Buckets consist of an array, so the final index is **`hash value % bucket number`** (if $2^n$, can be optimized as **`&`**)
+- <img src="img/unordered_map.png" alt="unordered_map" style="display:block; margin:auto;" />
+- In **MSVC** implementation, it’s slightly different.
+  - It uses **double linked list** instead of **single linked list**
+  - So we think it as **array of double linked list**; then from the view of implementation of **`list`**, we need to allocate a **sentinel** for each linked list.
+    - However, hash table is usually scattered, so each linked list is quite small; a sentinel wastes much memory.
+    - So **MSVC** makes **all** linked list “share” the same **sentinel**.
+    - To be exact, **all nodes are linked together as a huge linked list**.
+- So, **`begin`** iterator is just **`sentinel->next`**, **`end`** is the **`sentinel`**.
+  - **`operator++`** is just list iterator’s **`operator++`**.
+  - **Insertion**, **erasure** are all operating on the whole linked list.
+- A little abstract, let me show you by animation!
+- <img src="img/unordered_map_MSVC.png" alt="unordered_map_MSVC" style="display:block; margin:auto;" />
+- To be specific, we assume the size of bucket array is **`s0`**, then in **MSVC** implementation, array of pointers with size of **`2 * s0`** are allocated
+- <img src="img/bucket.png" alt="bucket" style="display:block; margin:auto;" />
+- When the bucket is **empty**, its **`begin`** and **`end`** are assigned pointer to **`sentinel`**.
+  - **`begin`** and **`end`** is called “bucket high” and “bucket low” there.
+- When we insert into too many elements, there will also be too many elements in each bucket!
+  - This increases the complexity of finding by key.
+  - $\frac{\text { size }}{\text { bucket num }}$ is called **load factor**.
+  - So when load factor is high, we need to enlarge the size of bucket array to make elements scattered again.
+    - The grow policy is not regulated, e.g. in **MSVC**, you can see **`_Desired_grow_bucket_count`** in **`<xhash>`**.
+- This is called **rehash**.
+- Though the hash values of elements remain same, the indices after modulus are changed, so the whole list needs rearrangement.
+  - **C++ regulates that rehash will invalidate all iterators**, though implementing by list will not invalidate anything(but you may not rely on this when cross-platform).
+  - Since it’s node-based, references will always be valid.
+  - MSVC doc: inserting an element invalidates no iterators, and removing an element invalidates only those iterators that point at the removed element.
+
+##### methods
+
+- So, as a hash table, it provides many related methods:
+  - **`.bucket_count()`**: size of bucket **array**.
+  - **`.max_bucket_count()`**: similar to **`max_size()`** in **`vector`**, not that useful usually.
+  - **`.load_factor()`**: **`size() / bucket_count()`**
+  - **`.max_load_factor()`**: when load factor exceeds this limit, rehash will happen. You can set it by **`.max_load_factor(float xx)`**.
+    - In **MSVC**, this is 1 by default, i.e. when every bucket has more than 1 element on average, rehash will happen.
+  - **`.rehash(n)`**: make **`bucket_count()=max(n,ceil(size()/max_load_factor()))`** and rehash; particularly, **`rehash(0)`** may be used when you adjust **`max_load_factor()`** to immediately rehash to meet minimum requirement.
+  - **`.reserve(n)`**: reserve the bucket to accommodate at least **`n`** elements, i.e. before **`size() > n`**, no rehash should happen. Equivalent to **`rehash(ceil(n/max_load_factor()))`**.
+  - This is similar to **`vector::reserve(n)`**; before **`size() > n`**, no resizing will happen.
+- C++ also provides you interface to get a bucket directly.
+  - .**`bucket(key)`**: get the bucket index of the key.
+  - **`.begin/cbegin/end/cend(index)`**: get the iterator of the bucket at index.
+  - **`.bucket_size(index)`**: get the size of bucket at index.
+    - This is just **`std::distance(begin(index), end(index))`**, the complexity is 𝑂(𝑏𝑢𝑐𝑘𝑒𝑡 𝑠𝑖𝑧𝑒).
+- Finally, you can observe functions by **`hash_function()`** and **`key_eq()`**.
+- As a “map”, its methods are almost same as **`std::map`**, except:
+  - It doesn’t have **`lower_bound`** and **`upper_bound`**, because of unordered.
+  - It can also use **hint**, but requirement is not the same.
+    - The standard doesn’t specify how the **hint** influences lookup; in **MSVC** implementation, it’s only useful when the inserted key and hint key are **same**.
+      - Obviously basically only useful in **`unordered_multimap`**.
+- You can also extract nodes and insert them.
+  - For comparison, you can only compare **`==/!=`** for two unordered map.
+  - Particularly, for **`==/!=`** in **`unordered_multimap`**, it’s only required that they have same values on each key, rather than force an insertion sequence like **`multimap`**.
+    - That is, equal as long as they are permutation, order is not important.
+    - The worst complexity is thus $O\left(N^2\right)$ and the average is 𝑂(𝑁), because testing whether two ranges are permutation is $O\left(N^2\right)$ in worst case
+
+    ```cpp
+    std::unordered_multimap<int, std::string> a{
+        {1, "11"},
+        {1, "22"},
+        {2, "11"}};
+    std::unordered_multimap<int, std::string> b{
+        {1, "22"},
+        {1, "11"},
+        {2, "11"}};
+    std::cout << std::boolalpha << std::ranges::equal(a, b) << std::endl; // false
+    std::cout << std::boolalpha << (a == b) << std::endl;
+    ```
+
+- When you use your own class as key, you need to customize hash.
+  - You can of course define a class with **`operator()`** and return **`size_t`**.
+  - Another frequently-used way is to specialize **`std::hash`**; we’ll cover specialization of template in Template, and here you can just have a look at it
+  
+  ```cpp
+  struct Person{
+      int id;
+      std::string name;
+  };
+  template<>
+  struct std::hash<Person>
+  {
+      std::size_t operator()(const Person& p) const{
+          return std::hash<int>{}(p.id) ^ std::hash<std::string>{}(p.name);
+      }
+  };
+  ```
+
+- We use xor to combine two hash values of members.
+  - This is just a common way; but designing a good hash function to reduce conflict is quite difficult, and we’ll not cover them here.
