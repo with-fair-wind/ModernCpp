@@ -848,6 +848,27 @@ It’s defined in **`<queue>`**! It’s in fact **max heap**(大根堆/大顶堆
       - The higher it is, the higher percolation complexity is, but the less nodes it need to percolate.
       - So the total complexity is $$\sum O(\log n-\log i)=O\left(\sum \log \frac{n^n}{n!}\right)$$; Stirling approx. tells us it’s 𝑂(𝑛).
 
+### flat_set/flat_map/flat_multiset/flat_multimap
+
+- The only defect of **`map/unordered_map/…`** is that they’re really **cache-unfriendly**!
+  - This is the common problem of node-based containers, including linked list.
+  - It will also waste too much memory when **`sizeof`** data is actually small because a node has many pointers.
+  - It’s criticized by many (e.g. Google) and they write their own versions.
+    - Even possibly their theoretical complexity is higher, the real efficiency is still higher because of good locality.
+- Flat containers are for it.
+  - The functionality is same as **`set/map`**;
+  - But it’s in fact an **ordered “vector”**!
+    - It doesn’t have any redundant data, and is more cache-friendly obviously.
+  - For flat map, it’s just two vectors
+- So, the whole definition is **`std::flat_map<Key, Value, Compare = std::less<Key>, ContainerForKey = std::vector<Key>, ContainerForValue = std::vector<Value>>`**
+- You can also choose **`deque`** as container.
+- Obviously, the complexity is:
+  - For lookup, 𝑂(log𝑁), with a really small constant (just a simple binary search, much smaller than RB tree).
+  - For insertion/removal, 𝑂(𝑛).
+    - Though search insertion position is 𝑂(log𝑁), it needs to move the elements, and even possibly resize, and they are all 𝑂(𝑛).
+  - For **`iterator++`**, constant 𝑂(1).
+    - The iterator is also **random-access** iterator!
+
 ## Associative containers
 
 - They’re called associative because they associate *key* with *value*.
@@ -863,6 +884,16 @@ It’s defined in **`<queue>`**! It’s in fact **max heap**(大根堆/大顶堆
   - It’s (open) hash table, and **search, insertion, removal** are all expected 𝑂(1) while the worst is 𝑂(𝑛), if all keys are hashed as the same key.
 - They’re all node-based containers, i.e. every element is stored in a node separately (similar to linked list).
   - Thus, nodes can be extracted and inserted to reduce complexity of moving between containers.
+- But, you need to pay more attention to iterator invalidation.
+  - For **`map/set`**, only erased elements are invalidated.
+  - For **`unordered`** ones, though iterators are invalidated after rehashing, at least the reference is still valid.
+  - But if you use **`vector`**, insertion/removal itself will make more or even all iterators/references invalid.
+    - Resizing will also cause iterator & reference invalidation!
+- Besides, you cannot store objects that cannot be **copied/moved**.
+  - Still resizing problem!
+  - The exception guarantee of vector is also looser than map, which will be covered in *Error Handling*.
+- Finally, since keys and values are stored separately in two containers, the iterator doesn’t point to a whole pair; it stores only an index, and has separate **`first`** and **`second`**.
+  - So dereferencing it will get **a proxy of pair**.
   
 ### Ordered containers
 
