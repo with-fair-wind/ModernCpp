@@ -9,6 +9,7 @@
 #include <forward_list>
 #include <stack>
 #include <map>
+#include <unordered_map>
 
 void demo_v1()
 {
@@ -243,8 +244,22 @@ void demo_v15()
     std::cout << std::boolalpha << (a < b) << std::endl;
 }
 
+void demo_v16()
+{
+    std::unordered_multimap<int, std::string> a{
+        {1, "11"},
+        {1, "22"},
+        {2, "11"}};
+    std::unordered_multimap<int, std::string> b{
+        {1, "22"},
+        {1, "11"},
+        {2, "11"}};
+    std::cout << std::boolalpha << std::ranges::equal(a, b) << std::endl; // false
+    std::cout << std::boolalpha << (a == b) << std::endl;
+}
+
 int main()
 {
-    demo_v15();
+    demo_v16();
     return 0;
 }
