@@ -996,3 +996,88 @@ public:
       - Difference: **overwrite**; provide key and value separately instead of providing a **`std::pair`**.
   - Leave it unchanged and even not construct the inserted value (**C++17**):
     - **`.try_emplace(key, params)`**: same as **`emplace`**, except that the params are used to construct **value**, and **`emplace`** is not forbidden to construct the pair in failure
+      - It’s costly to construct a Texture, and **`try_emplace`** is perfect!
+- Erasure:
+  - **`.erase(…)`**
+    - **`(key)`**
+      - It will return the number of erased elements, 0 or 1 in map.
+    - **`(iterator pos)`**: erase pos, requiring that pos is from the map.
+    - **`(iterator first, iterator last)`**: erase **`[first, last)`** from map.
+      - These two will return the iterator after the last erased iterator.
+- You can also provide a **hint iterator** for insertion.
+  - The hint iterator **should be after the inserted element** to gain efficiency.
+    - If it’s before the element, the efficiency may be hurt, so use it **carefully**.
+  - The insertion methods are same, except that:
+    - It should provide a hint as the first parameter.
+    - **`emplace()`** is replaced by **`emplace_hint()`**.
+    - It will only return the iterator, no **`bool`**.
+- Hint is often used in idiom below:
+
+  ```cpp
+  auto pLoc = someMap.lower_bound(someKey);
+  if(pLoc != someMap.end() && !(someMap.key_comp()(someKey, pLoc->first)))
+      return pLoc->second;
+  else
+  {
+      auto newValue = expensiveCalculation();
+      someMap.insert(pLoc, std::make_pair(someKey, newValue));
+      return newValue;
+  }
+  ```
+
+  - **`key_comp()`** gets the comparison function.
+  - This means **`someKey >= pLoc->first`**, while **`lower_bound`** means **`someKey <= pLoc->first`**, thus **`someKey == pLoc->first`**, meaning that this key exists.
+  - For “**`else`**”, the key doesn’t exist, **`lower_bound()`** will return the exact one that is bigger than key (i.e. iterator after that), which will facilitate the future insertion.
+  - Notice that they don’t return a **`bool`** for uniformity with e.g. **`vector`**’s insert.
+    - Yes, you see that params of this method are same as **`vector`**!
+    - **`Inserter iterator`** uses it, so you can also insert into map with **`inserter`**.
+
+    ```cpp
+    std::vector<std::pair<std::string, int>> scoreTable{
+        {"Li", 99},
+        {"God Liu", 100},
+        {"Saint Liu", 99},
+        {"Liang", 60}};
+    std::map<std::string, int> scoreMap;
+    std::copy(scoreTable.begin(), scoreTable.end(), std::inserter(scoreMap, scoreMap.begin()));
+    ```
+
+    - Notice that **key** of map is **`const`** to maintain order; you need to **`erase`** the original and **`insert`** a new one if you want to **change key**.
+      - So, you **cannot** directly use **`std::copy(.., .., scoreTable2.begin())`**, since it assigns a whole pair and violates **`const`** of key.
+
+      ```cpp
+      std::map<std::string, int> A = {{"one", 1}, {"two", 2}};
+      std::map<std::string, int> B = {{"two", 20}, {"three", 3}};
+
+      for (auto it = B.begin(); it != B.end();)
+      {
+          if (A.count(it->first))
+          {
+              auto node = B.extract(it++);
+              node.key() += "_conflict";
+              A.insert(std::move(node));
+          }
+          else
+              A.insert(*it++);
+      }
+
+      for (const auto &[k, v] : A)
+          std::cout << k << ": " << v << '\n';
+      std::cout << "\n";
+      for (const auto &[k, v] : B)
+          std::cout << k << ": " << v << '\n';
+      ```
+
+- Finally, since **`map`** is node-based containers, it can also **extract nodes** and insert them to another map like **`splice`** of linked list.
+- Since **C++17**:
+  - **`.extract(key)/extract(iterator pos)`**: extract out the node from the map.
+    - It will return a **`node_type`** thing, and you may just use **`auto`**.
+      - In fact **`std::map<Key, Value, …>::node_type`**, that’s too long…
+    - You may think it as a pointer; if key doesn’t exists, then **`ret.empty()`** or **`operator bool`** will return **`false`**, just like return a **`nullptr`**. Empty node will do nothing in insertion.
+- **`.insert(node_type&&)`**: insert the node to the map.
+  - We’ll tell you what **`&&`** means in the future; now you just need to know you need to pass **`std::move(node)`** or directly **`xx.extract(yy)`** to this param.
+  - Return **`insert_return_type`**, a struct with **`{ iter position, bool inserted, node_type }`**;
+    - The first two is same as normal insertion; node will be empty if succeed, else the original node.
+      - After **`std::move(node)`**, the variable **`node`** is invalid, and you should get it again here.
+  - You can also provide a hint as the first param, and the return type is still only iterator.
+- **`.merge(another map/multimap)`**: merge another map into self, i.e. iff. the key doesn’t exist, it will be moved from another to self (existing keys will not be moved)

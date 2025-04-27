@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <forward_list>
 #include <stack>
+#include <map>
 
 void demo_v1()
 {
@@ -173,11 +174,63 @@ public:
     }
 };
 
-int main()
+void demo_v11()
+{
+    std::vector<std::pair<std::string, int>> scoreTable{
+        {"Li", 99},
+        {"God Liu", 100},
+        {"Saint Liu", 99},
+        {"Liang", 60}};
+    std::map<std::string, int> scoreMap;
+    std::copy(scoreTable.begin(), scoreTable.end(), std::inserter(scoreMap, scoreMap.begin()));
+}
+
+void demo_v12()
+{
+    std::map<std::string, int> myMap{
+        {"oldKey", 42},
+        {"anotherKey", 100}};
+
+    auto node = myMap.extract("oldKey");
+    node.key() = "newKey";
+    myMap.insert(std::move(node));
+    for (const auto &[k, v] : myMap)
+        std::cout << k << ": " << v << '\n';
+}
+
+void demo_v13()
 {
     std::tuple<int, float> a{1, 1.0f};
     const auto &[b, c] = a;
     decltype(b) m = 0;
-    demo_v9();
+}
+
+void demo_v14()
+{
+    std::map<std::string, int> A = {{"one", 1}, {"two", 2}};
+    std::map<std::string, int> B = {{"two", 20}, {"three", 3}};
+
+    for (auto it = B.begin(); it != B.end();)
+    {
+        if (A.count(it->first))
+        {
+            auto node = B.extract(it++);
+            node.key() += "_conflict";
+            A.insert(std::move(node));
+        }
+        else
+            A.insert(*it++);
+    }
+
+    for (const auto &[k, v] : A)
+        std::cout << k << ": " << v << '\n';
+    std::cout << "\n";
+    for (const auto &[k, v] : B)
+        std::cout << k << ": " << v << '\n';
+}
+
+int main()
+{
+    demo_v14();
     return 0;
 }
