@@ -229,8 +229,22 @@ void demo_v14()
         std::cout << k << ": " << v << '\n';
 }
 
+void demo_v15()
+{
+    std::multimap<int, std::string> a{
+        {1, "11"},
+        {1, "22"},
+        {2, "11"}};
+    std::multimap<int, std::string> b{
+        {1, "22"},
+        {1, "11"},
+        {2, "11"}};
+    std::cout << std::boolalpha << std::ranges::equal(a, b) << std::endl; // false
+    std::cout << std::boolalpha << (a < b) << std::endl;
+}
+
 int main()
 {
-    demo_v14();
+    demo_v15();
     return 0;
 }

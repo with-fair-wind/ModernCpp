@@ -889,7 +889,7 @@ It’s defined in **`<queue>`**! It’s in fact **max heap**(大根堆/大顶堆
 - Note2: key-value pair is stored in RB tree, so iterator also points to the pair.
 - Note3: you can use **structured binding** (since **C++17**) to facilitate iteration.
 
-#### structured binding
+##### structured binding
 
 - As you’ve seen, structured binding is just **`auto& […]{xx}`**.
   - **`{xx}`** can be **`(xx)`** or **`= xx`**.
@@ -925,7 +925,7 @@ It’s defined in **`<queue>`**! It’s in fact **max heap**(大根堆/大顶堆
   - However, **`map`** stores **`std::pair<const std::string, int>`**, so iterate by **`std::pair<std::string, int>`** will lead to unnecessary **copy**.
     - Of course, **`const auto& p`** can eliminate this problem too.
 
-#### tuple
+##### tuple
 
 **`std::tuple<int, float, double> t{1, 2.0f, 3.0}`**
 
@@ -960,7 +960,7 @@ public:
 };
 ```
 
-#### methods
+##### methods
 
 - For size operations:
   - **`.size()`**: get size, return **`size_t`**.
@@ -1081,3 +1081,55 @@ public:
       - After **`std::move(node)`**, the variable **`node`** is invalid, and you should get it again here.
   - You can also provide a hint as the first param, and the return type is still only iterator.
 - **`.merge(another map/multimap)`**: merge another map into self, i.e. iff. the key doesn’t exist, it will be moved from another to self (existing keys will not be moved)
+- Since C++23, you can also use **`insert_range`**.
+- For **`ctor`**, besides default **`ctor`**, **`copy ctor`**, **`move ctor`**:
+  - **`(cmp)`**: specify the compare function, utilize CTAD.
+  - **`(first, last, cmp = Compare())`**: construct by iterator pair, which refers to a key-value pair.
+  - **`(intiailizer_list<pair>, cmp = Compare())`**.
+- For iterator invalidation, since map is **node-based**, and **iterators are just pointer to the node**, so **only erasure** will invalidate the iterators of erased elements.
+  - This is **same as linked list**.
+
+#### set
+
+- Set is just a map without value; that is, you can only insert/remove/check whether an element exist in 𝑂(log𝑁).
+  - The key is still unique; this is same as the definition of set in math.
+- So, the only difference with map is that it doesn’t have **`operator[]`** and **`.at()`**; the iterator points to only key instead of key-value pair.
+  - And that’s all!
+  
+#### multimap
+
+- Multimap cancels the uniqueness of key, i.e. a key can be mapped to multiple values.
+  - So, you cannot use **`operator[]`** and **`at()`** too.
+  - These **equivalent values** are in the **same order** of **inserting sequence.**
+    - The **`operator <=>`** check equality one by one, so even when two multimap stores same things with only different orders in equal keys, **`==`** is **`false`**.
+    ***Example***
+
+    ```cpp
+    std::multimap<int, std::string> a{
+        {1, "11"},
+        {1, "22"},
+        {2, "11"}};
+    std::multimap<int, std::string> b{
+        {1, "22"},
+        {1, "11"},
+        {2, "11"}};
+    std::cout << std::boolalpha << std::ranges::equal(a, b) << std::endl; // false
+    std::cout << std::boolalpha << (a < b) << std::endl;
+    ```
+
+- Also, insertion will never fail, so there is no **`insert_or_assign`**/**`try_emplace`**, and **`insert`**/**`emplace`** will only return iterator.
+  - Hint is still available.
+- For **`find()`**, only a random element with equal key will be returned.
+- For **`count()`**, return the number of elements (not only 0/1).
+  - The complexity is **𝑂(log𝑁) +𝑂(𝑀)**, where **`M = count()`**.
+- For **`equal_range()`**, return iterator pair with equal key.
+  - This is the often used method to find elements in multimap; **`it1 == it2`** means the key doesn’t exist.
+- Finally, nodes of multimap and map can be exchanged, e.g. you can insert node into multimap extracted from map and vice versa.
+  - Multimap into map will only reserve the first element in the equal range to maintain uniqueness.
+
+#### multiset
+
+- Except for only key and no value, same as multimap.
+  - That’s all!
+- You can also exchange nodes of multiset and set.
+- In fact, **`map`** is just almost like **`set<pair>`**, and **`multimap`** is almost like **`multiset<pair>`** (with the first element as compare standard).
