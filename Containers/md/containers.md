@@ -1179,7 +1179,7 @@ public:
     - Usually the bucket is stored as single linked list for 𝑂(1) random removal.
     - C++ just requires **forward iterator**, so it’s possible.
   - Buckets consist of an array, so the final index is **`hash value % bucket number`** (if $2^n$, can be optimized as **`&`**)
-- <img src="img/unordered_map.png" alt="unordered_map" style="display:block; margin:auto;" />
+<img src="img/unordered_map.png" alt="unordered_map" style="display:block; margin:auto;" />
 - In **MSVC** implementation, it’s slightly different.
   - It uses **double linked list** instead of **single linked list**
   - So we think it as **array of double linked list**; then from the view of implementation of **`list`**, we need to allocate a **sentinel** for each linked list.
@@ -1190,7 +1190,7 @@ public:
   - **`operator++`** is just list iterator’s **`operator++`**.
   - **Insertion**, **erasure** are all operating on the whole linked list.
 - A little abstract, let me show you by animation!
-- <img src="img/unordered_map_MSVC.png" alt="unordered_map_MSVC" style="display:block; margin:auto;" />
+<img src="img/unordered_map_MSVC.png" alt="unordered_map_MSVC" style="display:block; margin:auto;" />
 - To be specific, we assume the size of bucket array is **`s0`**, then in **MSVC** implementation, array of pointers with size of **`2 * s0`** are allocated
 - <img src="img/bucket.png" alt="bucket" style="display:block; margin:auto;" />
 - When the bucket is **empty**, its **`begin`** and **`end`** are assigned pointer to **`sentinel`**.
