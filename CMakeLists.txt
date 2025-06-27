@@ -11,13 +11,13 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     endif()
 endif()
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 project(ModernCPP LANGUAGES CXX)
 
-link_libraries(stdc++exp)
+# link_libraries(stdc++exp)
 
 # add_executable(Container Containers/containers.cpp)
 add_executable(containers Containers/containers.cpp)
@@ -28,5 +28,6 @@ add_executable(test10 Test/test10.cpp)
 add_executable(test11 Test/test11.cpp)
 add_executable(test12 Test/test12.cpp)
 add_executable(test13 Test/test13.cpp)
+add_executable(test14 Test/test14.cpp Test/t1.cpp Test/t2.cpp)
 
 # target_link_libraries(test9 PUBLIC stdc++exp)
