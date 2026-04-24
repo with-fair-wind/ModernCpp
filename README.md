@@ -52,25 +52,54 @@ git clone https://github.com/microsoft/vcpkg
 ./vcpkg/bootstrap-vcpkg.sh     # Linux/macOS
 # 或 .\vcpkg\bootstrap-vcpkg.bat  (Windows)
 
-# 2) 配置项目（把 toolchain 指向 vcpkg）
-cmake --preset gcc-debug \
-    -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
+# 2) 把 vcpkg 根目录设到环境变量 VCPKG_ROOT 里（一次性，装机步骤）
+#    Linux/macOS: 写进 .bashrc / .zshrc
+export VCPKG_ROOT=/path/to/vcpkg
+#    Windows PowerShell（持久化到用户级环境变量）
+setx VCPKG_ROOT "D:\path\to\vcpkg"
+
+# 3) 直接 configure，toolchain 由仓库 preset 通过 $env{VCPKG_ROOT} 找到
+cmake --preset gcc-debug
 ```
 
-vcpkg 会读取仓库根的 `vcpkg.json` 自动拉取 `gtest`。
+vcpkg 会读取仓库根的 `vcpkg.json` 自动拉取 `gtest`。Linux / macOS / Windows
+MSVC 到这里就好了，零额外配置。
 
-> **Windows + MinGW GCC/Clang 用户注意**：vcpkg 在 Windows 上默认 triplet 为
-> `x64-windows`（MSVC ABI），用它装出来的 GoogleTest 与 MinGW GCC 链接时会出现
-> 大量 `undefined reference to testing::...`。用 MinGW GCC（MSYS2 / ucrt64 等）
-> 或 clang 搭配 MinGW 运行时的话，configure 时需要加上：
+> **Windows + MinGW GCC/Clang 的一个额外步骤**：vcpkg 在 Windows 上不会检测
+> 当前编译器，总默认 triplet 为 `x64-windows`（MSVC ABI），用它装出来的
+> GoogleTest 与 MinGW GCC 链接时会报大量 `undefined reference to testing::...`。
+> 解决办法：在仓库根建一份 `CMakeUserPresets.json`，给 gcc/clang preset 叠一层
+> triplet 覆盖（`x64-mingw-dynamic`）。已经在 `.gitignore`，不影响仓库：
 >
-> ```bash
-> cmake --preset gcc-debug \
->     -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake \
->     -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic
+> ```json
+> {
+>     "version": 6,
+>     "configurePresets": [
+>         {
+>             "name": "_mingw-triplet",
+>             "hidden": true,
+>             "cacheVariables": { "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic" }
+>         },
+>         { "name": "my-gcc-debug",   "inherits": ["_mingw-triplet", "gcc-debug"] },
+>         { "name": "my-clang-debug", "inherits": ["_mingw-triplet", "clang-debug"] }
+>     ],
+>     "buildPresets": [
+>         { "name": "my-gcc-debug",   "configurePreset": "my-gcc-debug" },
+>         { "name": "my-clang-debug", "configurePreset": "my-clang-debug" }
+>     ],
+>     "testPresets": [
+>         { "name": "my-gcc-debug",   "configurePreset": "my-gcc-debug",
+>           "output": { "outputOnFailure": true, "shortProgress": true } }
+>     ]
+> }
 > ```
 >
-> MSVC preset 用默认的 `x64-windows` 即可。Linux/macOS 不涉及此问题。
+> 然后用 `cmake --preset my-gcc-debug` 代替 `gcc-debug`。需要 release /
+> relwithdebinfo / minsizerel 就同样照着加一组 `my-*` preset。
+>
+> 备选：每次 configure 时手动加 `-DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic`。
+>
+> MSVC preset 用默认的 `x64-windows` 即可，不需要 user preset。
 
 ### Option B：Conan
 
@@ -86,28 +115,6 @@ conan install . --output-folder=build/gcc-debug --build=missing \
 cmake --preset gcc-debug \
     -DCMAKE_TOOLCHAIN_FILE=build/gcc-debug/conan_toolchain.cmake
 ```
-
-### 推荐做法：把 toolchain 固化到 `CMakeUserPresets.json`
-
-仓库不提交这份文件（已在 `.gitignore`）。在本地放一份：
-
-```json
-{
-    "version": 6,
-    "configurePresets": [
-        {
-            "name": "gcc-debug",
-            "inherits": "gcc-debug",
-            "cacheVariables": {
-                "CMAKE_TOOLCHAIN_FILE": "/absolute/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake",
-                "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic"
-            }
-        }
-    ]
-}
-```
-
-之后 `cmake --preset gcc-debug` 就会自动带上 toolchain。
 
 ---
 

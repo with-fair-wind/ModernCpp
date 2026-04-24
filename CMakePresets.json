@@ -16,9 +16,17 @@
         },
 
         {
+            "name": "_vcpkg",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+            }
+        },
+
+        {
             "name": "_gcc",
             "hidden": true,
-            "inherits": "_base",
+            "inherits": ["_vcpkg", "_base"],
             "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "gcc",
@@ -45,7 +53,7 @@
         {
             "name": "_clang",
             "hidden": true,
-            "inherits": "_base",
+            "inherits": ["_vcpkg", "_base"],
             "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "clang",
@@ -73,7 +81,7 @@
             "name": "msvc",
             "displayName": "MSVC (VS 2022, multi-config)",
             "description": "Visual Studio 17 2022 generator, x64. Pick Debug/Release/RelWithDebInfo/MinSizeRel at build time via --config.",
-            "inherits": "_base",
+            "inherits": ["_vcpkg", "_base"],
             "generator": "Visual Studio 17 2022",
             "architecture": { "value": "x64", "strategy": "set" },
             "condition": {
