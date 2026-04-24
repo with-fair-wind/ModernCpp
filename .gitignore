@@ -39,3 +39,44 @@
 
 # debug information files
 *.dwo
+
+# CMake build directories
+build/
+build-*/
+out/
+cmake-build-*/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# Per-user CMake presets (machine-specific toolchain paths)
+CMakeUserPresets.json
+
+# vcpkg
+vcpkg_installed/
+
+# Conan
+conan_toolchain.cmake
+conan_provider.cmake
+conanbuildinfo*
+graph_info.json
+conan.lock
+
+# clangd / LSP cache
+.cache/
+.clangd/
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Claude Code project-local state
+.claude/

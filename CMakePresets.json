@@ -1,0 +1,127 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 25,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "_base",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+
+        {
+            "name": "_gcc",
+            "hidden": true,
+            "inherits": "_base",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++"
+            }
+        },
+        {
+            "name": "gcc-debug",          "displayName": "GCC Debug",
+            "inherits": "_gcc", "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        },
+        {
+            "name": "gcc-release",        "displayName": "GCC Release",
+            "inherits": "_gcc", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+        },
+        {
+            "name": "gcc-relwithdebinfo", "displayName": "GCC RelWithDebInfo",
+            "inherits": "_gcc", "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
+        },
+        {
+            "name": "gcc-minsizerel",     "displayName": "GCC MinSizeRel",
+            "inherits": "_gcc", "cacheVariables": { "CMAKE_BUILD_TYPE": "MinSizeRel" }
+        },
+
+        {
+            "name": "_clang",
+            "hidden": true,
+            "inherits": "_base",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            }
+        },
+        {
+            "name": "clang-debug",          "displayName": "Clang Debug",
+            "inherits": "_clang", "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        },
+        {
+            "name": "clang-release",        "displayName": "Clang Release",
+            "inherits": "_clang", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+        },
+        {
+            "name": "clang-relwithdebinfo", "displayName": "Clang RelWithDebInfo",
+            "inherits": "_clang", "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
+        },
+        {
+            "name": "clang-minsizerel",     "displayName": "Clang MinSizeRel",
+            "inherits": "_clang", "cacheVariables": { "CMAKE_BUILD_TYPE": "MinSizeRel" }
+        },
+
+        {
+            "name": "msvc",
+            "displayName": "MSVC (VS 2022, multi-config)",
+            "description": "Visual Studio 17 2022 generator, x64. Pick Debug/Release/RelWithDebInfo/MinSizeRel at build time via --config.",
+            "inherits": "_base",
+            "generator": "Visual Studio 17 2022",
+            "architecture": { "value": "x64", "strategy": "set" },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        }
+    ],
+
+    "buildPresets": [
+        { "name": "gcc-debug",          "configurePreset": "gcc-debug" },
+        { "name": "gcc-release",        "configurePreset": "gcc-release" },
+        { "name": "gcc-relwithdebinfo", "configurePreset": "gcc-relwithdebinfo" },
+        { "name": "gcc-minsizerel",     "configurePreset": "gcc-minsizerel" },
+
+        { "name": "clang-debug",          "configurePreset": "clang-debug" },
+        { "name": "clang-release",        "configurePreset": "clang-release" },
+        { "name": "clang-relwithdebinfo", "configurePreset": "clang-relwithdebinfo" },
+        { "name": "clang-minsizerel",     "configurePreset": "clang-minsizerel" },
+
+        { "name": "msvc-debug",          "configurePreset": "msvc", "configuration": "Debug" },
+        { "name": "msvc-release",        "configurePreset": "msvc", "configuration": "Release" },
+        { "name": "msvc-relwithdebinfo", "configurePreset": "msvc", "configuration": "RelWithDebInfo" },
+        { "name": "msvc-minsizerel",     "configurePreset": "msvc", "configuration": "MinSizeRel" }
+    ],
+
+    "testPresets": [
+        {
+            "name": "_test-base",
+            "hidden": true,
+            "output": { "outputOnFailure": true, "shortProgress": true },
+            "execution": { "noTestsAction": "ignore", "stopOnFailure": false }
+        },
+
+        { "name": "gcc-debug",          "inherits": "_test-base", "configurePreset": "gcc-debug" },
+        { "name": "gcc-release",        "inherits": "_test-base", "configurePreset": "gcc-release" },
+        { "name": "gcc-relwithdebinfo", "inherits": "_test-base", "configurePreset": "gcc-relwithdebinfo" },
+        { "name": "gcc-minsizerel",     "inherits": "_test-base", "configurePreset": "gcc-minsizerel" },
+
+        { "name": "clang-debug",          "inherits": "_test-base", "configurePreset": "clang-debug" },
+        { "name": "clang-release",        "inherits": "_test-base", "configurePreset": "clang-release" },
+        { "name": "clang-relwithdebinfo", "inherits": "_test-base", "configurePreset": "clang-relwithdebinfo" },
+        { "name": "clang-minsizerel",     "inherits": "_test-base", "configurePreset": "clang-minsizerel" },
+
+        { "name": "msvc-debug",          "inherits": "_test-base", "configurePreset": "msvc", "configuration": "Debug" },
+        { "name": "msvc-release",        "inherits": "_test-base", "configurePreset": "msvc", "configuration": "Release" },
+        { "name": "msvc-relwithdebinfo", "inherits": "_test-base", "configurePreset": "msvc", "configuration": "RelWithDebInfo" },
+        { "name": "msvc-minsizerel",     "inherits": "_test-base", "configurePreset": "msvc", "configuration": "MinSizeRel" }
+    ]
+}

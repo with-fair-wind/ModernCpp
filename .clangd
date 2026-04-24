@@ -1,0 +1,35 @@
+CompileFlags:
+  # clangd looks for compile_commands.json; by default it searches upward from
+  # the source file and picks the nearest build/ tree. If you use multiple
+  # presets, point this at the preset you actively develop against (or copy
+  # compile_commands.json to the repo root after configuring).
+  CompilationDatabase: build/gcc-debug
+  Add:
+    - -std=c++23
+    - -Wall
+    - -Wextra
+    - -Wpedantic
+
+Diagnostics:
+  ClangTidy:
+    Add:
+      - modernize-*
+      - performance-*
+      - bugprone-*
+      - readability-*
+      - cppcoreguidelines-*
+    Remove:
+      - modernize-use-trailing-return-type
+      - readability-identifier-length
+      - readability-magic-numbers
+      - cppcoreguidelines-avoid-magic-numbers
+      - cppcoreguidelines-pro-bounds-pointer-arithmetic
+      - cppcoreguidelines-pro-bounds-array-to-pointer-decay
+
+Index:
+  Background: Build
+
+InlayHints:
+  Enabled: Yes
+  ParameterNames: Yes
+  DeducedTypes: Yes
