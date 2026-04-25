@@ -39,6 +39,32 @@ ModernCpp/
 
 ---
 
+## 编译器 × 平台 × triplet 速查
+
+仓库一份 `CMakePresets.json` 同时支持三种主流编译器；与之配套的 vcpkg triplet
+**必须**与编译器 ABI 匹配，否则会出现 GoogleTest 链接失败。
+
+| 编译器 | 平台 | 推荐 vcpkg triplet | preset 前缀 | 备注 |
+| --- | --- | --- | --- | --- |
+| **GCC**          | Linux            | `x64-linux`           | `gcc-*`     | 默认 triplet 即可 |
+| **GCC**          | Windows (MinGW)  | `x64-mingw-dynamic`   | `my-gcc-*`  | 需要 `CMakeUserPresets.json` 叠层（见下方 vcpkg 段） |
+| **Clang**        | Linux            | `x64-linux`           | `clang-*`   | 需要 libstdc++-13 提供 C++23 库 |
+| **Clang**        | Windows (MinGW)  | `x64-mingw-dynamic`   | `my-clang-*`| msys2 ucrt64/clang++ |
+| **clang-cl**     | Windows (LLVM)   | `x64-windows`         | `clang-cl-*`| LLVM 官方分发，MSVC 兼容前端，需在 VS Developer Prompt 中跑 |
+| **MSVC**         | Windows          | `x64-windows`         | `msvc-*`    | VS 2022 multi-config，默认 triplet 即可 |
+
+切 triplet 的两种方式：
+
+```bash
+# 方式 A：用本地 CMakeUserPresets.json 叠层（推荐，零环境变量）
+cmake --preset my-gcc-debug
+
+# 方式 B：configure 时一次性传入
+cmake --preset gcc-debug -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic
+```
+
+---
+
 ## 依赖安装 / Installing Dependencies
 
 项目使用 `find_package` 查询第三方依赖，不内置 FetchContent。
@@ -103,18 +129,30 @@ MSVC 到这里就好了，零额外配置。
 
 ### Option B：Conan
 
+仓库提供与 vcpkg 平行的一组 `*-conan` preset，直接读 Conan 生成的 toolchain，
+无需手动 `-DCMAKE_TOOLCHAIN_FILE=`：
+
 ```bash
 # 1) 安装 Conan 2.x
 pip install --upgrade conan
 
-# 2) 让 Conan 安装依赖并生成 toolchain
-conan install . --output-folder=build/gcc-debug --build=missing \
+# 2) 让 Conan 把依赖装到与 preset 同名的 build 目录
+conan install . --output-folder=build/gcc-debug-conan --build=missing \
     -s compiler.cppstd=23
 
-# 3) 配置项目
-cmake --preset gcc-debug \
-    -DCMAKE_TOOLCHAIN_FILE=build/gcc-debug/conan_toolchain.cmake
+# 3) 直接用 conan preset 配置（toolchain 自动取自 build/<preset>/conan_toolchain.cmake）
+cmake --preset gcc-debug-conan
+cmake --build --preset gcc-debug-conan
+ctest --preset gcc-debug-conan
 ```
+
+可用的 conan preset：
+
+| 编译器 | preset |
+| --- | --- |
+| GCC   | `gcc-debug-conan` / `gcc-release-conan` / `gcc-relwithdebinfo-conan` |
+| Clang | `clang-debug-conan` / `clang-release-conan` / `clang-relwithdebinfo-conan` |
+| MSVC  | `msvc-conan`（多配置）+ build/test preset `msvc-{debug,release,relwithdebinfo}-conan` |
 
 ---
 
@@ -125,9 +163,10 @@ cmake --preset gcc-debug \
 
 | 编译器 | 生成器 / Generator | 选择 build type 的方式 |
 | --- | --- | --- |
-| GCC   | Ninja（单配置）    | 为每种 build type 提供独立 configurePreset：`gcc-debug` / `gcc-release` / `gcc-relwithdebinfo` / `gcc-minsizerel` |
-| Clang | Ninja（单配置）    | 同上：`clang-debug` / `clang-release` / `clang-relwithdebinfo` / `clang-minsizerel` |
-| MSVC  | Visual Studio 17 2022（多配置） | 单一 configurePreset `msvc`，在构建时通过 buildPreset 选择：`msvc-debug` / `msvc-release` / `msvc-relwithdebinfo` / `msvc-minsizerel` |
+| GCC      | Ninja（单配置）                 | 每种 build type 一个 preset：`gcc-debug` / `gcc-release` / `gcc-relwithdebinfo` / `gcc-minsizerel` |
+| Clang    | Ninja（单配置）                 | 同上：`clang-debug` / `clang-release` / `clang-relwithdebinfo` / `clang-minsizerel` |
+| clang-cl | Ninja（单配置，仅 Windows）     | 同上：`clang-cl-debug` / `clang-cl-release` / `clang-cl-relwithdebinfo` / `clang-cl-minsizerel` |
+| MSVC     | Visual Studio 17 2022（多配置） | 单一 configurePreset `msvc`，构建时通过 buildPreset 选 `msvc-debug` / `msvc-release` / `msvc-relwithdebinfo` / `msvc-minsizerel` |
 
 列出所有可用 preset：
 
@@ -196,6 +235,30 @@ mcpp_add_test(NAME test_my_topic SOURCES tests/test_my_topic.cpp)
 仓库根的 `.clangd` 与 `.clang-format` 由 clangd 自动识别，支持 clangd 的编辑器
 （VSCode + clangd 扩展、Neovim + nvim-lspconfig、CLion 内置、Emacs lsp-mode 等）
 开箱即用。无需额外 IDE 配置。
+
+详细配置说明：
+
+- [`docs/clangd-toolchain-overview.md`](docs/clangd-toolchain-overview.md) —— 工具链整体框架
+- [`docs/clangd-config-guide.md`](docs/clangd-config-guide.md) —— `.clangd` 完整参考
+- [`docs/clang-format-config-guide.md`](docs/clang-format-config-guide.md) —— `.clang-format` 完整参考
+- [`docs/clang-tidy-config-guide.md`](docs/clang-tidy-config-guide.md) —— `.clang-tidy` 完整参考
+
+---
+
+## 持续集成 / CI
+
+GitHub Actions（`.github/workflows/ci.yml`）会在每次 push 与 PR 上验证：
+
+| Job | 平台 | 内容 |
+| --- | --- | --- |
+| `linux-gcc`     | ubuntu-24.04 | GCC 13 + vcpkg + `gcc-relwithdebinfo` preset，跑 ctest |
+| `linux-clang`   | ubuntu-24.04 | Clang 18 + libstdc++-13 + `clang-relwithdebinfo` preset，跑 ctest |
+| `windows-msvc`  | windows-2022 | MSVC (VS 2022) + `msvc-relwithdebinfo`，跑 ctest |
+| `lint`          | ubuntu-24.04 | `clang-format-18 --dry-run --Werror` 检查所有 .cpp/.hpp/.h |
+
+任一 job 失败即阻止 PR 合并，确保三编译器始终可编译且代码风格一致。
+
+详细使用与配置说明：[`docs/ci-guide.md`](docs/ci-guide.md) —— CI 完整指南（触发、matrix、缓存、调试、分支保护、扩展功能）。
 
 ---
 

@@ -20,8 +20,8 @@ std::string const& source() {
 }  // namespace
 
 int main() {
-    auto        a = source();  // std::string          (copy)
-    auto const& b = source();  // std::string const&   (no copy)
+    auto a = source();            // std::string          (copy)
+    auto const& b = source();     // std::string const&   (no copy)
     decltype(auto) c = source();  // std::string const&
 
     static_assert(std::is_same_v<decltype(a), std::string>);

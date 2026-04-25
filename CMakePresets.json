@@ -24,6 +24,15 @@
         },
 
         {
+            "name": "_conan",
+            "hidden": true,
+            "description": "Run `conan install . --output-folder=build/<preset> --build=missing` first; this preset then picks up the generated conan_toolchain.cmake.",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/conan_toolchain.cmake"
+            }
+        },
+
+        {
             "name": "_gcc",
             "hidden": true,
             "inherits": ["_vcpkg", "_base"],
@@ -89,6 +98,99 @@
                 "lhs": "${hostSystemName}",
                 "rhs": "Windows"
             }
+        },
+
+        {
+            "name": "_clang-cl",
+            "hidden": true,
+            "description": "LLVM clang with the MSVC-compatible clang-cl driver. Requires running from a VS Developer Prompt so VS environment is available.",
+            "inherits": ["_vcpkg", "_base"],
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER":   "clang-cl",
+                "CMAKE_CXX_COMPILER": "clang-cl"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "clang-cl-debug",          "displayName": "clang-cl Debug",
+            "inherits": "_clang-cl", "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        },
+        {
+            "name": "clang-cl-release",        "displayName": "clang-cl Release",
+            "inherits": "_clang-cl", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+        },
+        {
+            "name": "clang-cl-relwithdebinfo", "displayName": "clang-cl RelWithDebInfo",
+            "inherits": "_clang-cl", "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
+        },
+        {
+            "name": "clang-cl-minsizerel",     "displayName": "clang-cl MinSizeRel",
+            "inherits": "_clang-cl", "cacheVariables": { "CMAKE_BUILD_TYPE": "MinSizeRel" }
+        },
+
+        {
+            "name": "_gcc-conan",
+            "hidden": true,
+            "inherits": ["_conan", "_base"],
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER":   "gcc",
+                "CMAKE_CXX_COMPILER": "g++"
+            }
+        },
+        {
+            "name": "gcc-debug-conan",          "displayName": "GCC Debug (Conan)",
+            "inherits": "_gcc-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        },
+        {
+            "name": "gcc-release-conan",        "displayName": "GCC Release (Conan)",
+            "inherits": "_gcc-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+        },
+        {
+            "name": "gcc-relwithdebinfo-conan", "displayName": "GCC RelWithDebInfo (Conan)",
+            "inherits": "_gcc-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
+        },
+
+        {
+            "name": "_clang-conan",
+            "hidden": true,
+            "inherits": ["_conan", "_base"],
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER":   "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            }
+        },
+        {
+            "name": "clang-debug-conan",          "displayName": "Clang Debug (Conan)",
+            "inherits": "_clang-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        },
+        {
+            "name": "clang-release-conan",        "displayName": "Clang Release (Conan)",
+            "inherits": "_clang-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+        },
+        {
+            "name": "clang-relwithdebinfo-conan", "displayName": "Clang RelWithDebInfo (Conan)",
+            "inherits": "_clang-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
+        },
+
+        {
+            "name": "msvc-conan",
+            "displayName": "MSVC (VS 2022, Conan)",
+            "description": "Visual Studio 17 2022 generator + Conan toolchain. Run `conan install . --output-folder=build/msvc-conan --build=missing` first.",
+            "inherits": ["_conan", "_base"],
+            "generator": "Visual Studio 17 2022",
+            "architecture": { "value": "x64", "strategy": "set" },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
         }
     ],
 
@@ -106,7 +208,24 @@
         { "name": "msvc-debug",          "configurePreset": "msvc", "configuration": "Debug" },
         { "name": "msvc-release",        "configurePreset": "msvc", "configuration": "Release" },
         { "name": "msvc-relwithdebinfo", "configurePreset": "msvc", "configuration": "RelWithDebInfo" },
-        { "name": "msvc-minsizerel",     "configurePreset": "msvc", "configuration": "MinSizeRel" }
+        { "name": "msvc-minsizerel",     "configurePreset": "msvc", "configuration": "MinSizeRel" },
+
+        { "name": "clang-cl-debug",          "configurePreset": "clang-cl-debug" },
+        { "name": "clang-cl-release",        "configurePreset": "clang-cl-release" },
+        { "name": "clang-cl-relwithdebinfo", "configurePreset": "clang-cl-relwithdebinfo" },
+        { "name": "clang-cl-minsizerel",     "configurePreset": "clang-cl-minsizerel" },
+
+        { "name": "gcc-debug-conan",            "configurePreset": "gcc-debug-conan" },
+        { "name": "gcc-release-conan",          "configurePreset": "gcc-release-conan" },
+        { "name": "gcc-relwithdebinfo-conan",   "configurePreset": "gcc-relwithdebinfo-conan" },
+
+        { "name": "clang-debug-conan",          "configurePreset": "clang-debug-conan" },
+        { "name": "clang-release-conan",        "configurePreset": "clang-release-conan" },
+        { "name": "clang-relwithdebinfo-conan", "configurePreset": "clang-relwithdebinfo-conan" },
+
+        { "name": "msvc-debug-conan",          "configurePreset": "msvc-conan", "configuration": "Debug" },
+        { "name": "msvc-release-conan",        "configurePreset": "msvc-conan", "configuration": "Release" },
+        { "name": "msvc-relwithdebinfo-conan", "configurePreset": "msvc-conan", "configuration": "RelWithDebInfo" }
     ],
 
     "testPresets": [
@@ -130,6 +249,23 @@
         { "name": "msvc-debug",          "inherits": "_test-base", "configurePreset": "msvc", "configuration": "Debug" },
         { "name": "msvc-release",        "inherits": "_test-base", "configurePreset": "msvc", "configuration": "Release" },
         { "name": "msvc-relwithdebinfo", "inherits": "_test-base", "configurePreset": "msvc", "configuration": "RelWithDebInfo" },
-        { "name": "msvc-minsizerel",     "inherits": "_test-base", "configurePreset": "msvc", "configuration": "MinSizeRel" }
+        { "name": "msvc-minsizerel",     "inherits": "_test-base", "configurePreset": "msvc", "configuration": "MinSizeRel" },
+
+        { "name": "clang-cl-debug",          "inherits": "_test-base", "configurePreset": "clang-cl-debug" },
+        { "name": "clang-cl-release",        "inherits": "_test-base", "configurePreset": "clang-cl-release" },
+        { "name": "clang-cl-relwithdebinfo", "inherits": "_test-base", "configurePreset": "clang-cl-relwithdebinfo" },
+        { "name": "clang-cl-minsizerel",     "inherits": "_test-base", "configurePreset": "clang-cl-minsizerel" },
+
+        { "name": "gcc-debug-conan",          "inherits": "_test-base", "configurePreset": "gcc-debug-conan" },
+        { "name": "gcc-release-conan",        "inherits": "_test-base", "configurePreset": "gcc-release-conan" },
+        { "name": "gcc-relwithdebinfo-conan", "inherits": "_test-base", "configurePreset": "gcc-relwithdebinfo-conan" },
+
+        { "name": "clang-debug-conan",          "inherits": "_test-base", "configurePreset": "clang-debug-conan" },
+        { "name": "clang-release-conan",        "inherits": "_test-base", "configurePreset": "clang-release-conan" },
+        { "name": "clang-relwithdebinfo-conan", "inherits": "_test-base", "configurePreset": "clang-relwithdebinfo-conan" },
+
+        { "name": "msvc-debug-conan",          "inherits": "_test-base", "configurePreset": "msvc-conan", "configuration": "Debug" },
+        { "name": "msvc-release-conan",        "inherits": "_test-base", "configurePreset": "msvc-conan", "configuration": "Release" },
+        { "name": "msvc-relwithdebinfo-conan", "inherits": "_test-base", "configurePreset": "msvc-conan", "configuration": "RelWithDebInfo" }
     ]
 }
