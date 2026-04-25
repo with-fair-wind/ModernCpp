@@ -39,7 +39,13 @@
             "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "gcc",
-                "CMAKE_CXX_COMPILER": "g++"
+                "CMAKE_CXX_COMPILER": "g++",
+                "VCPKG_TARGET_TRIPLET": "x64-linux"
+            },
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
             }
         },
         {
@@ -66,7 +72,13 @@
             "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "clang",
-                "CMAKE_CXX_COMPILER": "clang++"
+                "CMAKE_CXX_COMPILER": "clang++",
+                "VCPKG_TARGET_TRIPLET": "x64-linux"
+            },
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
             }
         },
         {
@@ -93,6 +105,9 @@
             "inherits": ["_vcpkg", "_base"],
             "generator": "Visual Studio 17 2022",
             "architecture": { "value": "x64", "strategy": "set" },
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "x64-windows"
+            },
             "condition": {
                 "type": "equals",
                 "lhs": "${hostSystemName}",
@@ -108,7 +123,8 @@
             "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_C_COMPILER":   "clang-cl",
-                "CMAKE_CXX_COMPILER": "clang-cl"
+                "CMAKE_CXX_COMPILER": "clang-cl",
+                "VCPKG_TARGET_TRIPLET": "x64-windows"
             },
             "condition": {
                 "type": "equals",
@@ -141,6 +157,11 @@
             "cacheVariables": {
                 "CMAKE_C_COMPILER":   "gcc",
                 "CMAKE_CXX_COMPILER": "g++"
+            },
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
             }
         },
         {
@@ -164,6 +185,11 @@
             "cacheVariables": {
                 "CMAKE_C_COMPILER":   "clang",
                 "CMAKE_CXX_COMPILER": "clang++"
+            },
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
             }
         },
         {
