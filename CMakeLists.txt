@@ -21,6 +21,14 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# MSVC: CMAKE_CXX_STANDARD=23 maps to /std:c++23, but parts of the C++23 library
+# (e.g. <print>, std::expected, second-batch ranges) only land under /std:c++latest
+# in current MSVC versions. Force the latest flag globally so demos using newer
+# library features still compile under the msvc preset.
+if(MSVC)
+    add_compile_options(/std:c++latest)
+endif()
+
 # Always emit compile_commands.json for clangd.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
