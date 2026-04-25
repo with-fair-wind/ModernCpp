@@ -258,6 +258,8 @@ GitHub Actions（`.github/workflows/ci.yml`）会在每次 push 与 PR 上验证
 
 任一 job 失败即阻止 PR 合并，确保三编译器始终可编译且代码风格一致。
 
+详细使用与配置说明：[`docs/ci-guide.md`](docs/ci-guide.md) —— CI 完整指南（触发、matrix、缓存、调试、分支保护、扩展功能）。
+
 ---
 
 ## Module Index / 模块索引
