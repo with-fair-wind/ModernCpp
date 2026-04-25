@@ -1,35 +1,97 @@
+# =============================================================================
+# .clangd —— clangd 语言服务器的项目级配置（YAML 格式）
+#
+# 作用范围：本文件所在目录及其所有子目录下的源文件
+# 加载方式：clangd 启动时自动读取（需 --enable-config，clangd 11+ 默认开启）
+# 优先级 ：编辑器 CLI 参数（如 VS Code 的 clangd.arguments）> .clangd 文件
+# 详细文档：https://clangd.llvm.org/config
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# CompileFlags —— 控制 clangd 看到的编译命令
+# -----------------------------------------------------------------------------
 CompileFlags:
-  # clangd looks for compile_commands.json; by default it searches upward from
-  # the source file and picks the nearest build/ tree. If you use multiple
-  # presets, point this at the preset you actively develop against (or copy
-  # compile_commands.json to the repo root after configuring).
-  CompilationDatabase: build/gcc-debug
+  # 指定 compile_commands.json 所在目录（相对 .clangd 文件位置）
+  # 默认情况下 clangd 会从源文件向上递归找，但 build 目录不在源文件路径上，
+  # 因此必须显式指定。VS Code 的 --compile-commands-dir CLI 参数会覆盖此项。
+  # 切换 preset 时需要同步修改这一行。
+  CompilationDatabase: build/my-gcc-relwithdebinfo
+
+  # 追加到所有编译命令的 flag，对 compile_commands.json 中已有的文件也生效
+  # 主要作用：保护「不在 DB 中的文件」（如临时新建的 .cpp）也能拿到正确的标准
   Add:
-    - -std=c++23
-    - -Wall
-    - -Wextra
-    - -Wpedantic
+    - -std=c++23      # C++23 标准（与项目主线一致）
+    - -Wall           # 常用警告组
+    - -Wextra         # 额外警告
+    - -Wpedantic      # 严格 ISO 标准检查
 
+
+# -----------------------------------------------------------------------------
+# Completion —— 控制代码补全行为
+# -----------------------------------------------------------------------------
+Completion:
+  # 全作用域补全：写 cout 即使没引入 std:: 也建议 std::cout
+  # 配合 HeaderInsertion 还能自动补 #include <iostream>
+  # 副作用：补全列表更长，偶尔推荐到非预期同名符号
+  AllScopes: Yes
+
+  # 头文件插入策略：IWYU（Include What You Use）
+  # 用了某个符号就直接 include 它的来源头，不依赖其他头的间接传递
+  # 可选值：IWYU | NeverInsert
+  HeaderInsertion: IWYU
+
+
+# -----------------------------------------------------------------------------
+# Diagnostics —— 控制诊断（红线/黄线/quickfix）
+# -----------------------------------------------------------------------------
 Diagnostics:
-  ClangTidy:
-    Add:
-      - modernize-*
-      - performance-*
-      - bugprone-*
-      - readability-*
-      - cppcoreguidelines-*
-    Remove:
-      - modernize-use-trailing-return-type
-      - readability-identifier-length
-      - readability-magic-numbers
-      - cppcoreguidelines-avoid-magic-numbers
-      - cppcoreguidelines-pro-bounds-pointer-arithmetic
-      - cppcoreguidelines-pro-bounds-array-to-pointer-decay
+  # 缺失 include 警告：用了某符号但没直接 include 它的来源头时报警
+  # 配合 HeaderInsertion: IWYU 提供一键修复
+  # 大型项目或重度使用第三方库时可能产生噪音，按需关闭
+  MissingIncludes: Strict
 
+  # 多余 include 警告：include 了但没用到的头会被标记
+  # 提供 quickfix 一键删除
+  UnusedIncludes: Strict
+
+  # ---- clang-tidy 静态检查 ----
+  # 启用整组 + 关闭过严的具体规则，是社区主流做法
+  ClangTidy:
+    # 启用的规则组（* 通配匹配组下所有规则）
+    Add:
+      - modernize-*           # 推荐 modern C++ 写法（nullptr / 范围 for / using 别名等）
+      - performance-*         # 性能优化建议（不必要拷贝、低效字符串操作等）
+      - bugprone-*            # 易出错代码模式（隐式转换、悬挂引用、未初始化等）
+      - readability-*         # 可读性改进（命名、控制流复杂度、隐式 bool 转换等）
+      - cppcoreguidelines-*   # C++ Core Guidelines 强制规则
+
+    # 从启用组中关闭的具体规则（过严或与项目风格冲突）
+    Remove:
+      - modernize-use-trailing-return-type                       # 强制 auto func() -> int 写法，多数项目不爱用
+      - readability-identifier-length                            # 禁止单字母名（i/j/n），数学/循环里不实用
+      - readability-magic-numbers                                # 把所有字面量当魔法数（包括 0/1/2）
+      - cppcoreguidelines-avoid-magic-numbers                    # 同上
+      - cppcoreguidelines-pro-bounds-pointer-arithmetic          # 禁止指针算术，写底层代码不可避免
+      - cppcoreguidelines-pro-bounds-array-to-pointer-decay      # 禁止数组退化，C 风格 API 必须用
+
+
+# -----------------------------------------------------------------------------
+# Index —— 后台索引设置（用于跳转定义、查找引用、全局补全）
+# -----------------------------------------------------------------------------
 Index:
+  # 后台索引模式：Build（构建索引）| Skip（跳过）
+  # 通常配合 If.PathMatch 对 third_party 目录设 Skip 以节省资源
   Background: Build
 
+
+# -----------------------------------------------------------------------------
+# InlayHints —— 编辑器内联提示（VS Code 默认开，Neovim 需 vim.lsp.inlay_hint.enable(true)）
+# -----------------------------------------------------------------------------
 InlayHints:
-  Enabled: Yes
-  ParameterNames: Yes
-  DeducedTypes: Yes
+  Enabled: Yes              # 总开关
+  ParameterNames: Yes       # 函数调用处显示形参名：foo(/*x:*/ 1, /*y:*/ 2)
+  DeducedTypes: Yes         # auto 推导类型显示：auto x = ... ← /* int */
+  Designators: Yes          # 聚合初始化显示成员名：Point{/*.x=*/ 1, /*.y=*/ 2}
+  BlockEnd: Yes             # 长函数 } 后显示这是哪个块的收尾
+  DefaultArguments: Yes     # 调用时显示用到的默认参数值：foo(1) ← /*, y=10*/
