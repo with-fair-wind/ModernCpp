@@ -39,27 +39,72 @@ ModernCpp/
 
 ---
 
+## 快速开始 / Quickstart
+
+### Linux (Ubuntu 24.04 / Debian 13)
+
+```bash
+# 1) 工具链
+sudo apt update
+sudo apt install -y build-essential gcc-13 g++-13 ninja-build cmake git
+
+# 2) vcpkg（一次性）
+git clone https://github.com/microsoft/vcpkg ~/vcpkg
+~/vcpkg/bootstrap-vcpkg.sh
+echo 'export VCPKG_ROOT=$HOME/vcpkg' >> ~/.bashrc
+source ~/.bashrc
+
+# 3) 构建 + 测试
+cmake --preset gcc-relwithdebinfo
+cmake --build --preset gcc-relwithdebinfo --parallel
+ctest   --preset gcc-relwithdebinfo
+```
+
+切 Clang：把 `gcc-` 换成 `clang-`，并 `apt install -y clang-18 lld-18`（C++23 库依赖
+`libstdc++-13`，已被 g++-13 包带入）。
+
+### Windows (MSVC / clang-cl)
+
+```powershell
+# 在 "x64 Native Tools Command Prompt for VS 2022" 或 Developer PowerShell 中：
+$env:VCPKG_ROOT = "D:\path\to\vcpkg"
+cmake --preset msvc
+cmake --build --preset msvc-relwithdebinfo --parallel
+ctest   --preset msvc-relwithdebinfo
+```
+
+clang-cl 同上，preset 改成 `clang-cl-relwithdebinfo`。
+
+### Windows (MinGW UCRT64)
+
+见下方 [vcpkg 段](#option-avcpkgmanifest-模式) 中关于 `CMakeUserPresets.json`
+叠层的说明。
+
+---
+
 ## 编译器 × 平台 × triplet 速查
 
 仓库一份 `CMakePresets.json` 同时支持三种主流编译器；与之配套的 vcpkg triplet
 **必须**与编译器 ABI 匹配，否则会出现 GoogleTest 链接失败。
 
-| 编译器 | 平台 | 推荐 vcpkg triplet | preset 前缀 | 备注 |
+| 编译器 | 平台 | vcpkg triplet | preset 前缀 | 备注 |
 | --- | --- | --- | --- | --- |
-| **GCC**          | Linux            | `x64-linux`           | `gcc-*`     | 默认 triplet 即可 |
-| **GCC**          | Windows (MinGW)  | `x64-mingw-dynamic`   | `my-gcc-*`  | 需要 `CMakeUserPresets.json` 叠层（见下方 vcpkg 段） |
-| **Clang**        | Linux            | `x64-linux`           | `clang-*`   | 需要 libstdc++-13 提供 C++23 库 |
-| **Clang**        | Windows (MinGW)  | `x64-mingw-dynamic`   | `my-clang-*`| msys2 ucrt64/clang++ |
-| **clang-cl**     | Windows (LLVM)   | `x64-windows`         | `clang-cl-*`| LLVM 官方分发，MSVC 兼容前端，需在 VS Developer Prompt 中跑 |
-| **MSVC**         | Windows          | `x64-windows`         | `msvc-*`    | VS 2022 multi-config，默认 triplet 即可 |
+| **GCC**          | Linux            | `x64-linux`           | `gcc-*`     | preset 内已固化，且仅在非 Windows 主机上可见 |
+| **GCC**          | Windows (MinGW)  | `x64-mingw-dynamic`   | `my-gcc-*`  | 需要 `CMakeUserPresets.json` 叠层并 `"condition": null`（见下方 vcpkg 段） |
+| **Clang**        | Linux            | `x64-linux`           | `clang-*`   | preset 内已固化；需要 libstdc++-13 提供 C++23 库 |
+| **Clang**        | Windows (MinGW)  | `x64-mingw-dynamic`   | `my-clang-*`| msys2 ucrt64/clang++，方法同 MinGW GCC |
+| **clang-cl**     | Windows (LLVM)   | `x64-windows`         | `clang-cl-*`| preset 内已固化；LLVM 官方分发，需在 VS Developer Prompt 中跑 |
+| **MSVC**         | Windows          | `x64-windows`         | `msvc-*`    | preset 内已固化；VS 2022 multi-config |
 
-切 triplet 的两种方式：
+仓库 preset 已经把 triplet 固化在 `cacheVariables.VCPKG_TARGET_TRIPLET`，
+正常情况下你不用关心；只有 Windows MinGW 这种"需要 override"的场景才要叠层
+或加 `-D` 覆盖：
 
 ```bash
 # 方式 A：用本地 CMakeUserPresets.json 叠层（推荐，零环境变量）
 cmake --preset my-gcc-debug
 
-# 方式 B：configure 时一次性传入
+# 方式 B：configure 时一次性传入（绕过 condition 也只能用 -D 覆盖到已显示的 preset）
 cmake --preset gcc-debug -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic
 ```
 
@@ -97,6 +142,10 @@ MSVC 到这里就好了，零额外配置。
 > 解决办法：在仓库根建一份 `CMakeUserPresets.json`，给 gcc/clang preset 叠一层
 > triplet 覆盖（`x64-mingw-dynamic`）。已经在 `.gitignore`，不影响仓库：
 >
+> 仓库内的 `gcc-*` / `clang-*` preset 已加 `condition: hostSystemName != Windows`
+> （避免 Windows 用户误用 Linux triplet），所以 Windows 上的 MinGW 叠层 preset
+> 必须用 `"condition": null` 显式解除：
+>
 > ```json
 > {
 >     "version": 6,
@@ -106,8 +155,8 @@ MSVC 到这里就好了，零额外配置。
 >             "hidden": true,
 >             "cacheVariables": { "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic" }
 >         },
->         { "name": "my-gcc-debug",   "inherits": ["_mingw-triplet", "gcc-debug"] },
->         { "name": "my-clang-debug", "inherits": ["_mingw-triplet", "clang-debug"] }
+>         { "name": "my-gcc-debug",   "inherits": ["_mingw-triplet", "gcc-debug"],   "condition": null },
+>         { "name": "my-clang-debug", "inherits": ["_mingw-triplet", "clang-debug"], "condition": null }
 >     ],
 >     "buildPresets": [
 >         { "name": "my-gcc-debug",   "configurePreset": "my-gcc-debug" },
