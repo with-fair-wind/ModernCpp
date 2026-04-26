@@ -39,13 +39,12 @@
             "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "gcc",
-                "CMAKE_CXX_COMPILER": "g++",
-                "VCPKG_TARGET_TRIPLET": "x64-linux"
+                "CMAKE_CXX_COMPILER": "g++"
             },
             "condition": {
-                "type": "notEquals",
+                "type": "equals",
                 "lhs": "${hostSystemName}",
-                "rhs": "Windows"
+                "rhs": "Linux"
             }
         },
         {
@@ -72,8 +71,7 @@
             "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "clang",
-                "CMAKE_CXX_COMPILER": "clang++",
-                "VCPKG_TARGET_TRIPLET": "x64-linux"
+                "CMAKE_CXX_COMPILER": "clang++"
             },
             "condition": {
                 "type": "notEquals",
@@ -159,9 +157,9 @@
                 "CMAKE_CXX_COMPILER": "g++"
             },
             "condition": {
-                "type": "notEquals",
+                "type": "equals",
                 "lhs": "${hostSystemName}",
-                "rhs": "Windows"
+                "rhs": "Linux"
             }
         },
         {
