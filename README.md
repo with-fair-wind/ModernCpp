@@ -63,6 +63,29 @@ ctest   --preset gcc-relwithdebinfo
 切 Clang：把 `gcc-` 换成 `clang-`，并 `apt install -y clang-18 lld-18`（C++23 库依赖
 `libstdc++-13`，已被 g++-13 包带入）。
 
+ARM64 Linux（Raspberry Pi、AWS Graviton 等）同样可用 —— vcpkg 会自动选 `arm64-linux`
+triplet，无需额外配置。
+
+### macOS (Intel / Apple Silicon)
+
+```bash
+# 1) 工具链
+brew install cmake ninja llvm    # llvm 提供较新的 clang；Apple Clang 也可用，但 C++23 滞后
+brew install vcpkg               # 或手动 git clone
+
+# 2) 设置 VCPKG_ROOT
+echo 'export VCPKG_ROOT=$(brew --prefix)/share/vcpkg' >> ~/.zshrc  # brew 安装的话
+source ~/.zshrc
+
+# 3) 构建 + 测试（macOS 上用 clang-* preset；gcc 在 mac 上是 clang shim，不要用 gcc-*）
+cmake --preset clang-relwithdebinfo
+cmake --build --preset clang-relwithdebinfo --parallel
+ctest   --preset clang-relwithdebinfo
+```
+
+vcpkg 会根据主机自动选 `x64-osx`（Intel）或 `arm64-osx`（Apple Silicon），无需手动指定。
+若 Apple Clang 的 C++23 支持不全，请用 `brew install llvm` 后让 PATH 优先指向 LLVM clang。
+
 ### Windows (MSVC / clang-cl)
 
 ```powershell
@@ -87,18 +110,24 @@ clang-cl 同上，preset 改成 `clang-cl-relwithdebinfo`。
 仓库一份 `CMakePresets.json` 同时支持三种主流编译器；与之配套的 vcpkg triplet
 **必须**与编译器 ABI 匹配，否则会出现 GoogleTest 链接失败。
 
+策略：**Linux / macOS 上 vcpkg 会按主机自动检测 triplet**（一种 OS 一种主流 ABI，
+检测可靠），preset 不固化；**Windows 上必须固化**，因为 MSVC ABI 与 MinGW ABI 共存，
+vcpkg 默认猜 `x64-windows`，MinGW 用户需手动覆盖。
+
 | 编译器 | 平台 | vcpkg triplet | preset 前缀 | 备注 |
 | --- | --- | --- | --- | --- |
-| **GCC**          | Linux            | `x64-linux`           | `gcc-*`     | preset 内已固化，且仅在非 Windows 主机上可见 |
+| **GCC**          | Linux x64 / ARM64 | `x64-linux` / `arm64-linux` | `gcc-*` | vcpkg 自动检测；preset 仅在 Linux 主机上可见 |
+| **GCC**          | macOS             | —                     | —           | macOS 上 `gcc` 是 clang shim，请用 `clang-*` preset |
 | **GCC**          | Windows (MinGW)  | `x64-mingw-dynamic`   | `my-gcc-*`  | 需要 `CMakeUserPresets.json` 叠层并 `"condition": null`（见下方 vcpkg 段） |
-| **Clang**        | Linux            | `x64-linux`           | `clang-*`   | preset 内已固化；需要 libstdc++-13 提供 C++23 库 |
+| **Clang**        | Linux x64 / ARM64 | `x64-linux` / `arm64-linux` | `clang-*` | vcpkg 自动检测；需要 libstdc++-13 提供 C++23 库 |
+| **Clang**        | macOS Intel / Apple Silicon | `x64-osx` / `arm64-osx` | `clang-*` | vcpkg 自动检测；preset 在所有非 Windows 主机上可见 |
 | **Clang**        | Windows (MinGW)  | `x64-mingw-dynamic`   | `my-clang-*`| msys2 ucrt64/clang++，方法同 MinGW GCC |
 | **clang-cl**     | Windows (LLVM)   | `x64-windows`         | `clang-cl-*`| preset 内已固化；LLVM 官方分发，需在 VS Developer Prompt 中跑 |
 | **MSVC**         | Windows          | `x64-windows`         | `msvc-*`    | preset 内已固化；VS 2022 multi-config |
 
-仓库 preset 已经把 triplet 固化在 `cacheVariables.VCPKG_TARGET_TRIPLET`，
-正常情况下你不用关心；只有 Windows MinGW 这种"需要 override"的场景才要叠层
-或加 `-D` 覆盖：
+Windows 上的 MSVC / clang-cl preset 已经把 triplet 固化在
+`cacheVariables.VCPKG_TARGET_TRIPLET`，正常情况下你不用关心；只有 Windows MinGW 这种
+"需要 override"的场景才要叠层或加 `-D` 覆盖：
 
 ```bash
 # 方式 A：用本地 CMakeUserPresets.json 叠层（推荐，零环境变量）
