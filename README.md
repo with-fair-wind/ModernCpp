@@ -128,6 +128,8 @@ vcpkg 默认猜 `x64-windows`，MinGW 用户需手动覆盖。
 | **clang-cl**     | Windows (LLVM)   | `x64-windows`         | `clang-cl-*`| preset 内已固化；LLVM 官方分发，需在 VS Developer Prompt 中跑 |
 | **MSVC**         | Windows          | `x64-windows`         | `msvc-*`    | preset 内已固化；VS 2022 multi-config |
 
+> **为什么这样设计**：详见 [`docs/vcpkg-guide.md §5 triplet：ABI 的命名空间`](docs/vcpkg-guide.md#5-tripletabi-的命名空间)。
+
 Windows 上的 MSVC / clang-cl preset 已经把 triplet 固化在
 `cacheVariables.VCPKG_TARGET_TRIPLET`，正常情况下你不用关心；只有 Windows MinGW 这种
 "需要 override"的场景才要叠层或加 `-D` 覆盖：
@@ -168,45 +170,24 @@ cmake --preset gcc-debug
 vcpkg 会读取仓库根的 `vcpkg.json` 自动拉取 `gtest`。Linux / macOS / Windows
 MSVC 到这里就好了，零额外配置。
 
-> **Windows + MinGW GCC/Clang 的一个额外步骤**：vcpkg 在 Windows 上不会检测
-> 当前编译器，总默认 triplet 为 `x64-windows`（MSVC ABI），用它装出来的
-> GoogleTest 与 MinGW GCC 链接时会报大量 `undefined reference to testing::...`。
-> 解决办法：在仓库根建一份 `CMakeUserPresets.json`，给 gcc/clang preset 叠一层
-> triplet 覆盖（`x64-mingw-dynamic`）。已经在 `.gitignore`，不影响仓库：
->
-> 仓库内的 `gcc-*` / `clang-*` preset 已加 `condition: hostSystemName != Windows`
-> （避免 Windows 用户误用 Linux triplet），所以 Windows 上的 MinGW 叠层 preset
-> 必须用 `"condition": null` 显式解除：
+> **Windows + MinGW GCC/Clang 的一个额外步骤**：vcpkg 在 Windows 上不会检测当前
+> 编译器，总默认 triplet 为 `x64-windows`（MSVC ABI），与 MinGW ABI 不匹配会链接失败。
+> 解决办法是在仓库根建一份 `CMakeUserPresets.json`（已 gitignored），叠一层覆盖 triplet
+> 的 `my-*` preset。核心模板：
 >
 > ```json
-> {
->     "version": 6,
->     "configurePresets": [
->         {
->             "name": "_mingw-triplet",
->             "hidden": true,
->             "cacheVariables": { "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic" }
->         },
->         { "name": "my-gcc-debug",   "inherits": ["_mingw-triplet", "gcc-debug"],   "condition": null },
->         { "name": "my-clang-debug", "inherits": ["_mingw-triplet", "clang-debug"], "condition": null }
->     ],
->     "buildPresets": [
->         { "name": "my-gcc-debug",   "configurePreset": "my-gcc-debug" },
->         { "name": "my-clang-debug", "configurePreset": "my-clang-debug" }
->     ],
->     "testPresets": [
->         { "name": "my-gcc-debug",   "configurePreset": "my-gcc-debug",
->           "output": { "outputOnFailure": true, "shortProgress": true } }
->     ]
-> }
+> { "name": "_mingw-triplet", "hidden": true,
+>   "cacheVariables": { "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic" } }
+> { "name": "my-gcc-debug",
+>   "inherits": ["_mingw-triplet", "gcc-debug"], "condition": null }
 > ```
 >
-> 然后用 `cmake --preset my-gcc-debug` 代替 `gcc-debug`。需要 release /
-> relwithdebinfo / minsizerel 就同样照着加一组 `my-*` preset。
->
-> 备选：每次 configure 时手动加 `-DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic`。
->
-> MSVC preset 用默认的 `x64-windows` 即可，不需要 user preset。
+> **完整可用模板（含所有 build types + buildPreset + testPreset）与原理解释**：
+> [`docs/vcpkg-guide.md §6 MinGW 专题`](docs/vcpkg-guide.md#6-mingw-专题)。
+
+> **完整文档**：vcpkg 端到端使用、binary cache、CRT 对齐、排查 FAQ 详见
+> [`docs/vcpkg-guide.md`](docs/vcpkg-guide.md)；preset 设计原理详见
+> [`docs/cmake-presets-guide.md`](docs/cmake-presets-guide.md)。
 
 ### Option B：Conan
 
@@ -234,6 +215,9 @@ ctest --preset gcc-debug-conan
 | GCC   | `gcc-debug-conan` / `gcc-release-conan` / `gcc-relwithdebinfo-conan` |
 | Clang | `clang-debug-conan` / `clang-release-conan` / `clang-relwithdebinfo-conan` |
 | MSVC  | `msvc-conan`（多配置）+ build/test preset `msvc-{debug,release,relwithdebinfo}-conan` |
+
+> **完整文档**：Conan 2.x 概念、profile、CMakeDeps/CMakeToolchain、三步走工作流、
+> 排查 FAQ 详见 [`docs/conan-guide.md`](docs/conan-guide.md)。
 
 ---
 
