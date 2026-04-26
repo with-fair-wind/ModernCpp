@@ -7,7 +7,6 @@
 # 详细文档：https://clangd.llvm.org/config
 # =============================================================================
 
-
 # -----------------------------------------------------------------------------
 # CompileFlags —— 控制 clangd 看到的编译命令
 # -----------------------------------------------------------------------------
@@ -16,16 +15,24 @@ CompileFlags:
   # 默认情况下 clangd 会从源文件向上递归找，但 build 目录不在源文件路径上，
   # 因此必须显式指定。VS Code 的 --compile-commands-dir CLI 参数会覆盖此项。
   # 切换 preset 时需要同步修改这一行。
-  CompilationDatabase: build/my-gcc-relwithdebinfo
+  CompilationDatabase: build/clang-cl-relwithdebinfo
 
   # 追加到所有编译命令的 flag，对 compile_commands.json 中已有的文件也生效
   # 主要作用：保护「不在 DB 中的文件」（如临时新建的 .cpp）也能拿到正确的标准
   Add:
-    - -std=c++23      # C++23 标准（与项目主线一致）
-    - -Wall           # 常用警告组
-    - -Wextra         # 额外警告
-    - -Wpedantic      # 严格 ISO 标准检查
+    - -std=c++23 # C++23 标准（与项目主线一致）
+    - -Wall # 常用警告组
+    - -Wextra # 额外警告
+    - -Wpedantic # 严格 ISO 标准检查
 
+  # 从 compile_commands.json 中剥离的 flag（支持 * 通配）
+  # 主因：clang-cl + Ninja 生成的命令带 /Fo<obj> /Fd<dir>，clangd 改写命令后
+  # 会让 clang-cl 报 "Cannot specify '/Fo...' when compiling multiple source files"。
+  # 顺手剥 /FS（MSVC 的 PDB 串行化锁，clangd 不写 PDB 用不到）。
+  Remove:
+    - /Fo*
+    - /Fd*
+    - /FS
 
 # -----------------------------------------------------------------------------
 # Completion —— 控制代码补全行为
@@ -40,7 +47,6 @@ Completion:
   # 用了某个符号就直接 include 它的来源头，不依赖其他头的间接传递
   # 可选值：IWYU | NeverInsert
   HeaderInsertion: IWYU
-
 
 # -----------------------------------------------------------------------------
 # Diagnostics —— 控制诊断（红线/黄线/quickfix）
@@ -60,21 +66,20 @@ Diagnostics:
   ClangTidy:
     # 启用的规则组（* 通配匹配组下所有规则）
     Add:
-      - modernize-*           # 推荐 modern C++ 写法（nullptr / 范围 for / using 别名等）
-      - performance-*         # 性能优化建议（不必要拷贝、低效字符串操作等）
-      - bugprone-*            # 易出错代码模式（隐式转换、悬挂引用、未初始化等）
-      - readability-*         # 可读性改进（命名、控制流复杂度、隐式 bool 转换等）
-      - cppcoreguidelines-*   # C++ Core Guidelines 强制规则
+      - modernize-* # 推荐 modern C++ 写法（nullptr / 范围 for / using 别名等）
+      - performance-* # 性能优化建议（不必要拷贝、低效字符串操作等）
+      - bugprone-* # 易出错代码模式（隐式转换、悬挂引用、未初始化等）
+      - readability-* # 可读性改进（命名、控制流复杂度、隐式 bool 转换等）
+      - cppcoreguidelines-* # C++ Core Guidelines 强制规则
 
     # 从启用组中关闭的具体规则（过严或与项目风格冲突）
     Remove:
-      - modernize-use-trailing-return-type                       # 强制 auto func() -> int 写法，多数项目不爱用
-      - readability-identifier-length                            # 禁止单字母名（i/j/n），数学/循环里不实用
-      - readability-magic-numbers                                # 把所有字面量当魔法数（包括 0/1/2）
-      - cppcoreguidelines-avoid-magic-numbers                    # 同上
-      - cppcoreguidelines-pro-bounds-pointer-arithmetic          # 禁止指针算术，写底层代码不可避免
-      - cppcoreguidelines-pro-bounds-array-to-pointer-decay      # 禁止数组退化，C 风格 API 必须用
-
+      - modernize-use-trailing-return-type # 强制 auto func() -> int 写法，多数项目不爱用
+      - readability-identifier-length # 禁止单字母名（i/j/n），数学/循环里不实用
+      - readability-magic-numbers # 把所有字面量当魔法数（包括 0/1/2）
+      - cppcoreguidelines-avoid-magic-numbers # 同上
+      - cppcoreguidelines-pro-bounds-pointer-arithmetic # 禁止指针算术，写底层代码不可避免
+      - cppcoreguidelines-pro-bounds-array-to-pointer-decay # 禁止数组退化，C 风格 API 必须用
 
 # -----------------------------------------------------------------------------
 # Index —— 后台索引设置（用于跳转定义、查找引用、全局补全）
@@ -84,14 +89,13 @@ Index:
   # 通常配合 If.PathMatch 对 third_party 目录设 Skip 以节省资源
   Background: Build
 
-
 # -----------------------------------------------------------------------------
 # InlayHints —— 编辑器内联提示（VS Code 默认开，Neovim 需 vim.lsp.inlay_hint.enable(true)）
 # -----------------------------------------------------------------------------
 InlayHints:
-  Enabled: Yes              # 总开关
-  ParameterNames: Yes       # 函数调用处显示形参名：foo(/*x:*/ 1, /*y:*/ 2)
-  DeducedTypes: Yes         # auto 推导类型显示：auto x = ... ← /* int */
-  Designators: Yes          # 聚合初始化显示成员名：Point{/*.x=*/ 1, /*.y=*/ 2}
-  BlockEnd: Yes             # 长函数 } 后显示这是哪个块的收尾
-  DefaultArguments: Yes     # 调用时显示用到的默认参数值：foo(1) ← /*, y=10*/
+  Enabled: Yes # 总开关
+  ParameterNames: Yes # 函数调用处显示形参名：foo(/*x:*/ 1, /*y:*/ 2)
+  DeducedTypes: Yes # auto 推导类型显示：auto x = ... ← /* int */
+  Designators: Yes # 聚合初始化显示成员名：Point{/*.x=*/ 1, /*.y=*/ 2}
+  BlockEnd: Yes # 长函数 } 后显示这是哪个块的收尾
+  DefaultArguments: Yes # 调用时显示用到的默认参数值：foo(1) ← /*, y=10*/
