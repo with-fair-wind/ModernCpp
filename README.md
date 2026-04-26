@@ -71,10 +71,13 @@ triplet，无需额外配置。
 ```bash
 # 1) 工具链
 brew install cmake ninja llvm    # llvm 提供较新的 clang；Apple Clang 也可用，但 C++23 滞后
-brew install vcpkg               # 或手动 git clone
 
-# 2) 设置 VCPKG_ROOT
-echo 'export VCPKG_ROOT=$(brew --prefix)/share/vcpkg' >> ~/.zshrc  # brew 安装的话
+# 2) vcpkg（一次性，手动 clone）
+#    注：Homebrew 的 vcpkg formula 只装了可执行文件，不含 scripts/ports/triplets
+#    完整源码树（CMake toolchain 文件就在源码树里），所以这里必须 git clone。
+git clone https://github.com/microsoft/vcpkg ~/vcpkg
+~/vcpkg/bootstrap-vcpkg.sh
+echo 'export VCPKG_ROOT=$HOME/vcpkg' >> ~/.zshrc
 source ~/.zshrc
 
 # 3) 构建 + 测试（macOS 上用 clang-* preset；gcc 在 mac 上是 clang shim，不要用 gcc-*）
