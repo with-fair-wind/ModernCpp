@@ -26,9 +26,9 @@
         {
             "name": "_conan",
             "hidden": true,
-            "description": "Run `conan install . --output-folder=build/<preset> --build=missing` first; this preset then picks up the generated conan_toolchain.cmake.",
+            "description": "Run `conan install . --output-folder=build/<preset> --build=missing` first; this preset then picks up the conan_toolchain.cmake that Conan writes under <output-folder>/generators/ (cmake_layout convention).",
             "cacheVariables": {
-                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/conan_toolchain.cmake"
+                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/generators/conan_toolchain.cmake"
             }
         },
 

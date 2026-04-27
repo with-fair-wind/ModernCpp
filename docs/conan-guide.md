@@ -247,8 +247,12 @@ list(PREPEND CMAKE_PREFIX_PATH "/path/to/build/Release/generators")
 [cmake-presets-guide.md §8](cmake-presets-guide.md#8-toolchain-hook-机制)）：
 
 ```json
-"CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/conan_toolchain.cmake"
+"CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/generators/conan_toolchain.cmake"
 ```
+
+注意路径里的 `generators/` 子目录——`cmake_layout` + `--output-folder` 的组合下，
+Conan 把 toolchain / `<Pkg>Config.cmake` 等文件统一写在 `<output-folder>/generators/`
+而不是 `<output-folder>/` 本身。
 
 ### CMakeDeps → `<pkg>-config.cmake`
 
@@ -314,16 +318,17 @@ build/
 conan install . --output-folder=build/gcc-debug-conan --build=missing
 ```
 
-`--output-folder` 让 Conan 把 generators 写到 `build/gcc-debug-conan/`，与
-preset 的 `binaryDir` 目录对齐。
+`--output-folder` 让 Conan 把 generators 写到 `build/gcc-debug-conan/generators/`，
+与 preset 的 `binaryDir` 同根。
 
 然后 preset 把 toolchain 路径写死成：
 
 ```json
-"CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/conan_toolchain.cmake"
+"CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/generators/conan_toolchain.cmake"
 ```
 
-`${presetName}` 会展开成 `gcc-debug-conan`，正好命中 `conan install` 的输出目录。
+`${presetName}` 会展开成 `gcc-debug-conan`，正好命中 `conan install` 写入的
+`generators/` 子目录。
 
 ### 为什么 `_conan` preset 的 toolchain 路径写死
 
@@ -332,7 +337,7 @@ preset 的 `binaryDir` 目录对齐。
     "name": "_conan",
     "hidden": true,
     "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/conan_toolchain.cmake"
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/generators/conan_toolchain.cmake"
     }
 }
 ```
@@ -342,7 +347,7 @@ preset 的 `binaryDir` 目录对齐。
 
 ```
 CMake Error: Could not find toolchain file:
-.../build/gcc-debug-conan/conan_toolchain.cmake
+.../build/gcc-debug-conan/generators/conan_toolchain.cmake
 ```
 
 错误信息里直接告诉你少了 `conan install` 这一步。这比 vcpkg 的"configure 慢慢卡住装包"
@@ -415,7 +420,7 @@ build"，是日常开发的安全默认。
 | --- | --- | --- |
 | 决定要装啥 | `vcpkg.json` | `conanfile.txt` + profile + 命令行 settings |
 | 触发安装 | CMake configure 时 toolchain 自动跑 | **`conan install` 命令显式跑** |
-| 安装完产物 | `vcpkg_installed/` | `build/<preset>/conan_toolchain.cmake` + `generators/` |
+| 安装完产物 | `vcpkg_installed/` | `build/<preset>/generators/conan_toolchain.cmake` + 同目录下的 `<Pkg>Config.cmake` 等 |
 | CMake 使用 | toolchain 注册路径 | toolchain 注册路径 + Deps 文件被 `find_package` 命中 |
 
 vcpkg 把"装包"塞进 toolchain 的 side effect；Conan 把它独立成命令。Conan 的方式让"装
@@ -548,7 +553,7 @@ ctest --preset msvc-debug-conan
 
 # 想换成 Release：
 conan install . -s build_type=Release --output-folder=build/msvc-conan --build=missing
-                                 # ↑ 这一步会覆盖 build/msvc-conan/conan_toolchain.cmake
+                                 # ↑ 这一步会覆盖 build/msvc-conan/generators/conan_toolchain.cmake
 cmake --preset msvc-conan       # 重新 configure 让 CMake 拿新的 toolchain
 cmake --build --preset msvc-release-conan
 ```
