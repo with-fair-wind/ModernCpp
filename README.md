@@ -213,12 +213,20 @@ ctest --preset gcc-debug-conan
 
 | 编译器 | preset |
 | --- | --- |
-| GCC         | `gcc-{debug,release,relwithdebinfo,minsizerel}-conan` |
-| Clang       | `clang-{debug,release,relwithdebinfo,minsizerel}-conan` |
-| clang-cl    | `clang-cl-{debug,release,relwithdebinfo,minsizerel}-conan` |
-| MinGW GCC   | `mingw-gcc-{debug,release,relwithdebinfo,minsizerel}-conan` |
-| MinGW Clang | `mingw-clang-{debug,release,relwithdebinfo,minsizerel}-conan` |
-| MSVC        | `msvc-conan`（多配置）+ build/test preset `msvc-{debug,release,relwithdebinfo,minsizerel}-conan` |
+| GCC                | `gcc-{debug,release,relwithdebinfo,minsizerel}-conan` |
+| Clang              | `clang-{debug,release,relwithdebinfo,minsizerel}-conan` |
+| clang-cl           | `clang-cl-{debug,release,relwithdebinfo,minsizerel}-conan` |
+| MinGW GCC          | `mingw-gcc-{debug,release,relwithdebinfo,minsizerel}-conan` |
+| MinGW Clang        | `mingw-clang-{debug,release,relwithdebinfo,minsizerel}-conan` |
+| MSVC (VS)          | `msvc-conan`（多配置）+ build/test `msvc-{debug,release,relwithdebinfo,minsizerel}-conan` ⚠️ |
+| MSVC (Ninja MC)    | `ninja-mc-msvc-conan`（多配置）+ build/test `ninja-mc-msvc-{...}-conan` ⚠️ |
+
+> ⚠️ `msvc-conan` 与 `ninja-mc-msvc-conan` **多配置 + Conan 有固有摩擦**：Conan 的 `conan_toolchain.cmake` 是
+> per-build-type 的，每跑一次 `conan install` 会**覆盖**前一次的 toolchain，所以这两组 preset 在实际使用中
+> **同一时刻只能跑一种 build_type**（4 个 buildPreset 是为了"切到这一种"提供入口，不是真的能并存 4 种）。
+> 想要 Windows MSVC ABI + Conan **同时保留 4 种 build_type**，请改用 `clang-cl-{...}-conan`（单配置 Ninja，
+> 4 个独立的 build dir 与 toolchain，零摩擦；clang-cl 与 cl.exe 是同一套 ABI）。详见
+> [`docs/conan-guide.md` §"多配置 + Conan 的固有摩擦"](docs/conan-guide.md#多配置--conan-的固有摩擦)。
 
 > **完整文档**：Conan 2.x 概念、profile、CMakeDeps/CMakeToolchain、三步走工作流、
 > 排查 FAQ 详见 [`docs/conan-guide.md`](docs/conan-guide.md)。
@@ -232,10 +240,20 @@ ctest --preset gcc-debug-conan
 
 | 编译器 | 生成器 / Generator | 选择 build type 的方式 |
 | --- | --- | --- |
-| GCC      | Ninja（单配置）                 | 每种 build type 一个 preset：`gcc-debug` / `gcc-release` / `gcc-relwithdebinfo` / `gcc-minsizerel` |
-| Clang    | Ninja（单配置）                 | 同上：`clang-debug` / `clang-release` / `clang-relwithdebinfo` / `clang-minsizerel` |
-| clang-cl | Ninja（单配置，仅 Windows）     | 同上：`clang-cl-debug` / `clang-cl-release` / `clang-cl-relwithdebinfo` / `clang-cl-minsizerel` |
-| MSVC     | Visual Studio 17 2022（多配置） | 单一 configurePreset `msvc`，构建时通过 buildPreset 选 `msvc-debug` / `msvc-release` / `msvc-relwithdebinfo` / `msvc-minsizerel` |
+| GCC          | Ninja（单配置）                  | 每种 build type 一个 preset：`gcc-debug` / `gcc-release` / `gcc-relwithdebinfo` / `gcc-minsizerel` |
+| Clang        | Ninja（单配置）                  | 同上：`clang-debug` / `clang-release` / `clang-relwithdebinfo` / `clang-minsizerel` |
+| clang-cl     | Ninja（单配置，仅 Windows）      | 同上：`clang-cl-debug` / `clang-cl-release` / `clang-cl-relwithdebinfo` / `clang-cl-minsizerel` |
+| MinGW GCC    | Ninja（单配置，仅 Windows）      | 同上：`mingw-gcc-{debug,release,relwithdebinfo,minsizerel}` |
+| MinGW Clang  | Ninja（单配置，仅 Windows）      | 同上：`mingw-clang-{debug,release,relwithdebinfo,minsizerel}` |
+| MSVC (VS)    | Visual Studio 17 2022（多配置）  | 单一 configurePreset `msvc`，buildPreset 选 `msvc-{debug,release,relwithdebinfo,minsizerel}` |
+| MSVC (NMC)   | Ninja Multi-Config（多配置）     | 单一 configurePreset `ninja-mc-msvc`，buildPreset 选 `ninja-mc-msvc-{debug,release,...}` |
+
+> **Ninja Multi-Config 是什么**：CMake 4 自带的多配置生成器，跟 VS 一样能"一次 configure 出 4 种 build
+> type 共享的工程"，但底层是几份 `build-Debug.ninja` / `build-Release.ninja` ... 通过
+> `cmake --build <dir> --config <Type>` 切换，**速度近似 Ninja 单配置 + 体验近似 VS 多配置**。优势：
+> 比 VS 快、跨平台可用、不依赖 .sln/.vcxproj；劣势：与 Conan 配合时仍有 per-build-type toolchain 摩擦
+> （见上方 ⚠️）。日常推荐：单平台单 build type 选单配置 Ninja preset；想"一次 configure 切多种 build
+> type"且不在乎 IDE 集成的，用 `ninja-mc-msvc`。
 
 列出所有可用 preset：
 
@@ -275,6 +293,20 @@ ctest --preset msvc-release
 
 例：`cmake --preset gcc-debug -DMCPP_BUILD_TESTS=OFF`。
 开 sanitizer 的常用组合：`cmake --preset gcc-debug -DMCPP_ENABLE_SANITIZERS=ON`。
+
+### 格式化 / Formatting
+
+仓库根的 `.clang-format` 控制 C/C++ 风格，CI 用 `clang-format-18 --dry-run --Werror` 校验。
+本地一键修复 / 校验：
+
+```bash
+cmake --build --preset gcc-debug --target format        # 原地修复全部 .cpp/.hpp
+cmake --build --preset gcc-debug --target format-check  # 仅 dry-run，与 CI 行为一致
+```
+
+需要 `clang-format`（推荐 18+）在 PATH 中；CMake 配置时 `find_program` 检测不到就跳过这两个 target。
+非 C/C++ 文件（CMake、JSON、YAML、Markdown）的缩进由根目录 `.editorconfig` 兜底，VS Code / JetBrains
+等主流 IDE 会自动识别。
 
 ---
 

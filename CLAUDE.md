@@ -33,9 +33,12 @@ Preset 家族：`gcc-*`、`clang-*`（仅 Linux —— 通过 `hostSystemName !=
 测试名加上 `<module>.` 前缀）。或直接执行可执行：
 `./build/gcc-debug/bin/test_basics --gtest_filter=...`。
 
-顶层开关：`-DMCPP_BUILD_TESTS=OFF`（跳过 gtest 依赖）、`-DMCPP_ENABLE_SANITIZERS=ON`
-（GCC/Clang 上启用 ASan + UBSan，MSVC 上启用 ASan；仅 Debug/RelWithDebInfo 生效）、
-`-DMCPP_WARNINGS_AS_ERRORS=ON`。
+顶层开关：`-DMCPP_BUILD_DEMOS=OFF`（不构建 demo 可执行）、`-DMCPP_BUILD_TESTS=OFF`
+（跳过 gtest 依赖）、`-DMCPP_ENABLE_SANITIZERS=ON`（GCC/Clang 上启用 ASan + UBSan，
+MSVC 上启用 ASan；仅 Debug/RelWithDebInfo 生效）、`-DMCPP_WARNINGS_AS_ERRORS=ON`。
+
+格式化：`cmake --build --preset <p> --target format`（原地修复）/ `--target format-check`
+（dry-run，与 CI 行为一致）。clang-format 不在 PATH 时这两个 target 不会注册。
 
 ## 模块辅助函数 —— 你需要的全部 API
 
@@ -64,11 +67,14 @@ mcpp_add_test(NAME test_x  SOURCES tests/test_x.cpp  [STANDARD 23])
   `CMAKE_CXX_STANDARD=23` 还无法启用 `<print>` / `std::expected` / 新一批 ranges。
 - **MSVC ASan 会剥离 `/RTC1`** —— 在 `cmake/CompilerSanitizers.cmake` 中处理（两者
   互不兼容）。
-- **clangd 读取 `build/clang-cl-relwithdebinfo`** 作为 `compile_commands.json` 来源
-  （在 `.clangd` 中设置）。其中 `Remove: [/Fo*, /Fd*, /FS]` 这一块至关重要 —— Ninja
-  生成 clang-cl 命令时会带上这些 flag，clangd 改写命令后会报 "Cannot specify
-  '/Fo...' when compiling multiple source files"。**切换当前活跃 preset 时，记得同步
-  修改 `.clangd` 里的 `CompilationDatabase`**。
+- **clangd 的 `compile_commands.json` 由顶层 CMakeLists.txt 自动镜像到源码根**：
+  `mcpp_link_compile_commands` 这个 ALL custom target 会在 build 时把
+  `build/<active-preset>/compile_commands.json` 复制到 `${CMAKE_SOURCE_DIR}/`，所以
+  `.clangd` 里只写 `CompilationDatabase: .` 即可，**切换 preset 不需要改 .clangd**
+  （只需重新 `cmake --build --preset <new>`）。多配置生成器（VS）不产 DB，跳过此机制。
+  另：`Remove: [/Fo*, /Fd*, /FS]` 这一块对 clang-cl preset 至关重要 —— Ninja 生成的
+  clang-cl 命令会带上这些 flag，clangd 改写命令后会报 "Cannot specify '/Fo...' when
+  compiling multiple source files"。
 
 ## CI
 

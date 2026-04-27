@@ -250,6 +250,13 @@ list(PREPEND CMAKE_PREFIX_PATH "/path/to/build/Release/generators")
 "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/conan_toolchain.cmake"
 ```
 
+**本仓库 `conanfile.txt` 故意不写 `[layout] cmake_layout`**：cmake_layout 会把生成
+的 toolchain 路径变成 `<output-folder>/build/<BuildType>/generators/conan_toolchain.cmake`，
+带"build_type 子目录"——而 CMake preset 的 cache 变量是固定字符串、不能按 build_type
+动态变化（一个 leaf preset 已经隐含一个 build_type，但路径表达式没法用）。去掉
+`cmake_layout` 后 Conan 默认行为是把 toolchain 直接写在 `--output-folder` 根，
+preset 路径 `${sourceDir}/build/${presetName}/conan_toolchain.cmake` 一行到位。
+
 ### CMakeDeps → `<pkg>-config.cmake`
 
 每个 require 包会生成一个 `<pkg>-config.cmake` 文件，让 `find_package(<Pkg> CONFIG)`
@@ -305,17 +312,19 @@ build/
 
 构建类型在路径里，所以同一项目多 build_type 不冲突。
 
-### 本仓库的覆盖：per-preset 输出目录
+### 本仓库的选择：per-preset 输出目录 + 不用 cmake_layout
 
-`conan install` 默认会用 `cmake_layout` 的路径，但本仓库希望每个 preset 一个目录，所以
-**用命令行覆盖输出目录**：
+本仓库希望每个 preset 一个独立 build 目录、且 toolchain 路径**不带 build_type 子层**
+（preset cache 变量没法按 build_type 动态展开），所以 `conanfile.txt` 不写 `[layout]`，
+配合 `--output-folder=build/<preset>` 让 Conan 把 toolchain 直接写在 preset 同根：
 
 ```bash
 conan install . --output-folder=build/gcc-debug-conan --build=missing
 ```
 
-`--output-folder` 让 Conan 把 generators 写到 `build/gcc-debug-conan/`，与
-preset 的 `binaryDir` 目录对齐。
+`--output-folder` 让 Conan 把 toolchain / `<Pkg>Config.cmake` 等 generators 直接写到
+`build/gcc-debug-conan/`（无 `generators/` 子目录，因为本仓库的 `conanfile.txt`
+不带 `[layout] cmake_layout`），与 preset 的 `binaryDir` 完全对齐。
 
 然后 preset 把 toolchain 路径写死成：
 
@@ -323,7 +332,8 @@ preset 的 `binaryDir` 目录对齐。
 "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/conan_toolchain.cmake"
 ```
 
-`${presetName}` 会展开成 `gcc-debug-conan`，正好命中 `conan install` 的输出目录。
+`${presetName}` 会展开成 `gcc-debug-conan`，正好命中 `conan install` 写入的
+`generators/` 子目录。
 
 ### 为什么 `_conan` preset 的 toolchain 路径写死
 
@@ -342,7 +352,7 @@ preset 的 `binaryDir` 目录对齐。
 
 ```
 CMake Error: Could not find toolchain file:
-.../build/gcc-debug-conan/conan_toolchain.cmake
+.../build/gcc-debug-conan/generators/conan_toolchain.cmake
 ```
 
 错误信息里直接告诉你少了 `conan install` 这一步。这比 vcpkg 的"configure 慢慢卡住装包"
@@ -415,7 +425,7 @@ build"，是日常开发的安全默认。
 | --- | --- | --- |
 | 决定要装啥 | `vcpkg.json` | `conanfile.txt` + profile + 命令行 settings |
 | 触发安装 | CMake configure 时 toolchain 自动跑 | **`conan install` 命令显式跑** |
-| 安装完产物 | `vcpkg_installed/` | `build/<preset>/conan_toolchain.cmake` + `generators/` |
+| 安装完产物 | `vcpkg_installed/` | `build/<preset>/conan_toolchain.cmake` + 同目录下的 `<Pkg>Config.cmake` 等 |
 | CMake 使用 | toolchain 注册路径 | toolchain 注册路径 + Deps 文件被 `find_package` 命中 |
 
 vcpkg 把"装包"塞进 toolchain 的 side effect；Conan 把它独立成命令。Conan 的方式让"装
@@ -465,8 +475,10 @@ _base + _conan → _gcc-conan         → gcc-{debug,release,relwithdebinfo,mins
               → _clang-cl-conan     → clang-cl-{debug,release,relwithdebinfo,minsizerel}-conan
               → _mingw-gcc-conan    → mingw-gcc-{debug,release,relwithdebinfo,minsizerel}-conan
               → _mingw-clang-conan  → mingw-clang-{debug,release,relwithdebinfo,minsizerel}-conan
-              → msvc-conan (multi-config)
+              → msvc-conan          (VS 2022 multi-config)
                   build/test: msvc-{debug,release,relwithdebinfo,minsizerel}-conan
+              → ninja-mc-msvc-conan (Ninja Multi-Config + cl.exe)
+                  build/test: ninja-mc-msvc-{debug,release,relwithdebinfo,minsizerel}-conan
 ```
 
 `*-conan` preset 与 vcpkg 一侧（无 `-conan` 后缀）一一对应、四种 build type 全覆盖。
@@ -502,33 +514,76 @@ cmake --preset mingw-gcc-debug-conan
 
 `-pr=` 指定 profile，覆盖默认；`--output-folder` 必须与目标 preset 名一致。
 
-### MSVC + Conan 的多配置
+### Ninja Multi-Config 是什么
 
-`msvc-conan` preset 是多配置（VS generator）：
+`Ninja Multi-Config` 是 CMake 自 3.17 起内置的**多配置生成器**，与 VS generator 同级，
+但底层用 ninja 文件而非 .sln/.vcxproj。一次 configure 后会在 build 目录下生成：
 
-```json
-{
-    "name": "msvc-conan",
-    "displayName": "MSVC (VS 2022, Conan)",
-    "inherits": ["_conan", "_base"],
-    "generator": "Visual Studio 17 2022",
-    "architecture": { "value": "x64", "strategy": "set" }
-}
+```
+build/ninja-mc-msvc/
+├── build.ninja              # 默认 config（一般是 Debug）
+├── build-Debug.ninja        # Debug 专用
+├── build-Release.ninja
+├── build-RelWithDebInfo.ninja
+└── build-MinSizeRel.ninja
 ```
 
-buildPreset 用 `configuration` 选构建类型：
+`cmake --build <dir> --config <Type>` 通过选 `build-<Type>.ninja` 切换；CMake preset 的
+buildPreset 也支持 `"configuration": "Debug"` 字段，所以使用方式与 VS preset 完全相同。
 
-```json
-{ "name": "msvc-debug-conan",          "configurePreset": "msvc-conan", "configuration": "Debug" },
-{ "name": "msvc-release-conan",        "configurePreset": "msvc-conan", "configuration": "Release" },
-{ "name": "msvc-relwithdebinfo-conan", "configurePreset": "msvc-conan", "configuration": "RelWithDebInfo" },
-{ "name": "msvc-minsizerel-conan",     "configurePreset": "msvc-conan", "configuration": "MinSizeRel" }
+**优势**：
+
+- ninja 速度（远快于 VS 的 MSBuild）
+- 跨平台可用（gcc / clang / clang-cl / cl 都能配，本仓库只为 cl 提供 `ninja-mc-msvc`，
+  其他单配置 preset 已够用）
+- 不依赖 VS 工程文件，CI / 命令行场景更轻量
+
+**劣势**：与 VS generator 共享同一个**多配置 + Conan 摩擦**（见下）。
+
+### 多配置 + Conan 的固有摩擦
+
+`msvc-conan` 与 `ninja-mc-msvc-conan` 都是多配置 preset，本应"一次 configure 后随便切
+build_type"，但 **Conan 的 `conan_toolchain.cmake` 是 per-build-type 的**——每跑一次
+`conan install` 会按当前 profile 的 `build_type` 重新生成 toolchain，**覆盖**前一次的
+内容。所以这两组 preset 在实际使用中**同一时刻只能跑一种 build_type**。
+
+工作流的现实：
+
+```bash
+# 想跑 Debug：
+conan install . -s build_type=Debug --output-folder=build/msvc-conan --build=missing
+cmake --preset msvc-conan       # 此时 toolchain 是 Debug 版本
+cmake --build --preset msvc-debug-conan
+ctest --preset msvc-debug-conan
+
+# 想换成 Release：
+conan install . -s build_type=Release --output-folder=build/msvc-conan --build=missing
+                                 # ↑ 这一步会覆盖 build/msvc-conan/conan_toolchain.cmake
+cmake --preset msvc-conan       # 重新 configure 让 CMake 拿新的 toolchain
+cmake --build --preset msvc-release-conan
 ```
 
-但 Conan 的 toolchain 是 per-build-type 的（一个 profile 设了一个 build_type）。本仓库
-给每个 build_type 各跑一次 `conan install --output-folder=build/msvc-conan/...` 才行。
-这是 Conan + 多配置生成器的固有摩擦点，详见
-[cmake-presets-guide.md §6 多配置 vs 单配置生成器](cmake-presets-guide.md#6-多配置-vs-单配置生成器)。
+也就是 4 个 buildPreset 是为了"切到其中一种"提供入口，**不是真的能并存 4 种 build_type
+共享一份 configure**。
+
+### 想要 Windows MSVC ABI + Conan 同时保留 4 种 build type？
+
+改用 **`clang-cl-{debug,release,relwithdebinfo,minsizerel}-conan`**：
+
+- 单配置 Ninja，每个 build type 各自有独立的 `build/clang-cl-<type>-conan/` 目录与
+  `conan_toolchain.cmake`，互不覆盖
+- clang-cl 与 cl.exe **使用同一套 MSVC ABI**（都链接 MSVC STL、用 MSVC 的 name mangling），
+  二进制层面与 cl.exe 互通，对 99% 的代码而言行为等价
+- 唯一差别：clang-cl 额外支持一些 GCC/Clang 风格的 builtin/attribute；想要"绝对纯
+  cl.exe"才需要继续用 msvc-conan
+
+### 为什么仓库还保留 msvc-conan / ninja-mc-msvc-conan
+
+虽然有摩擦，仍保留是因为：
+
+1. **教学价值**：让读者亲眼看到"VS generator + Conan"与"Ninja MC + Conan"的实际行为
+2. **想跑纯 cl.exe + VS .sln 调试**的用户仍可用 `msvc-conan` 接 VS IDE
+3. **对称性**：preset 全景图保持"vcpkg ↔ conan 一一对应"
 
 ---
 

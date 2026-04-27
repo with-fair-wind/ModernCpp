@@ -5,5 +5,9 @@ gtest/1.15.0
 CMakeDeps
 CMakeToolchain
 
-[layout]
-cmake_layout
+# No [layout] section on purpose. With cmake_layout + --output-folder=X,
+# Conan writes conan_toolchain.cmake to X/build/<BuildType>/generators/, which
+# is hard to reference from a CMake preset whose path can't depend on build type.
+# Without a layout, --output-folder=X puts conan_toolchain.cmake directly at
+# X/conan_toolchain.cmake, which the _conan preset then references as
+# ${sourceDir}/build/${presetName}/conan_toolchain.cmake. Simple and stable.

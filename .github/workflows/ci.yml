@@ -25,21 +25,48 @@ jobs:
             preset: gcc-relwithdebinfo
             cc: gcc-13
             cxx: g++-13
-            triplet: x64-linux
 
           - name: linux-clang
             os: ubuntu-24.04
             preset: clang-relwithdebinfo
             cc: clang-18
             cxx: clang++-18
-            triplet: x64-linux
+
+          # Sanitizer job: Debug + ASan/UBSan via MCPP_ENABLE_SANITIZERS.
+          # Catches memory / UB regressions that release-mode jobs miss.
+          - name: linux-gcc-asan
+            os: ubuntu-24.04
+            preset: gcc-debug
+            cc: gcc-13
+            cxx: g++-13
+            extra-config: -DMCPP_ENABLE_SANITIZERS=ON
+
+          # TODO(conan): re-enable once CMakeDeps + find_package(GTest CONFIG)
+          # path is debugged. Symptom is "fatal error: gtest/gtest.h: No such
+          # file or directory" at build time even though configure succeeds.
+          # Likely root cause: <Pkg>Config.cmake placement under --output-folder
+          # doesn't match where CMAKE_PREFIX_PATH (set by conan_toolchain.cmake)
+          # tells find_package to look. Steps and conanfile.txt notes are kept
+          # below in this file so re-enabling is just removing the comment-out.
+          # - name: linux-gcc-conan
+          #   os: ubuntu-24.04
+          #   preset: gcc-relwithdebinfo-conan
+          #   cc: gcc-13
+          #   cxx: g++-13
+          #   uses-conan: true
 
           - name: windows-msvc
             os: windows-2022
             preset: msvc
             build-preset: msvc-relwithdebinfo
             test-preset:  msvc-relwithdebinfo
-            triplet: x64-windows
+
+          # clang-cl on Windows is otherwise unverified.
+          - name: windows-clang-cl
+            os: windows-2022
+            preset: clang-cl-relwithdebinfo
+            build-preset: clang-cl-relwithdebinfo
+            test-preset:  clang-cl-relwithdebinfo
 
     env:
       VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
@@ -58,18 +85,19 @@ jobs:
       # Toolchain (Linux: install desired GCC/Clang; Windows: rely on VS)
       # ------------------------------------------------------------------
       - name: Install GCC 13 (Linux)
-        if: matrix.name == 'linux-gcc'
+        if: startsWith(matrix.name, 'linux-gcc')
         run: sudo apt-get update && sudo apt-get install -y gcc-13 g++-13 ninja-build
 
       - name: Install Clang 18 (Linux)
+        # linux-clang uses clang as its primary compiler, but it links against
+        # libstdc++ from g++-13 to get full C++23 library coverage (libc++ on
+        # ubuntu-24.04 lags). So we install both.
         if: matrix.name == 'linux-clang'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-18 lld-18 ninja-build
-          # libstdc++-13 needed for full C++23 library support
-          sudo apt-get install -y g++-13
+          sudo apt-get install -y clang-18 lld-18 ninja-build g++-13
 
-      - name: Install Ninja (Windows MSVC preset uses VS generator, but vcpkg likes ninja around)
+      - name: Install Ninja (Windows)
         if: runner.os == 'Windows'
         run: choco install ninja -y
 
@@ -80,16 +108,43 @@ jobs:
           arch: x64
 
       # ------------------------------------------------------------------
+      # Conan (only for jobs with uses-conan: true)
+      # ------------------------------------------------------------------
+      - name: Setup Python (Conan)
+        if: matrix.uses-conan
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Conan
+        if: matrix.uses-conan
+        run: |
+          pip install --upgrade conan
+          conan profile detect --force
+
+      - name: Conan install
+        if: matrix.uses-conan
+        env:
+          CC:  ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          conan install . \
+            --output-folder=build/${{ matrix.preset }} \
+            --build=missing \
+            -s compiler.cppstd=23
+
+      # ------------------------------------------------------------------
       # vcpkg: bootstrap once, cache binaries via GitHub Actions cache
+      # (Skipped for Conan jobs — they don't touch vcpkg.)
       # ------------------------------------------------------------------
       - name: Setup vcpkg
+        if: '!matrix.uses-conan'
         uses: lukka/run-vcpkg@v11
         with:
           vcpkgGitCommitId: '5ee5eee0d3e9c6098b24d263e9099edcdcef6631'
 
-      - name: Set VCPKG_DEFAULT_TRIPLET
-        shell: bash
-        run: echo "VCPKG_DEFAULT_TRIPLET=${{ matrix.triplet }}" >> "$GITHUB_ENV"
+      # Triplet selection is pinned in CMakePresets.json on Windows; on Linux
+      # vcpkg auto-detects from the host (x64-linux). No env override needed.
 
       # ------------------------------------------------------------------
       # Configure
@@ -100,14 +155,14 @@ jobs:
           CC:  ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
           VCPKG_ROOT: ${{ github.workspace }}/vcpkg
-        run: cmake --preset ${{ matrix.preset }}
+        run: cmake --preset ${{ matrix.preset }} ${{ matrix.extra-config }}
 
-      - name: Configure (Windows MSVC)
+      - name: Configure (Windows)
         if: runner.os == 'Windows'
         env:
           VCPKG_ROOT: ${{ github.workspace }}/vcpkg
         shell: pwsh
-        run: cmake --preset ${{ matrix.preset }}
+        run: cmake --preset ${{ matrix.preset }} ${{ matrix.extra-config }}
 
       # ------------------------------------------------------------------
       # Build & test
@@ -120,15 +175,15 @@ jobs:
         if: runner.os == 'Linux'
         run: ctest --preset ${{ matrix.preset }}
 
-      - name: Build (Windows MSVC)
+      - name: Build (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: cmake --build --preset ${{ matrix.build-preset }} --parallel
+        run: cmake --build --preset ${{ matrix.build-preset || matrix.preset }} --parallel
 
-      - name: Test (Windows MSVC)
+      - name: Test (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: ctest --preset ${{ matrix.test-preset }}
+        run: ctest --preset ${{ matrix.test-preset || matrix.preset }}
 
   lint:
     name: clang-format check

@@ -1,0 +1,58 @@
+# EditorConfig — https://editorconfig.org
+# Cross-IDE baseline for files NOT covered by clang-format
+# (CMake, JSON, Markdown, YAML, shell scripts).
+# Most editors auto-detect this file; in VS Code install the EditorConfig extension.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+# C/C++ — clang-format owns these (.clang-format), values here are fallback
+# only for editors before clang-format kicks in.
+[*.{c,cc,cpp,cxx,h,hh,hpp,hxx}]
+indent_size = 4
+
+# CMake
+[CMakeLists.txt]
+indent_size = 4
+
+[*.cmake]
+indent_size = 4
+
+# JSON (CMakePresets.json, vcpkg.json, .clangd config snippets, etc.)
+[*.json]
+indent_size = 4
+
+# YAML (.github/workflows/*.yml, .clangd, .clang-format)
+[*.{yml,yaml}]
+indent_size = 2
+
+# .clangd / .clang-format / .clang-tidy (YAML-flavored)
+[.clang*]
+indent_size = 2
+
+# Markdown — preserve trailing whitespace because two trailing spaces = <br>
+[*.md]
+indent_size = 2
+trim_trailing_whitespace = false
+
+# Shell
+[*.sh]
+indent_size = 4
+
+# Windows batch / PowerShell — CRLF is the convention there
+[*.{bat,cmd}]
+end_of_line = crlf
+indent_size = 4
+
+[*.ps1]
+indent_size = 4
+
+# Makefiles require literal tabs
+[{Makefile,*.mk}]
+indent_style = tab

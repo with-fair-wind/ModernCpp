@@ -135,13 +135,14 @@ Diagnostics:
 
 ```yaml
 CompileFlags:
-  CompilationDatabase: build/mingw-gcc-relwithdebinfo  # compile_commands.json 所在目录
-  Add:                                              # 追加到所有命令的 flag
+  CompilationDatabase: .          # compile_commands.json 所在目录
+                                  # 本仓库由 CMake 自动镜像到源码根，详见 §7.2
+  Add:                            # 追加到所有命令的 flag
     - -std=c++23
     - -Wall
     - -DDEBUG_MODE
     - -isystem/path/to/private/include
-  Remove:                                           # 从命令中移除的 flag
+  Remove:                         # 从命令中移除的 flag
     - -Werror
     - -Werror=*
     - -fsanitize=*                                  # IDE 不需要 sanitizer 链接
@@ -609,7 +610,7 @@ vim.lsp.enable('clangd')
 
 ```yaml
 CompileFlags:
-  CompilationDatabase: build/mingw-gcc-relwithdebinfo
+  CompilationDatabase: .   # 见 §7.2，本仓库已采用"自动镜像到源码根"方案
   Add: [-std=c++23, -Wall, -Wextra, -Wpedantic]
 ```
 
@@ -617,32 +618,33 @@ CompileFlags:
 
 ---
 
-### 7.2 多 Preset 切换
+### 7.2 多 Preset 切换（本仓库的解决方案）
 
-`.clangd` 硬编码一个 preset 不灵活。三种解决方案：
-
-#### 方案 A：把 .clangd 加进 .gitignore，每人本地维护
-
-```bash
-# .gitignore
-.clangd
-```
-
-每次切 preset 改本地 `.clangd` 一行。
-
-#### 方案 B：CMake 自动复制 compile_commands.json 到根目录
+`.clangd` 硬编码某个 preset 的 build 目录不灵活——切到别的 preset 后 clangd 还在读旧
+目录。本仓库采用 **CMake 自动镜像** 方案：顶层 `CMakeLists.txt` 注册了一个 ALL custom
+target `mcpp_link_compile_commands`，每次 build 时把
+`build/<active-preset>/compile_commands.json` 复制到源码根目录：
 
 ```cmake
-# CMakeLists.txt
-add_custom_target(copy_compile_commands ALL
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${CMAKE_BINARY_DIR}/compile_commands.json
-    ${CMAKE_SOURCE_DIR}/compile_commands.json)
+add_custom_target(mcpp_link_compile_commands ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_BINARY_DIR}/compile_commands.json"
+        "${CMAKE_SOURCE_DIR}/compile_commands.json"
+    BYPRODUCTS "${CMAKE_SOURCE_DIR}/compile_commands.json")
 ```
 
-`.clangd` 删掉 `CompilationDatabase` 字段，clangd 自动从根目录加载。
+`.clangd` 配 `CompilationDatabase: .`，clangd 直接从源码根读 DB。结果：**切 preset
+后只需要重跑一次 `cmake --build --preset <new>`，不需要手动改 `.clangd`**。
+多配置生成器（VS）不产 `compile_commands.json`，`if(NOT _mcpp_is_multi_config)`
+门控会跳过此 target——VS 用户走 IntelliSense 或装 LLVM 插件。
 
-#### 方案 C：用环境变量（少见）
+#### 备选方案：把 .clangd 加进 .gitignore
+
+如果不喜欢"复制到源码根"方案（例如担心源码根被污染），也可以把 `.clangd` 加进
+`.gitignore`，每人本地维护一份 `CompilationDatabase: build/<my-preset>` 的硬编码版本。
+本仓库未采用此方案——成本更高且无法跨设备同步。
+
+#### 备选方案：用环境变量（少见）
 
 CLI 参数 `--compile-commands-dir="$PRESET_BUILD_DIR"`，shell 启动 clangd 前 export 变量。
 
@@ -855,7 +857,7 @@ I[xx:xx:xx.xxx] Compiler driver F:\scoop\apps\msys2\current\ucrt64\bin\g++.exe i
 
 ```yaml
 CompileFlags:
-  CompilationDatabase: build/mingw-gcc-relwithdebinfo
+  CompilationDatabase: .
   Add: [-std=c++23, -Wall, -Wextra, -Wpedantic]
 
 Completion:

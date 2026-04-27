@@ -284,7 +284,7 @@ ModernCpp/
 
 | 文件 | 主要内容 |
 |---|---|
-| **`.clangd`** | `CompilationDatabase: build/mingw-gcc-relwithdebinfo`、`-std=c++23 -Wall -Wextra -Wpedantic`、`AllScopes/IWYU`、`MissingIncludes/UnusedIncludes: Strict`、ClangTidy 启用组、Index.Background: Build、InlayHints 全开 |
+| **`.clangd`** | `CompilationDatabase: .`（DB 由 CMake 自动镜像到源码根）、`-std=c++23 -Wall -Wextra -Wpedantic`、`AllScopes/IWYU`、`MissingIncludes/UnusedIncludes: Strict`、ClangTidy 启用组、Index.Background: Build、InlayHints 全开 |
 | **`.clang-format`** | `BasedOnStyle: Google` + 4 空格缩进 + 100 列宽 + `PointerAlignment: Left` + `IncludeBlocks: Regroup` |
 | **`.clang-tidy`** | 主流 6 组 check（bugprone/cert/cppcoreguidelines/modernize/performance/readability）+ Google 命名风格 + 函数大小阈值 |
 
@@ -318,14 +318,16 @@ ModernCpp/
 
 ### 7.3 切换 build preset 时
 
-只需修改 `.clangd` 中一行：
+本仓库不需要改 `.clangd`：顶层 `CMakeLists.txt` 注册的 `mcpp_link_compile_commands`
+custom target 会在每次 build 时把活跃 preset 的 `compile_commands.json` 镜像到源码
+根目录，clangd 配 `CompilationDatabase: .` 即可拿到最新 DB。
 
-```yaml
-CompileFlags:
-  CompilationDatabase: build/mingw-gcc-debug    # 从 relwithdebinfo 切到 debug
+```bash
+cmake --preset mingw-gcc-debug          # 切到 debug preset
+cmake --build --preset mingw-gcc-debug  # build 时自动更新源码根的 compile_commands.json
 ```
 
-clangd 会自动重新加载（或通过编辑器命令 `clangd: Restart language server` 强制重启）。
+clangd 检测到 DB 变化会自动重新加载（或通过编辑器命令 `clangd: Restart language server` 强制重启）。
 
 ---
 

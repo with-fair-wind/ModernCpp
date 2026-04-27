@@ -26,7 +26,7 @@
         {
             "name": "_conan",
             "hidden": true,
-            "description": "Run `conan install . --output-folder=build/<preset> --build=missing` first; this preset then picks up the generated conan_toolchain.cmake.",
+            "description": "Run `conan install . --output-folder=build/<preset> --build=missing` first; this preset then picks up the conan_toolchain.cmake that Conan writes directly under <output-folder>/. (conanfile.txt intentionally has no [layout] — see comment there.)",
             "cacheVariables": {
                 "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/conan_toolchain.cmake"
             }
@@ -286,10 +286,45 @@
         {
             "name": "msvc-conan",
             "displayName": "MSVC (VS 2022, Conan)",
-            "description": "Visual Studio 17 2022 generator + Conan toolchain. Run `conan install . --output-folder=build/msvc-conan --build=missing` first.",
+            "description": "VS 2022 multi-config + Conan. NOTE: Conan generates a per-build-type toolchain file; running `conan install` for a 2nd build_type OVERWRITES the previous one. So in practice this preset only supports ONE build_type at a time. For independent build types under MSVC ABI + Conan, use clang-cl-*-conan (single-config Ninja, 4 separate build dirs) or ninja-mc-msvc-conan (Ninja Multi-Config, same caveat).",
             "inherits": ["_conan", "_base"],
             "generator": "Visual Studio 17 2022",
             "architecture": { "value": "x64", "strategy": "set" },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+
+        {
+            "name": "ninja-mc-msvc",
+            "displayName": "MSVC (Ninja Multi-Config, vcpkg)",
+            "description": "VS-like multi-config experience without VS — uses CMake's Ninja Multi-Config generator + cl.exe. Requires running from a VS Developer Prompt.",
+            "inherits": ["_vcpkg", "_base"],
+            "generator": "Ninja Multi-Config",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER":   "cl",
+                "CMAKE_CXX_COMPILER": "cl",
+                "VCPKG_TARGET_TRIPLET": "x64-windows"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+
+        {
+            "name": "ninja-mc-msvc-conan",
+            "displayName": "MSVC (Ninja Multi-Config, Conan)",
+            "description": "Ninja Multi-Config + cl.exe + Conan. Same per-build-type-toolchain caveat as msvc-conan: each `conan install` overwrites the previous toolchain, so practically one build_type at a time. Requires VS Developer Prompt.",
+            "inherits": ["_conan", "_base"],
+            "generator": "Ninja Multi-Config",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER":   "cl",
+                "CMAKE_CXX_COMPILER": "cl"
+            },
             "condition": {
                 "type": "equals",
                 "lhs": "${hostSystemName}",
@@ -413,6 +448,11 @@
         { "name": "msvc-relwithdebinfo", "configurePreset": "msvc", "configuration": "RelWithDebInfo" },
         { "name": "msvc-minsizerel",     "configurePreset": "msvc", "configuration": "MinSizeRel" },
 
+        { "name": "ninja-mc-msvc-debug",          "configurePreset": "ninja-mc-msvc", "configuration": "Debug" },
+        { "name": "ninja-mc-msvc-release",        "configurePreset": "ninja-mc-msvc", "configuration": "Release" },
+        { "name": "ninja-mc-msvc-relwithdebinfo", "configurePreset": "ninja-mc-msvc", "configuration": "RelWithDebInfo" },
+        { "name": "ninja-mc-msvc-minsizerel",     "configurePreset": "ninja-mc-msvc", "configuration": "MinSizeRel" },
+
         { "name": "clang-cl-debug",          "configurePreset": "clang-cl-debug" },
         { "name": "clang-cl-release",        "configurePreset": "clang-cl-release" },
         { "name": "clang-cl-relwithdebinfo", "configurePreset": "clang-cl-relwithdebinfo" },
@@ -442,6 +482,11 @@
         { "name": "msvc-release-conan",        "configurePreset": "msvc-conan", "configuration": "Release" },
         { "name": "msvc-relwithdebinfo-conan", "configurePreset": "msvc-conan", "configuration": "RelWithDebInfo" },
         { "name": "msvc-minsizerel-conan",     "configurePreset": "msvc-conan", "configuration": "MinSizeRel" },
+
+        { "name": "ninja-mc-msvc-debug-conan",          "configurePreset": "ninja-mc-msvc-conan", "configuration": "Debug" },
+        { "name": "ninja-mc-msvc-release-conan",        "configurePreset": "ninja-mc-msvc-conan", "configuration": "Release" },
+        { "name": "ninja-mc-msvc-relwithdebinfo-conan", "configurePreset": "ninja-mc-msvc-conan", "configuration": "RelWithDebInfo" },
+        { "name": "ninja-mc-msvc-minsizerel-conan",     "configurePreset": "ninja-mc-msvc-conan", "configuration": "MinSizeRel" },
 
         { "name": "clang-cl-debug-conan",          "configurePreset": "clang-cl-debug-conan" },
         { "name": "clang-cl-release-conan",        "configurePreset": "clang-cl-release-conan" },
@@ -482,6 +527,11 @@
         { "name": "msvc-relwithdebinfo", "inherits": "_test-base", "configurePreset": "msvc", "configuration": "RelWithDebInfo" },
         { "name": "msvc-minsizerel",     "inherits": "_test-base", "configurePreset": "msvc", "configuration": "MinSizeRel" },
 
+        { "name": "ninja-mc-msvc-debug",          "inherits": "_test-base", "configurePreset": "ninja-mc-msvc", "configuration": "Debug" },
+        { "name": "ninja-mc-msvc-release",        "inherits": "_test-base", "configurePreset": "ninja-mc-msvc", "configuration": "Release" },
+        { "name": "ninja-mc-msvc-relwithdebinfo", "inherits": "_test-base", "configurePreset": "ninja-mc-msvc", "configuration": "RelWithDebInfo" },
+        { "name": "ninja-mc-msvc-minsizerel",     "inherits": "_test-base", "configurePreset": "ninja-mc-msvc", "configuration": "MinSizeRel" },
+
         { "name": "clang-cl-debug",          "inherits": "_test-base", "configurePreset": "clang-cl-debug" },
         { "name": "clang-cl-release",        "inherits": "_test-base", "configurePreset": "clang-cl-release" },
         { "name": "clang-cl-relwithdebinfo", "inherits": "_test-base", "configurePreset": "clang-cl-relwithdebinfo" },
@@ -511,6 +561,11 @@
         { "name": "msvc-release-conan",        "inherits": "_test-base", "configurePreset": "msvc-conan", "configuration": "Release" },
         { "name": "msvc-relwithdebinfo-conan", "inherits": "_test-base", "configurePreset": "msvc-conan", "configuration": "RelWithDebInfo" },
         { "name": "msvc-minsizerel-conan",     "inherits": "_test-base", "configurePreset": "msvc-conan", "configuration": "MinSizeRel" },
+
+        { "name": "ninja-mc-msvc-debug-conan",          "inherits": "_test-base", "configurePreset": "ninja-mc-msvc-conan", "configuration": "Debug" },
+        { "name": "ninja-mc-msvc-release-conan",        "inherits": "_test-base", "configurePreset": "ninja-mc-msvc-conan", "configuration": "Release" },
+        { "name": "ninja-mc-msvc-relwithdebinfo-conan", "inherits": "_test-base", "configurePreset": "ninja-mc-msvc-conan", "configuration": "RelWithDebInfo" },
+        { "name": "ninja-mc-msvc-minsizerel-conan",     "inherits": "_test-base", "configurePreset": "ninja-mc-msvc-conan", "configuration": "MinSizeRel" },
 
         { "name": "clang-cl-debug-conan",          "inherits": "_test-base", "configurePreset": "clang-cl-debug-conan" },
         { "name": "clang-cl-release-conan",        "inherits": "_test-base", "configurePreset": "clang-cl-release-conan" },

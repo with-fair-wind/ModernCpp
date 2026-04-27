@@ -31,8 +31,9 @@ set(_mcpp_msvc_flags
     /utf-8
     /Zc:__cplusplus
     /Zc:preprocessor
-    /EHsc
 )
+# Note: /EHsc is the MSVC default exception model — CMake injects it for C++
+# targets automatically, so we don't repeat it here.
 
 target_compile_options(mcpp_warnings INTERFACE
     $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:${_mcpp_gnu_like_flags}>
