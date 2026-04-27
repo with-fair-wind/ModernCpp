@@ -247,12 +247,15 @@ list(PREPEND CMAKE_PREFIX_PATH "/path/to/build/Release/generators")
 [cmake-presets-guide.md §8](cmake-presets-guide.md#8-toolchain-hook-机制)）：
 
 ```json
-"CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/generators/conan_toolchain.cmake"
+"CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/conan_toolchain.cmake"
 ```
 
-注意路径里的 `generators/` 子目录——`cmake_layout` + `--output-folder` 的组合下，
-Conan 把 toolchain / `<Pkg>Config.cmake` 等文件统一写在 `<output-folder>/generators/`
-而不是 `<output-folder>/` 本身。
+**本仓库 `conanfile.txt` 故意不写 `[layout] cmake_layout`**：cmake_layout 会把生成
+的 toolchain 路径变成 `<output-folder>/build/<BuildType>/generators/conan_toolchain.cmake`，
+带"build_type 子目录"——而 CMake preset 的 cache 变量是固定字符串、不能按 build_type
+动态变化（一个 leaf preset 已经隐含一个 build_type，但路径表达式没法用）。去掉
+`cmake_layout` 后 Conan 默认行为是把 toolchain 直接写在 `--output-folder` 根，
+preset 路径 `${sourceDir}/build/${presetName}/conan_toolchain.cmake` 一行到位。
 
 ### CMakeDeps → `<pkg>-config.cmake`
 
@@ -309,22 +312,24 @@ build/
 
 构建类型在路径里，所以同一项目多 build_type 不冲突。
 
-### 本仓库的覆盖：per-preset 输出目录
+### 本仓库的选择：per-preset 输出目录 + 不用 cmake_layout
 
-`conan install` 默认会用 `cmake_layout` 的路径，但本仓库希望每个 preset 一个目录，所以
-**用命令行覆盖输出目录**：
+本仓库希望每个 preset 一个独立 build 目录、且 toolchain 路径**不带 build_type 子层**
+（preset cache 变量没法按 build_type 动态展开），所以 `conanfile.txt` 不写 `[layout]`，
+配合 `--output-folder=build/<preset>` 让 Conan 把 toolchain 直接写在 preset 同根：
 
 ```bash
 conan install . --output-folder=build/gcc-debug-conan --build=missing
 ```
 
-`--output-folder` 让 Conan 把 generators 写到 `build/gcc-debug-conan/generators/`，
-与 preset 的 `binaryDir` 同根。
+`--output-folder` 让 Conan 把 toolchain / `<Pkg>Config.cmake` 等 generators 直接写到
+`build/gcc-debug-conan/`（无 `generators/` 子目录，因为本仓库的 `conanfile.txt`
+不带 `[layout] cmake_layout`），与 preset 的 `binaryDir` 完全对齐。
 
 然后 preset 把 toolchain 路径写死成：
 
 ```json
-"CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/generators/conan_toolchain.cmake"
+"CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/conan_toolchain.cmake"
 ```
 
 `${presetName}` 会展开成 `gcc-debug-conan`，正好命中 `conan install` 写入的
@@ -337,7 +342,7 @@ conan install . --output-folder=build/gcc-debug-conan --build=missing
     "name": "_conan",
     "hidden": true,
     "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/generators/conan_toolchain.cmake"
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/conan_toolchain.cmake"
     }
 }
 ```
@@ -420,7 +425,7 @@ build"，是日常开发的安全默认。
 | --- | --- | --- |
 | 决定要装啥 | `vcpkg.json` | `conanfile.txt` + profile + 命令行 settings |
 | 触发安装 | CMake configure 时 toolchain 自动跑 | **`conan install` 命令显式跑** |
-| 安装完产物 | `vcpkg_installed/` | `build/<preset>/generators/conan_toolchain.cmake` + 同目录下的 `<Pkg>Config.cmake` 等 |
+| 安装完产物 | `vcpkg_installed/` | `build/<preset>/conan_toolchain.cmake` + 同目录下的 `<Pkg>Config.cmake` 等 |
 | CMake 使用 | toolchain 注册路径 | toolchain 注册路径 + Deps 文件被 `find_package` 命中 |
 
 vcpkg 把"装包"塞进 toolchain 的 side effect；Conan 把它独立成命令。Conan 的方式让"装
@@ -553,7 +558,7 @@ ctest --preset msvc-debug-conan
 
 # 想换成 Release：
 conan install . -s build_type=Release --output-folder=build/msvc-conan --build=missing
-                                 # ↑ 这一步会覆盖 build/msvc-conan/generators/conan_toolchain.cmake
+                                 # ↑ 这一步会覆盖 build/msvc-conan/conan_toolchain.cmake
 cmake --preset msvc-conan       # 重新 configure 让 CMake 拿新的 toolchain
 cmake --build --preset msvc-release-conan
 ```
