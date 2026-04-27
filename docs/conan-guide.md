@@ -460,10 +460,16 @@ toolchain：
 [cmake-presets-guide.md §4 本仓库 preset 全景图](cmake-presets-guide.md#4-本仓库-preset-全景图)）：
 
 ```
-_base + _conan → _gcc-conan → gcc-debug-conan
-                              gcc-release-conan
-                              gcc-relwithdebinfo-conan
+_base + _conan → _gcc-conan         → gcc-{debug,release,relwithdebinfo,minsizerel}-conan
+              → _clang-conan        → clang-{debug,release,relwithdebinfo,minsizerel}-conan
+              → _clang-cl-conan     → clang-cl-{debug,release,relwithdebinfo,minsizerel}-conan
+              → _mingw-gcc-conan    → mingw-gcc-{debug,release,relwithdebinfo,minsizerel}-conan
+              → _mingw-clang-conan  → mingw-clang-{debug,release,relwithdebinfo,minsizerel}-conan
+              → msvc-conan (multi-config)
+                  build/test: msvc-{debug,release,relwithdebinfo,minsizerel}-conan
 ```
+
+`*-conan` preset 与 vcpkg 一侧（无 `-conan` 后缀）一一对应、四种 build type 全覆盖。
 
 ### 为什么 `*-conan` preset 不固化 triplet
 
@@ -473,9 +479,9 @@ Conan **完全不读** `VCPKG_TARGET_TRIPLET`。Conan 用 `[settings]` 表达 AB
 
 ### MinGW 在 Conan 下的处理
 
-vcpkg 下 MinGW 用户必须用 UserPresets 覆盖 triplet（详见
-[vcpkg-guide.md §6](vcpkg-guide.md#6-mingw-专题)）。Conan 下 MinGW 不需要 UserPresets
-叠层 —— 用对应的 profile 即可：
+vcpkg 下仓库为 MinGW 提供专门的 `mingw-{gcc,clang}-*` preset 固化 triplet（详见
+[vcpkg-guide.md §6](vcpkg-guide.md#6-mingw-专题)）。Conan 下同样有平行的
+`mingw-{gcc,clang}-*-conan` preset，但 ABI 不靠 triplet 表达，而是靠 profile：
 
 ```bash
 # 一个针对 MinGW 的 profile（保存为 ~/.conan2/profiles/mingw-ucrt64）
@@ -490,10 +496,11 @@ os=Windows
 ```
 
 ```bash
-conan install . -pr=mingw-ucrt64 --output-folder=build/gcc-debug-conan --build=missing
+conan install . -pr=mingw-ucrt64 --output-folder=build/mingw-gcc-debug-conan --build=missing
+cmake --preset mingw-gcc-debug-conan
 ```
 
-`-pr=` 指定 profile，覆盖默认。剩下 cmake 步骤照旧。
+`-pr=` 指定 profile，覆盖默认；`--output-folder` 必须与目标 preset 名一致。
 
 ### MSVC + Conan 的多配置
 
@@ -512,8 +519,10 @@ conan install . -pr=mingw-ucrt64 --output-folder=build/gcc-debug-conan --build=m
 buildPreset 用 `configuration` 选构建类型：
 
 ```json
-{ "name": "msvc-debug-conan",   "configurePreset": "msvc-conan", "configuration": "Debug" },
-{ "name": "msvc-release-conan", "configurePreset": "msvc-conan", "configuration": "Release" }
+{ "name": "msvc-debug-conan",          "configurePreset": "msvc-conan", "configuration": "Debug" },
+{ "name": "msvc-release-conan",        "configurePreset": "msvc-conan", "configuration": "Release" },
+{ "name": "msvc-relwithdebinfo-conan", "configurePreset": "msvc-conan", "configuration": "RelWithDebInfo" },
+{ "name": "msvc-minsizerel-conan",     "configurePreset": "msvc-conan", "configuration": "MinSizeRel" }
 ```
 
 但 Conan 的 toolchain 是 per-build-type 的（一个 profile 设了一个 build_type）。本仓库

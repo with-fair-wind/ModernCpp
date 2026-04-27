@@ -450,10 +450,10 @@ Diagnostics:
 
 ```bash
 # 检查单个文件（自动找 compile_commands.json）
-clang-tidy -p build/my-gcc-relwithdebinfo src/foo.cpp
+clang-tidy -p build/mingw-gcc-relwithdebinfo src/foo.cpp
 
 # 自动修复
-clang-tidy -p build/my-gcc-relwithdebinfo --fix src/foo.cpp
+clang-tidy -p build/mingw-gcc-relwithdebinfo --fix src/foo.cpp
 
 # 只跑特定 check（覆盖 .clang-tidy）
 clang-tidy --checks='-*,bugprone-*' src/foo.cpp
@@ -468,12 +468,12 @@ clang-tidy --dump-config
 clang-tidy --checks=readability-function-size --dump-config
 
 # 批量分析（LLVM 自带脚本）
-run-clang-tidy.py -p build/my-gcc-relwithdebinfo \
+run-clang-tidy.py -p build/mingw-gcc-relwithdebinfo \
   -header-filter='^.*/(src|include)/.*' \
   src/
 
 # 并行 + 修复
-run-clang-tidy.py -p build/my-gcc-relwithdebinfo -fix
+run-clang-tidy.py -p build/mingw-gcc-relwithdebinfo -fix
 ```
 
 ---
@@ -486,10 +486,10 @@ run-clang-tidy.py -p build/my-gcc-relwithdebinfo -fix
 - name: clang-tidy
   run: |
     sudo apt-get install -y clang-tidy
-    cmake --preset my-gcc-relwithdebinfo
-    cmake --build build/my-gcc-relwithdebinfo
+    cmake --preset mingw-gcc-relwithdebinfo
+    cmake --build build/mingw-gcc-relwithdebinfo
     git ls-files 'modules/**/*.cpp' \
-      | xargs clang-tidy -p build/my-gcc-relwithdebinfo --warnings-as-errors='*'
+      | xargs clang-tidy -p build/mingw-gcc-relwithdebinfo --warnings-as-errors='*'
 ```
 
 ### 13.2 只检查 PR 改动的文件
@@ -497,7 +497,7 @@ run-clang-tidy.py -p build/my-gcc-relwithdebinfo -fix
 ```bash
 git diff --name-only origin/main...HEAD \
   | grep -E '\.(cpp|hpp|h)$' \
-  | xargs -r clang-tidy -p build/my-gcc-relwithdebinfo
+  | xargs -r clang-tidy -p build/mingw-gcc-relwithdebinfo
 ```
 
 ### 13.3 pre-commit hook
@@ -506,7 +506,7 @@ git diff --name-only origin/main...HEAD \
 #!/usr/bin/env bash
 files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(cpp|hpp|h)$')
 [ -z "$files" ] && exit 0
-clang-tidy -p build/my-gcc-relwithdebinfo --warnings-as-errors='*' $files
+clang-tidy -p build/mingw-gcc-relwithdebinfo --warnings-as-errors='*' $files
 ```
 
 ---

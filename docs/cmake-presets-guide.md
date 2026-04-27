@@ -389,9 +389,10 @@ Available configure presets:
 ### MinGW 用户怎么办
 
 MinGW（msys2 ucrt64 环境）虽然在 Windows 上，但用 GNU 工具链 + GNU ABI。本仓库的
-`_gcc` 在 Windows 上不可见，这正是 condition 想避免的"误用"。MinGW 用户的正确做法是
-在本地 [`CMakeUserPresets.json`](#9-cmakeuserpresetsjson本地叠层) 里叠一层带
-`"condition": null` 的 leaf，详见 [vcpkg-guide.md §6 MinGW 专题](vcpkg-guide.md#6-mingw-专题)。
+`_gcc` 在 Windows 上不可见，这正是 condition 想避免的"误用"。仓库为 MinGW 单独提供了
+两组一等公民 preset：`mingw-gcc-*` 与 `mingw-clang-*`，门控为
+`hostSystemName == Windows`，triplet 已固化为 `x64-mingw-dynamic`，开箱即用。详见
+[vcpkg-guide.md §6 MinGW 专题](vcpkg-guide.md#6-mingw-专题)。
 
 ---
 
@@ -563,28 +564,39 @@ CMake 在第一次 `project()` 调用之前，会**先加载** `CMAKE_TOOLCHAIN_
 
 ### 典型用途
 
-- **MinGW 用户**：覆盖 vcpkg triplet 为 `x64-mingw-dynamic`（详见 [vcpkg-guide.md §6](vcpkg-guide.md#6-mingw-专题)）
-- **本地编译器路径不在 PATH 里**：覆盖 `CMAKE_C_COMPILER` 为绝对路径
+- **本地编译器路径不在 PATH 里**：继承 `mingw-gcc-debug` 等 leaf 后覆盖
+  `CMAKE_C_COMPILER` 为绝对路径（如 `F:/scoop/apps/msys2/current/ucrt64/bin/gcc.exe`）
+- **想用非默认 triplet**：例如继承 `mingw-gcc-debug` 改成 `x64-mingw-static`，详见
+  [vcpkg-guide.md §6 备选方案 2](vcpkg-guide.md#6-mingw-专题)
 - **个人偏好的 build 目录布局**：覆盖 `binaryDir`
 - **添加只对自己有用的 leaf**：例如带特殊 sanitizer 配置的 `my-debug-asan`
+
+> 注：MinGW UCRT64 的 vcpkg triplet 已经在仓库的 `mingw-gcc-*` / `mingw-clang-*`
+> preset 里固化为 `x64-mingw-dynamic`，**不再需要 UserPresets 叠层**。
 
 ### 与仓库 preset 的合并规则
 
 - 同名 preset：UserPresets 里的字段**覆盖**仓库版（按 cacheVariables 浅合并）
-- 不同名 preset：直接追加，能 `inherits` 仓库的 hidden preset
+- 不同名 preset：直接追加，能 `inherits` 仓库的 hidden 或公开 preset
 
-### MinGW 叠层模板（核心 5 行）
+### 叠层模板示例
 
 ```json
 {
-    "name": "_mingw-triplet",
-    "hidden": true,
-    "cacheVariables": { "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic" }
+    "version": 6,
+    "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+    "configurePresets": [
+        {
+            "name": "my-mingw-abs-path-debug",
+            "inherits": "mingw-gcc-debug",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER":   "F:/scoop/apps/msys2/current/ucrt64/bin/gcc.exe",
+                "CMAKE_CXX_COMPILER": "F:/scoop/apps/msys2/current/ucrt64/bin/g++.exe"
+            }
+        }
+    ]
 }
 ```
-
-完整可用模板（含 leaf、condition: null、buildPreset、testPreset）见
-[vcpkg-guide.md §6 MinGW 专题](vcpkg-guide.md#6-mingw-专题)。
 
 ---
 

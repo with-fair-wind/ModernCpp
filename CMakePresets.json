@@ -74,9 +74,11 @@
                 "CMAKE_CXX_COMPILER": "clang++"
             },
             "condition": {
-                "type": "notEquals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Windows"
+                "type": "anyOf",
+                "conditions": [
+                    { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" },
+                    { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" }
+                ]
             }
         },
         {
@@ -148,6 +150,74 @@
         },
 
         {
+            "name": "_mingw-gcc",
+            "hidden": true,
+            "description": "MinGW GCC (e.g. MSYS2 UCRT64). Run from the matching MSYS2 shell or with the ucrt64 bin dir on PATH.",
+            "inherits": ["_vcpkg", "_base"],
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER":   "gcc",
+                "CMAKE_CXX_COMPILER": "g++",
+                "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "mingw-gcc-debug",          "displayName": "MinGW GCC Debug",
+            "inherits": "_mingw-gcc", "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        },
+        {
+            "name": "mingw-gcc-release",        "displayName": "MinGW GCC Release",
+            "inherits": "_mingw-gcc", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+        },
+        {
+            "name": "mingw-gcc-relwithdebinfo", "displayName": "MinGW GCC RelWithDebInfo",
+            "inherits": "_mingw-gcc", "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
+        },
+        {
+            "name": "mingw-gcc-minsizerel",     "displayName": "MinGW GCC MinSizeRel",
+            "inherits": "_mingw-gcc", "cacheVariables": { "CMAKE_BUILD_TYPE": "MinSizeRel" }
+        },
+
+        {
+            "name": "_mingw-clang",
+            "hidden": true,
+            "description": "MinGW Clang (e.g. MSYS2 UCRT64 clang++). Run from the matching MSYS2 shell or with the ucrt64 bin dir on PATH.",
+            "inherits": ["_vcpkg", "_base"],
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER":   "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "mingw-clang-debug",          "displayName": "MinGW Clang Debug",
+            "inherits": "_mingw-clang", "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        },
+        {
+            "name": "mingw-clang-release",        "displayName": "MinGW Clang Release",
+            "inherits": "_mingw-clang", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+        },
+        {
+            "name": "mingw-clang-relwithdebinfo", "displayName": "MinGW Clang RelWithDebInfo",
+            "inherits": "_mingw-clang", "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
+        },
+        {
+            "name": "mingw-clang-minsizerel",     "displayName": "MinGW Clang MinSizeRel",
+            "inherits": "_mingw-clang", "cacheVariables": { "CMAKE_BUILD_TYPE": "MinSizeRel" }
+        },
+
+        {
             "name": "_gcc-conan",
             "hidden": true,
             "inherits": ["_conan", "_base"],
@@ -174,6 +244,10 @@
             "name": "gcc-relwithdebinfo-conan", "displayName": "GCC RelWithDebInfo (Conan)",
             "inherits": "_gcc-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
         },
+        {
+            "name": "gcc-minsizerel-conan",     "displayName": "GCC MinSizeRel (Conan)",
+            "inherits": "_gcc-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "MinSizeRel" }
+        },
 
         {
             "name": "_clang-conan",
@@ -185,9 +259,11 @@
                 "CMAKE_CXX_COMPILER": "clang++"
             },
             "condition": {
-                "type": "notEquals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Windows"
+                "type": "anyOf",
+                "conditions": [
+                    { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" },
+                    { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" }
+                ]
             }
         },
         {
@@ -202,6 +278,10 @@
             "name": "clang-relwithdebinfo-conan", "displayName": "Clang RelWithDebInfo (Conan)",
             "inherits": "_clang-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
         },
+        {
+            "name": "clang-minsizerel-conan",     "displayName": "Clang MinSizeRel (Conan)",
+            "inherits": "_clang-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "MinSizeRel" }
+        },
 
         {
             "name": "msvc-conan",
@@ -215,6 +295,105 @@
                 "lhs": "${hostSystemName}",
                 "rhs": "Windows"
             }
+        },
+
+        {
+            "name": "_clang-cl-conan",
+            "hidden": true,
+            "description": "LLVM clang-cl + Conan toolchain. Requires running from a VS Developer Prompt.",
+            "inherits": ["_conan", "_base"],
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER":   "clang-cl",
+                "CMAKE_CXX_COMPILER": "clang-cl"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "clang-cl-debug-conan",          "displayName": "clang-cl Debug (Conan)",
+            "inherits": "_clang-cl-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        },
+        {
+            "name": "clang-cl-release-conan",        "displayName": "clang-cl Release (Conan)",
+            "inherits": "_clang-cl-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+        },
+        {
+            "name": "clang-cl-relwithdebinfo-conan", "displayName": "clang-cl RelWithDebInfo (Conan)",
+            "inherits": "_clang-cl-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
+        },
+        {
+            "name": "clang-cl-minsizerel-conan",     "displayName": "clang-cl MinSizeRel (Conan)",
+            "inherits": "_clang-cl-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "MinSizeRel" }
+        },
+
+        {
+            "name": "_mingw-gcc-conan",
+            "hidden": true,
+            "description": "MinGW GCC (e.g. MSYS2 UCRT64) + Conan toolchain.",
+            "inherits": ["_conan", "_base"],
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER":   "gcc",
+                "CMAKE_CXX_COMPILER": "g++"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "mingw-gcc-debug-conan",          "displayName": "MinGW GCC Debug (Conan)",
+            "inherits": "_mingw-gcc-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        },
+        {
+            "name": "mingw-gcc-release-conan",        "displayName": "MinGW GCC Release (Conan)",
+            "inherits": "_mingw-gcc-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+        },
+        {
+            "name": "mingw-gcc-relwithdebinfo-conan", "displayName": "MinGW GCC RelWithDebInfo (Conan)",
+            "inherits": "_mingw-gcc-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
+        },
+        {
+            "name": "mingw-gcc-minsizerel-conan",     "displayName": "MinGW GCC MinSizeRel (Conan)",
+            "inherits": "_mingw-gcc-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "MinSizeRel" }
+        },
+
+        {
+            "name": "_mingw-clang-conan",
+            "hidden": true,
+            "description": "MinGW Clang (e.g. MSYS2 UCRT64 clang++) + Conan toolchain.",
+            "inherits": ["_conan", "_base"],
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER":   "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "mingw-clang-debug-conan",          "displayName": "MinGW Clang Debug (Conan)",
+            "inherits": "_mingw-clang-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        },
+        {
+            "name": "mingw-clang-release-conan",        "displayName": "MinGW Clang Release (Conan)",
+            "inherits": "_mingw-clang-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+        },
+        {
+            "name": "mingw-clang-relwithdebinfo-conan", "displayName": "MinGW Clang RelWithDebInfo (Conan)",
+            "inherits": "_mingw-clang-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
+        },
+        {
+            "name": "mingw-clang-minsizerel-conan",     "displayName": "MinGW Clang MinSizeRel (Conan)",
+            "inherits": "_mingw-clang-conan", "cacheVariables": { "CMAKE_BUILD_TYPE": "MinSizeRel" }
         }
     ],
 
@@ -239,17 +418,45 @@
         { "name": "clang-cl-relwithdebinfo", "configurePreset": "clang-cl-relwithdebinfo" },
         { "name": "clang-cl-minsizerel",     "configurePreset": "clang-cl-minsizerel" },
 
+        { "name": "mingw-gcc-debug",          "configurePreset": "mingw-gcc-debug" },
+        { "name": "mingw-gcc-release",        "configurePreset": "mingw-gcc-release" },
+        { "name": "mingw-gcc-relwithdebinfo", "configurePreset": "mingw-gcc-relwithdebinfo" },
+        { "name": "mingw-gcc-minsizerel",     "configurePreset": "mingw-gcc-minsizerel" },
+
+        { "name": "mingw-clang-debug",          "configurePreset": "mingw-clang-debug" },
+        { "name": "mingw-clang-release",        "configurePreset": "mingw-clang-release" },
+        { "name": "mingw-clang-relwithdebinfo", "configurePreset": "mingw-clang-relwithdebinfo" },
+        { "name": "mingw-clang-minsizerel",     "configurePreset": "mingw-clang-minsizerel" },
+
         { "name": "gcc-debug-conan",            "configurePreset": "gcc-debug-conan" },
         { "name": "gcc-release-conan",          "configurePreset": "gcc-release-conan" },
         { "name": "gcc-relwithdebinfo-conan",   "configurePreset": "gcc-relwithdebinfo-conan" },
+        { "name": "gcc-minsizerel-conan",       "configurePreset": "gcc-minsizerel-conan" },
 
         { "name": "clang-debug-conan",          "configurePreset": "clang-debug-conan" },
         { "name": "clang-release-conan",        "configurePreset": "clang-release-conan" },
         { "name": "clang-relwithdebinfo-conan", "configurePreset": "clang-relwithdebinfo-conan" },
+        { "name": "clang-minsizerel-conan",     "configurePreset": "clang-minsizerel-conan" },
 
         { "name": "msvc-debug-conan",          "configurePreset": "msvc-conan", "configuration": "Debug" },
         { "name": "msvc-release-conan",        "configurePreset": "msvc-conan", "configuration": "Release" },
-        { "name": "msvc-relwithdebinfo-conan", "configurePreset": "msvc-conan", "configuration": "RelWithDebInfo" }
+        { "name": "msvc-relwithdebinfo-conan", "configurePreset": "msvc-conan", "configuration": "RelWithDebInfo" },
+        { "name": "msvc-minsizerel-conan",     "configurePreset": "msvc-conan", "configuration": "MinSizeRel" },
+
+        { "name": "clang-cl-debug-conan",          "configurePreset": "clang-cl-debug-conan" },
+        { "name": "clang-cl-release-conan",        "configurePreset": "clang-cl-release-conan" },
+        { "name": "clang-cl-relwithdebinfo-conan", "configurePreset": "clang-cl-relwithdebinfo-conan" },
+        { "name": "clang-cl-minsizerel-conan",     "configurePreset": "clang-cl-minsizerel-conan" },
+
+        { "name": "mingw-gcc-debug-conan",          "configurePreset": "mingw-gcc-debug-conan" },
+        { "name": "mingw-gcc-release-conan",        "configurePreset": "mingw-gcc-release-conan" },
+        { "name": "mingw-gcc-relwithdebinfo-conan", "configurePreset": "mingw-gcc-relwithdebinfo-conan" },
+        { "name": "mingw-gcc-minsizerel-conan",     "configurePreset": "mingw-gcc-minsizerel-conan" },
+
+        { "name": "mingw-clang-debug-conan",          "configurePreset": "mingw-clang-debug-conan" },
+        { "name": "mingw-clang-release-conan",        "configurePreset": "mingw-clang-release-conan" },
+        { "name": "mingw-clang-relwithdebinfo-conan", "configurePreset": "mingw-clang-relwithdebinfo-conan" },
+        { "name": "mingw-clang-minsizerel-conan",     "configurePreset": "mingw-clang-minsizerel-conan" }
     ],
 
     "testPresets": [
@@ -280,16 +487,44 @@
         { "name": "clang-cl-relwithdebinfo", "inherits": "_test-base", "configurePreset": "clang-cl-relwithdebinfo" },
         { "name": "clang-cl-minsizerel",     "inherits": "_test-base", "configurePreset": "clang-cl-minsizerel" },
 
+        { "name": "mingw-gcc-debug",          "inherits": "_test-base", "configurePreset": "mingw-gcc-debug" },
+        { "name": "mingw-gcc-release",        "inherits": "_test-base", "configurePreset": "mingw-gcc-release" },
+        { "name": "mingw-gcc-relwithdebinfo", "inherits": "_test-base", "configurePreset": "mingw-gcc-relwithdebinfo" },
+        { "name": "mingw-gcc-minsizerel",     "inherits": "_test-base", "configurePreset": "mingw-gcc-minsizerel" },
+
+        { "name": "mingw-clang-debug",          "inherits": "_test-base", "configurePreset": "mingw-clang-debug" },
+        { "name": "mingw-clang-release",        "inherits": "_test-base", "configurePreset": "mingw-clang-release" },
+        { "name": "mingw-clang-relwithdebinfo", "inherits": "_test-base", "configurePreset": "mingw-clang-relwithdebinfo" },
+        { "name": "mingw-clang-minsizerel",     "inherits": "_test-base", "configurePreset": "mingw-clang-minsizerel" },
+
         { "name": "gcc-debug-conan",          "inherits": "_test-base", "configurePreset": "gcc-debug-conan" },
         { "name": "gcc-release-conan",        "inherits": "_test-base", "configurePreset": "gcc-release-conan" },
         { "name": "gcc-relwithdebinfo-conan", "inherits": "_test-base", "configurePreset": "gcc-relwithdebinfo-conan" },
+        { "name": "gcc-minsizerel-conan",     "inherits": "_test-base", "configurePreset": "gcc-minsizerel-conan" },
 
         { "name": "clang-debug-conan",          "inherits": "_test-base", "configurePreset": "clang-debug-conan" },
         { "name": "clang-release-conan",        "inherits": "_test-base", "configurePreset": "clang-release-conan" },
         { "name": "clang-relwithdebinfo-conan", "inherits": "_test-base", "configurePreset": "clang-relwithdebinfo-conan" },
+        { "name": "clang-minsizerel-conan",     "inherits": "_test-base", "configurePreset": "clang-minsizerel-conan" },
 
         { "name": "msvc-debug-conan",          "inherits": "_test-base", "configurePreset": "msvc-conan", "configuration": "Debug" },
         { "name": "msvc-release-conan",        "inherits": "_test-base", "configurePreset": "msvc-conan", "configuration": "Release" },
-        { "name": "msvc-relwithdebinfo-conan", "inherits": "_test-base", "configurePreset": "msvc-conan", "configuration": "RelWithDebInfo" }
+        { "name": "msvc-relwithdebinfo-conan", "inherits": "_test-base", "configurePreset": "msvc-conan", "configuration": "RelWithDebInfo" },
+        { "name": "msvc-minsizerel-conan",     "inherits": "_test-base", "configurePreset": "msvc-conan", "configuration": "MinSizeRel" },
+
+        { "name": "clang-cl-debug-conan",          "inherits": "_test-base", "configurePreset": "clang-cl-debug-conan" },
+        { "name": "clang-cl-release-conan",        "inherits": "_test-base", "configurePreset": "clang-cl-release-conan" },
+        { "name": "clang-cl-relwithdebinfo-conan", "inherits": "_test-base", "configurePreset": "clang-cl-relwithdebinfo-conan" },
+        { "name": "clang-cl-minsizerel-conan",     "inherits": "_test-base", "configurePreset": "clang-cl-minsizerel-conan" },
+
+        { "name": "mingw-gcc-debug-conan",          "inherits": "_test-base", "configurePreset": "mingw-gcc-debug-conan" },
+        { "name": "mingw-gcc-release-conan",        "inherits": "_test-base", "configurePreset": "mingw-gcc-release-conan" },
+        { "name": "mingw-gcc-relwithdebinfo-conan", "inherits": "_test-base", "configurePreset": "mingw-gcc-relwithdebinfo-conan" },
+        { "name": "mingw-gcc-minsizerel-conan",     "inherits": "_test-base", "configurePreset": "mingw-gcc-minsizerel-conan" },
+
+        { "name": "mingw-clang-debug-conan",          "inherits": "_test-base", "configurePreset": "mingw-clang-debug-conan" },
+        { "name": "mingw-clang-release-conan",        "inherits": "_test-base", "configurePreset": "mingw-clang-release-conan" },
+        { "name": "mingw-clang-relwithdebinfo-conan", "inherits": "_test-base", "configurePreset": "mingw-clang-relwithdebinfo-conan" },
+        { "name": "mingw-clang-minsizerel-conan",     "inherits": "_test-base", "configurePreset": "mingw-clang-minsizerel-conan" }
     ]
 }

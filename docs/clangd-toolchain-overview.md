@@ -272,7 +272,7 @@ ModernCpp/
 │   └── (可选) .clang-tidy           # Checks: '-*'
 │
 └── build/
-    └── my-gcc-relwithdebinfo/
+    └── mingw-gcc-relwithdebinfo/
         └── compile_commands.json    # CMake 生成
 ```
 
@@ -284,7 +284,7 @@ ModernCpp/
 
 | 文件 | 主要内容 |
 |---|---|
-| **`.clangd`** | `CompilationDatabase: build/my-gcc-relwithdebinfo`、`-std=c++23 -Wall -Wextra -Wpedantic`、`AllScopes/IWYU`、`MissingIncludes/UnusedIncludes: Strict`、ClangTidy 启用组、Index.Background: Build、InlayHints 全开 |
+| **`.clangd`** | `CompilationDatabase: build/mingw-gcc-relwithdebinfo`、`-std=c++23 -Wall -Wextra -Wpedantic`、`AllScopes/IWYU`、`MissingIncludes/UnusedIncludes: Strict`、ClangTidy 启用组、Index.Background: Build、InlayHints 全开 |
 | **`.clang-format`** | `BasedOnStyle: Google` + 4 空格缩进 + 100 列宽 + `PointerAlignment: Left` + `IncludeBlocks: Regroup` |
 | **`.clang-tidy`** | 主流 6 组 check（bugprone/cert/cppcoreguidelines/modernize/performance/readability）+ Google 命名风格 + 函数大小阈值 |
 
@@ -322,7 +322,7 @@ ModernCpp/
 
 ```yaml
 CompileFlags:
-  CompilationDatabase: build/my-gcc-debug    # 从 relwithdebinfo 切到 debug
+  CompilationDatabase: build/mingw-gcc-debug    # 从 relwithdebinfo 切到 debug
 ```
 
 clangd 会自动重新加载（或通过编辑器命令 `clangd: Restart language server` 强制重启）。

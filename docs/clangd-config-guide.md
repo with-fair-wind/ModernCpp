@@ -135,7 +135,7 @@ Diagnostics:
 
 ```yaml
 CompileFlags:
-  CompilationDatabase: build/my-gcc-relwithdebinfo  # compile_commands.json 所在目录
+  CompilationDatabase: build/mingw-gcc-relwithdebinfo  # compile_commands.json 所在目录
   Add:                                              # 追加到所有命令的 flag
     - -std=c++23
     - -Wall
@@ -609,7 +609,7 @@ vim.lsp.enable('clangd')
 
 ```yaml
 CompileFlags:
-  CompilationDatabase: build/my-gcc-relwithdebinfo
+  CompilationDatabase: build/mingw-gcc-relwithdebinfo
   Add: [-std=c++23, -Wall, -Wextra, -Wpedantic]
 ```
 
@@ -855,7 +855,7 @@ I[xx:xx:xx.xxx] Compiler driver F:\scoop\apps\msys2\current\ucrt64\bin\g++.exe i
 
 ```yaml
 CompileFlags:
-  CompilationDatabase: build/my-gcc-relwithdebinfo
+  CompilationDatabase: build/mingw-gcc-relwithdebinfo
   Add: [-std=c++23, -Wall, -Wextra, -Wpedantic]
 
 Completion:

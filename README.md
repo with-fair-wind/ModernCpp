@@ -103,8 +103,17 @@ clang-cl 同上，preset 改成 `clang-cl-relwithdebinfo`。
 
 ### Windows (MinGW UCRT64)
 
-见下方 [vcpkg 段](#option-avcpkgmanifest-模式) 中关于 `CMakeUserPresets.json`
-叠层的说明。
+```bash
+# 在 MSYS2 UCRT64 shell 里（或者把 ucrt64 bin 目录放进 PATH）：
+export VCPKG_ROOT=/d/path/to/vcpkg
+cmake --preset mingw-gcc-relwithdebinfo
+cmake --build --preset mingw-gcc-relwithdebinfo --parallel
+ctest   --preset mingw-gcc-relwithdebinfo
+```
+
+切 MinGW Clang：把 `mingw-gcc-` 换成 `mingw-clang-` 即可（同样要求 ucrt64 的
+`clang/clang++` 在 PATH 中）。这两组 preset 已经把 `VCPKG_TARGET_TRIPLET` 固化为
+`x64-mingw-dynamic`，所以不需要再写 `CMakeUserPresets.json` 叠层。
 
 ---
 
@@ -121,26 +130,28 @@ vcpkg 默认猜 `x64-windows`，MinGW 用户需手动覆盖。
 | --- | --- | --- | --- | --- |
 | **GCC**          | Linux x64 / ARM64 | `x64-linux` / `arm64-linux` | `gcc-*` | vcpkg 自动检测；preset 仅在 Linux 主机上可见 |
 | **GCC**          | macOS             | —                     | —           | macOS 上 `gcc` 是 clang shim，请用 `clang-*` preset |
-| **GCC**          | Windows (MinGW)  | `x64-mingw-dynamic`   | `my-gcc-*`  | 需要 `CMakeUserPresets.json` 叠层并 `"condition": null`（见下方 vcpkg 段） |
+| **GCC**          | Windows (MinGW)  | `x64-mingw-dynamic`   | `mingw-gcc-*`  | preset 内已固化 triplet；需在 MSYS2 UCRT64 shell 中跑或把 ucrt64 bin 放进 PATH |
 | **Clang**        | Linux x64 / ARM64 | `x64-linux` / `arm64-linux` | `clang-*` | vcpkg 自动检测；需要 libstdc++-13 提供 C++23 库 |
-| **Clang**        | macOS Intel / Apple Silicon | `x64-osx` / `arm64-osx` | `clang-*` | vcpkg 自动检测；preset 在所有非 Windows 主机上可见 |
-| **Clang**        | Windows (MinGW)  | `x64-mingw-dynamic`   | `my-clang-*`| msys2 ucrt64/clang++，方法同 MinGW GCC |
+| **Clang**        | macOS Intel / Apple Silicon | `x64-osx` / `arm64-osx` | `clang-*` | vcpkg 自动检测；preset 在 Linux / macOS 主机上可见 |
+| **Clang**        | Windows (MinGW)  | `x64-mingw-dynamic`   | `mingw-clang-*`| preset 内已固化 triplet；同样需要 MSYS2 UCRT64 环境 |
 | **clang-cl**     | Windows (LLVM)   | `x64-windows`         | `clang-cl-*`| preset 内已固化；LLVM 官方分发，需在 VS Developer Prompt 中跑 |
 | **MSVC**         | Windows          | `x64-windows`         | `msvc-*`    | preset 内已固化；VS 2022 multi-config |
 
 > **为什么这样设计**：详见 [`docs/vcpkg-guide.md §5 triplet：ABI 的命名空间`](docs/vcpkg-guide.md#5-tripletabi-的命名空间)。
 
-Windows 上的 MSVC / clang-cl preset 已经把 triplet 固化在
-`cacheVariables.VCPKG_TARGET_TRIPLET`，正常情况下你不用关心；只有 Windows MinGW 这种
-"需要 override"的场景才要叠层或加 `-D` 覆盖：
+Windows 上四组 preset（`msvc-*` / `clang-cl-*` / `mingw-gcc-*` / `mingw-clang-*`）都
+已经把 triplet 固化在 `cacheVariables.VCPKG_TARGET_TRIPLET`，不需要任何环境变量或 `-D`
+覆盖；按编译器选 preset 即可：
 
 ```bash
-# 方式 A：用本地 CMakeUserPresets.json 叠层（推荐，零环境变量）
-cmake --preset my-gcc-debug
-
-# 方式 B：configure 时一次性传入（绕过 condition 也只能用 -D 覆盖到已显示的 preset）
-cmake --preset gcc-debug -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic
+cmake --preset mingw-gcc-debug      # MinGW GCC
+cmake --preset mingw-clang-debug    # MinGW Clang
+cmake --preset clang-cl-debug       # LLVM clang-cl（MSVC ABI）
+cmake --preset msvc                 # MSVC（多配置）
 ```
+
+如需切换到 `x64-mingw-static` 等其他 triplet，可用本地 `CMakeUserPresets.json` 叠一层
+`cacheVariables.VCPKG_TARGET_TRIPLET` 覆盖，或临时加 `-DVCPKG_TARGET_TRIPLET=...`。
 
 ---
 
@@ -170,20 +181,10 @@ cmake --preset gcc-debug
 vcpkg 会读取仓库根的 `vcpkg.json` 自动拉取 `gtest`。Linux / macOS / Windows
 MSVC 到这里就好了，零额外配置。
 
-> **Windows + MinGW GCC/Clang 的一个额外步骤**：vcpkg 在 Windows 上不会检测当前
-> 编译器，总默认 triplet 为 `x64-windows`（MSVC ABI），与 MinGW ABI 不匹配会链接失败。
-> 解决办法是在仓库根建一份 `CMakeUserPresets.json`（已 gitignored），叠一层覆盖 triplet
-> 的 `my-*` preset。核心模板：
->
-> ```json
-> { "name": "_mingw-triplet", "hidden": true,
->   "cacheVariables": { "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic" } }
-> { "name": "my-gcc-debug",
->   "inherits": ["_mingw-triplet", "gcc-debug"], "condition": null }
-> ```
->
-> **完整可用模板（含所有 build types + buildPreset + testPreset）与原理解释**：
-> [`docs/vcpkg-guide.md §6 MinGW 专题`](docs/vcpkg-guide.md#6-mingw-专题)。
+> **Windows + MinGW GCC/Clang**：仓库已内置 `mingw-gcc-*` 与 `mingw-clang-*` 两组
+> preset（仅在 `${hostSystemName} == Windows` 时可见），triplet 已固化为
+> `x64-mingw-dynamic`，开箱即用，无需 `CMakeUserPresets.json` 叠层。背景与设计动机
+> 详见 [`docs/vcpkg-guide.md §6 MinGW 专题`](docs/vcpkg-guide.md#6-mingw-专题)。
 
 > **完整文档**：vcpkg 端到端使用、binary cache、CRT 对齐、排查 FAQ 详见
 > [`docs/vcpkg-guide.md`](docs/vcpkg-guide.md)；preset 设计原理详见
@@ -208,13 +209,16 @@ cmake --build --preset gcc-debug-conan
 ctest --preset gcc-debug-conan
 ```
 
-可用的 conan preset：
+可用的 conan preset（与 vcpkg 一侧完全对称，同样四种 build type）：
 
 | 编译器 | preset |
 | --- | --- |
-| GCC   | `gcc-debug-conan` / `gcc-release-conan` / `gcc-relwithdebinfo-conan` |
-| Clang | `clang-debug-conan` / `clang-release-conan` / `clang-relwithdebinfo-conan` |
-| MSVC  | `msvc-conan`（多配置）+ build/test preset `msvc-{debug,release,relwithdebinfo}-conan` |
+| GCC         | `gcc-{debug,release,relwithdebinfo,minsizerel}-conan` |
+| Clang       | `clang-{debug,release,relwithdebinfo,minsizerel}-conan` |
+| clang-cl    | `clang-cl-{debug,release,relwithdebinfo,minsizerel}-conan` |
+| MinGW GCC   | `mingw-gcc-{debug,release,relwithdebinfo,minsizerel}-conan` |
+| MinGW Clang | `mingw-clang-{debug,release,relwithdebinfo,minsizerel}-conan` |
+| MSVC        | `msvc-conan`（多配置）+ build/test preset `msvc-{debug,release,relwithdebinfo,minsizerel}-conan` |
 
 > **完整文档**：Conan 2.x 概念、profile、CMakeDeps/CMakeToolchain、三步走工作流、
 > 排查 FAQ 详见 [`docs/conan-guide.md`](docs/conan-guide.md)。
