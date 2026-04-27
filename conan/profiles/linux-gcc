@@ -1,0 +1,21 @@
+# Linux + GCC profile for ModernCpp.
+#
+# Pairs with the gcc-{debug,release,relwithdebinfo,minsizerel}-conan presets.
+# Apt-based distros (Ubuntu 24.04 / Debian 13) install gcc-13 via the package
+# repos; on rolling distros bump compiler.version (or override on the CLI:
+# `-s compiler.version=14`).
+#
+# Usage:
+#   conan install . -pr=./conan/profiles/linux-gcc \
+#       -s build_type=RelWithDebInfo \
+#       --output-folder=build/gcc-relwithdebinfo-conan \
+#       --build=missing
+
+[settings]
+os=Linux
+arch=x86_64
+compiler=gcc
+compiler.version=13
+compiler.cppstd=23
+compiler.libcxx=libstdc++11
+build_type=Release

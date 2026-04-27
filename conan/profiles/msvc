@@ -1,0 +1,31 @@
+# Windows + MSVC profile for ModernCpp.
+#
+# Pairs with the msvc-conan / ninja-mc-msvc-conan / clang-cl-*-conan presets
+# (all of which target the MSVC ABI / MSVC STL).
+#
+# compiler.version mapping (Conan 2):
+#   192 -> VS 2019
+#   193 -> VS 2022 17.0 - 17.9
+#   194 -> VS 2022 17.10+ (recommended; matches windows-2022 GH runners and
+#                          the 17.10+ C++23 library improvements this repo
+#                          relies on under /std:c++latest)
+# Override on the CLI if your Visual Studio is older: `-s compiler.version=193`.
+#
+# compiler.runtime=dynamic + runtime_type matching build_type produces MD/MDd
+# linkage, which is what the bundled vcpkg `x64-windows` triplet uses too —
+# so binaries from either ecosystem are interchangeable.
+#
+# Usage (in an x64 Native Tools Command Prompt or Developer PowerShell):
+#   conan install . -pr=./conan/profiles/msvc ^
+#       -s build_type=RelWithDebInfo ^
+#       --output-folder=build/clang-cl-relwithdebinfo-conan ^
+#       --build=missing
+
+[settings]
+os=Windows
+arch=x86_64
+compiler=msvc
+compiler.version=194
+compiler.cppstd=23
+compiler.runtime=dynamic
+build_type=Release

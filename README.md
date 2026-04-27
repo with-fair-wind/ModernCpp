@@ -193,21 +193,66 @@ MSVC 到这里就好了，零额外配置。
 ### Option B：Conan
 
 仓库提供与 vcpkg 平行的一组 `*-conan` preset，直接读 Conan 生成的 toolchain，
-无需手动 `-DCMAKE_TOOLCHAIN_FILE=`：
+无需手动 `-DCMAKE_TOOLCHAIN_FILE=`。仓库还内置了 `conan/profiles/`：把每个常见
+平台 / 工具链的 ABI（compiler / version / libcxx / runtime …）固化成 profile 文件，
+让"哪个 preset 用哪份 profile"在仓库里就是 reproducible 的，不依赖 `conan profile detect`
+在不同机器上嗅探的结果。
 
 ```bash
 # 1) 安装 Conan 2.x
 pip install --upgrade conan
 
-# 2) 让 Conan 把依赖装到与 preset 同名的 build 目录
-conan install . --output-folder=build/gcc-debug-conan --build=missing \
-    -s compiler.cppstd=23
+# 2) 首次：初始化 Conan home 的默认 build profile（构建工具用，与 host profile 不同）
+conan profile detect --force
 
-# 3) 直接用 conan preset 配置（toolchain 自动取自 build/<preset>/conan_toolchain.cmake）
+# 3) 用仓库内置的 host profile 装依赖到与 preset 同名的目录
+conan install . -pr=./conan/profiles/linux-gcc \
+    -s build_type=Debug \
+    --output-folder=build/gcc-debug-conan \
+    --build=missing
+
+# 4) 直接用 conan preset 配置（toolchain 自动取自 build/<preset>/conan_toolchain.cmake）
 cmake --preset gcc-debug-conan
 cmake --build --preset gcc-debug-conan
 ctest --preset gcc-debug-conan
 ```
+
+> ⚠️ `-s build_type=` 必须与 preset 后缀一致（`*-debug-conan` ↔ `Debug`、
+> `*-relwithdebinfo-conan` ↔ `RelWithDebInfo`，类推）。CMakeDeps 只为请求的
+> build_type 生成 per-config 目标文件；mismatch 会 configure 通过、构建炸
+> `gtest/gtest.h: No such file`。`cmake/Dependencies.cmake` 已加 configure 期
+> 防御检查，撞上时会直接 FATAL_ERROR 提示重跑。
+
+#### 内置 profile × preset 对照表
+
+| profile | 目标场景 | 配套 preset 前缀 |
+| --- | --- | --- |
+| `conan/profiles/linux-gcc`     | Linux + GCC 13（Ubuntu 24.04 / Debian 13）         | `gcc-*-conan` |
+| `conan/profiles/linux-clang`   | Linux + Clang 18 + libstdc++（Ubuntu 24.04）       | `clang-*-conan` |
+| `conan/profiles/macos-clang`   | macOS + apple-clang 16+ / libc++（Xcode 16+）      | `clang-*-conan` |
+| `conan/profiles/msvc`          | Windows + MSVC ABI（cl.exe 或 clang-cl）           | `msvc-conan` / `ninja-mc-msvc-conan` / `clang-cl-*-conan` |
+| `conan/profiles/mingw-ucrt64`  | Windows + MSYS2 **UCRT64** GCC（仓库官方支持的 MinGW 入口） | `mingw-gcc-*-conan` |
+| `conan/profiles/mingw-clang64` | Windows + MSYS2 **CLANG64** Clang + libc++          | `mingw-clang-*-conan` |
+
+每份 profile 顶部都有用法注释、版本固化说明、以及"如何在 CLI 上覆盖 compiler.version"
+的指导。MSYS2 多环境共存时的 cache aliasing 注意事项见 `mingw-ucrt64` profile 内说明。
+
+#### Windows + MSYS2 完整命令示例
+
+```bash
+# 在 MSYS2 UCRT64 shell 里：
+conan profile detect --force      # 仅首次
+conan install . -pr=./conan/profiles/mingw-ucrt64 \
+    -s build_type=RelWithDebInfo \
+    --output-folder=build/mingw-gcc-relwithdebinfo-conan \
+    --build=missing
+cmake --preset mingw-gcc-relwithdebinfo-conan
+cmake --build --preset mingw-gcc-relwithdebinfo-conan --parallel
+ctest   --preset mingw-gcc-relwithdebinfo-conan
+```
+
+CLANG64 把 `mingw-ucrt64` profile 名 + `mingw-gcc-*-conan` preset 名同时换成
+`mingw-clang64` / `mingw-clang-*-conan`。
 
 可用的 conan preset（与 vcpkg 一侧完全对称，同样四种 build type）：
 

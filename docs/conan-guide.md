@@ -24,7 +24,8 @@
 7. [编译器矩阵下的 preset 设计](#7-编译器矩阵下的-preset-设计)
 8. [profile 进阶](#8-profile-进阶)
 9. [与 CI 的集成（前瞻）](#9-与-ci-的集成前瞻)
-10. [常见问题与排查](#10-常见问题与排查)
+10. [内置 profile（`conan/profiles/`）](#10-内置-profileconanprofiles)
+11. [常见问题与排查](#11-常见问题与排查)
 
 ---
 
@@ -504,26 +505,27 @@ Conan **完全不读** `VCPKG_TARGET_TRIPLET`。Conan 用 `[settings]` 表达 AB
 
 vcpkg 下仓库为 MinGW 提供专门的 `mingw-{gcc,clang}-*` preset 固化 triplet（详见
 [vcpkg-guide.md §6](vcpkg-guide.md#6-mingw-专题)）。Conan 下同样有平行的
-`mingw-{gcc,clang}-*-conan` preset，但 ABI 不靠 triplet 表达，而是靠 profile：
+`mingw-{gcc,clang}-*-conan` preset，但 ABI 不靠 triplet 表达，而是靠 profile。
+
+仓库已经把 MinGW 两个常见入口（UCRT64 GCC / CLANG64 Clang）的 profile 入库到
+`conan/profiles/`，详见 §10。直接用：
 
 ```bash
-# 一个针对 MinGW 的 profile（保存为 ~/.conan2/profiles/mingw-ucrt64）
-[settings]
-arch=x86_64
-build_type=Release
-compiler=gcc
-compiler.cppstd=gnu23
-compiler.libcxx=libstdc++11
-compiler.version=13
-os=Windows
+# UCRT64 GCC：
+conan install . -pr=./conan/profiles/mingw-ucrt64 \
+    -s build_type=RelWithDebInfo \
+    --output-folder=build/mingw-gcc-relwithdebinfo-conan --build=missing
+cmake --preset mingw-gcc-relwithdebinfo-conan
+
+# CLANG64 Clang：
+conan install . -pr=./conan/profiles/mingw-clang64 \
+    -s build_type=RelWithDebInfo \
+    --output-folder=build/mingw-clang-relwithdebinfo-conan --build=missing
+cmake --preset mingw-clang-relwithdebinfo-conan
 ```
 
-```bash
-conan install . -pr=mingw-ucrt64 --output-folder=build/mingw-gcc-debug-conan --build=missing
-cmake --preset mingw-gcc-debug-conan
-```
-
-`-pr=` 指定 profile，覆盖默认；`--output-folder` 必须与目标 preset 名一致。
+`-pr=` 指定 profile（`-pr` 是 `--profile:host=` 的简写）；`--output-folder` 必须与目标
+preset 名一致；`-s build_type=` 必须与 preset 后缀的 build type 一致。
 
 ### Ninja Multi-Config 是什么
 
@@ -704,7 +706,87 @@ preset，未集成 Conan**。Conan preset 仅本地可用。
 
 ---
 
-## 10. 常见问题与排查
+## 10. 内置 profile（`conan/profiles/`）
+
+仓库把每个常见目标的 host profile 入库到 `conan/profiles/`。这样做的目的是
+**让 ABI 描述变成 reproducible 的版本控制资产**，而不是依赖每台机器上
+`conan profile detect` 的嗅探结果。每份 profile 都自带顶部注释，写明用途、
+配套 preset、版本固化策略、以及如何在 CLI 上覆盖。
+
+| profile | 目标场景 | 配套 preset 前缀 |
+| --- | --- | --- |
+| `linux-gcc`     | Linux + GCC 13（Ubuntu 24.04 / Debian 13）         | `gcc-*-conan` |
+| `linux-clang`   | Linux + Clang 18 + libstdc++（Ubuntu 24.04）       | `clang-*-conan` |
+| `macos-clang`   | macOS + apple-clang 16+ / libc++（Xcode 16+）      | `clang-*-conan` |
+| `msvc`          | Windows + MSVC ABI（cl.exe 或 clang-cl）            | `msvc-conan` / `ninja-mc-msvc-conan` / `clang-cl-*-conan` |
+| `mingw-ucrt64`  | Windows + MSYS2 **UCRT64** GCC                      | `mingw-gcc-*-conan` |
+| `mingw-clang64` | Windows + MSYS2 **CLANG64** Clang + libc++          | `mingw-clang-*-conan` |
+
+用法：
+
+```bash
+conan install . -pr=./conan/profiles/<name> \
+    -s build_type=<必须与 preset 后缀一致> \
+    --output-folder=build/<presetName> \
+    --build=missing
+```
+
+**首次还需要：** `conan profile detect --force` —— 这会创建一个 _default_ profile
+作为 build profile（用于编译 cmake/ninja 等构建工具）。`-pr=` 只设了
+`--profile:host`，`--profile:build` 默认指向 `default`，所以这一步不能省略。
+如果你想完全脱离 detect，把上面的命令改成同时传两个 profile：
+
+```bash
+conan install . -pr:h=./conan/profiles/<name> -pr:b=./conan/profiles/<name> ...
+```
+
+### 为什么 MinGW profile 要写 `tools.build:compiler_executables`
+
+`mingw-ucrt64` 与 `mingw-clang64` 在 `[conf]` 段额外锁了 `tools.build:compiler_executables`：
+
+```ini
+[conf]
+tools.build:compiler_executables={"c": "gcc", "cpp": "g++"}
+```
+
+因为 Conan 默认让 CMake 自由 detect 编译器（`CMakeToolchain` 不写
+`CMAKE_C_COMPILER` / `CMAKE_CXX_COMPILER`），而 Windows 用户的 PATH 上常常
+同时存在多个编译器（MSYS2 + scoop/chocolatey LLVM + VS clang-cl 等）。
+**实测：** 在 MSYS2 UCRT64 shell 里跑 `conan install -pr=./conan/profiles/mingw-ucrt64`，
+profile 声明 `compiler=gcc`，但如果不锁 `compiler_executables`，Conan 在 build
+依赖（gtest）时 cmake 会拿到 PATH 上排在前面的 `clang++.exe`（来自 LLVM 安装），
+产出的 .obj 文件让 GNU ld 在最终链接阶段抛 `Warning: corrupt .drectve at end
+of def file` + `collect2.exe: error: ld returned 5 exit status`。
+
+锁定 `compiler_executables` 后 CMakeToolchain 会显式把 `CMAKE_*_COMPILER` 写到
+toolchain 文件，跨 PATH 污染都拿到正确的编译器。
+
+> **Linux / macOS profile 没加是因为：** 这些环境一般 PATH 干净（系统 gcc / 系统
+> clang / brew LLVM 不会三个同时撞），CI 也是用 `CC=gcc-13 CXX=g++-13` 这种带版本
+> 后缀的环境变量驱动。如果你的 Linux 机器上确实多个编译器混装，可以照葫芦画瓢
+> 在对应 profile 里加 `[conf]` 段。
+
+### MSYS2 多环境共存的 cache aliasing
+
+UCRT64 与 MINGW64（legacy MSVCRT）在 Conan 的 settings 空间下**完全相同**
+（`os=Windows / arch=x86_64 / compiler=gcc / libcxx=libstdc++11`），但 C 运行库
+ABI 不同 —— 同一份 Conan cache 路径下两套环境会互相污染。`mingw-ucrt64`
+profile 顶部注释给出了缓解方案：每个 shell 用独立的 `CONAN_HOME`：
+
+```bash
+# 在 UCRT64 shell rc 里
+export CONAN_HOME=$HOME/.conan2-ucrt64
+```
+
+CLAUDE.md 与本仓库的 `mingw-gcc-*` preset 只承诺 UCRT64，不支持 MINGW64。
+如果你只用 UCRT64 一种环境，不需要担心这件事。
+
+UCRT64（gcc）vs CLANG64（clang）则不存在这个问题：`compiler` 字段不同，Conan
+天然区分。
+
+---
+
+## 11. 常见问题与排查
 
 ### "Could not find toolchain file: conan_toolchain.cmake"
 

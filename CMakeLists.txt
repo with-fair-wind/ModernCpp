@@ -84,22 +84,27 @@ find_program(MCPP_CLANG_FORMAT_EXECUTABLE
     DOC "clang-format binary used by the `format` target")
 
 if(MCPP_CLANG_FORMAT_EXECUTABLE AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
+    # Drive clang-format through a cmake -P script so the targets work
+    # identically on Linux/macOS/Windows without depending on a host shell,
+    # xargs, or GNU-specific flags like `xargs -r`.
+    set(_mcpp_run_clang_format "${CMAKE_SOURCE_DIR}/cmake/RunClangFormat.cmake")
+
     add_custom_target(format
-        COMMAND ${CMAKE_COMMAND} -E echo
-            "Running ${MCPP_CLANG_FORMAT_EXECUTABLE} -i over tracked C/C++ sources..."
-        COMMAND git -C "${CMAKE_SOURCE_DIR}" ls-files
-            "*.cpp" "*.cc" "*.cxx" "*.hpp" "*.h" "*.hxx"
-            | xargs -r ${MCPP_CLANG_FORMAT_EXECUTABLE} -i
+        COMMAND ${CMAKE_COMMAND}
+            "-DCLANG_FORMAT=${MCPP_CLANG_FORMAT_EXECUTABLE}"
+            "-DSOURCE_DIR=${CMAKE_SOURCE_DIR}"
+            "-DMODE=fix"
+            -P "${_mcpp_run_clang_format}"
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
         COMMENT "Formatting tracked C/C++ sources in-place via clang-format"
         VERBATIM USES_TERMINAL)
 
     add_custom_target(format-check
-        COMMAND ${CMAKE_COMMAND} -E echo
-            "Running ${MCPP_CLANG_FORMAT_EXECUTABLE} --dry-run --Werror over tracked sources..."
-        COMMAND git -C "${CMAKE_SOURCE_DIR}" ls-files
-            "*.cpp" "*.cc" "*.cxx" "*.hpp" "*.h" "*.hxx"
-            | xargs -r ${MCPP_CLANG_FORMAT_EXECUTABLE} --dry-run --Werror
+        COMMAND ${CMAKE_COMMAND}
+            "-DCLANG_FORMAT=${MCPP_CLANG_FORMAT_EXECUTABLE}"
+            "-DSOURCE_DIR=${CMAKE_SOURCE_DIR}"
+            "-DMODE=check"
+            -P "${_mcpp_run_clang_format}"
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
         COMMENT "Checking formatting of tracked C/C++ sources (dry-run)"
         VERBATIM USES_TERMINAL)

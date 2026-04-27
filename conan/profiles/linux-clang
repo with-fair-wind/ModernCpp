@@ -1,0 +1,21 @@
+# Linux + Clang profile for ModernCpp.
+#
+# Pairs with the clang-{debug,release,relwithdebinfo,minsizerel}-conan presets.
+# On Ubuntu 24.04, Clang 18 links against libstdc++ from g++-13 to get the C++23
+# stdlib (libc++ on apt is too old). Override compiler.version / libcxx if your
+# host setup differs.
+#
+# Usage:
+#   conan install . -pr=./conan/profiles/linux-clang \
+#       -s build_type=RelWithDebInfo \
+#       --output-folder=build/clang-relwithdebinfo-conan \
+#       --build=missing
+
+[settings]
+os=Linux
+arch=x86_64
+compiler=clang
+compiler.version=18
+compiler.cppstd=23
+compiler.libcxx=libstdc++11
+build_type=Release

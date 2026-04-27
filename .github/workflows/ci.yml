@@ -51,6 +51,7 @@ jobs:
             cc: gcc-13
             cxx: g++-13
             uses-conan: true
+            conan-profile: linux-gcc
             build-type: RelWithDebInfo
 
           - name: windows-msvc
@@ -118,6 +119,11 @@ jobs:
         if: matrix.uses-conan
         run: |
           pip install --upgrade conan
+          # Default profile is required as Conan's --profile:build (used to
+          # compile build-tools), even when --profile:host points at a vendored
+          # profile under conan/profiles/. detect --force initialises it from
+          # whatever compiler is on PATH; that's fine because matrix.cc/.cxx
+          # are exported into the env below.
           conan profile detect --force
 
       - name: Conan install
@@ -127,10 +133,10 @@ jobs:
           CXX: ${{ matrix.cxx }}
         run: |
           conan install . \
+            --profile:host=./conan/profiles/${{ matrix.conan-profile }} \
             --output-folder=build/${{ matrix.preset }} \
             --build=missing \
-            -s build_type=${{ matrix.build-type }} \
-            -s compiler.cppstd=23
+            -s build_type=${{ matrix.build-type }}
 
       # ------------------------------------------------------------------
       # vcpkg: bootstrap once, cache binaries via GitHub Actions cache

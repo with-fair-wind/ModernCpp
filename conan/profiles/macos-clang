@@ -1,0 +1,26 @@
+# macOS + (Apple) Clang profile for ModernCpp.
+#
+# Pairs with the clang-{debug,release,relwithdebinfo,minsizerel}-conan presets
+# on macOS hosts. apple-clang is what `clang` resolves to under Xcode 16+
+# (which provides C++23 library coverage).
+#
+# If you use Homebrew LLVM (`brew install llvm`) instead of Apple Clang, copy
+# this profile and change to:
+#     compiler=clang
+#     compiler.version=18
+# Apple Silicon: override `arch=armv8` on the CLI or copy and adjust here.
+#
+# Usage:
+#   conan install . -pr=./conan/profiles/macos-clang \
+#       -s build_type=RelWithDebInfo \
+#       --output-folder=build/clang-relwithdebinfo-conan \
+#       --build=missing
+
+[settings]
+os=Macos
+arch=x86_64
+compiler=apple-clang
+compiler.version=16
+compiler.cppstd=23
+compiler.libcxx=libc++
+build_type=Release
