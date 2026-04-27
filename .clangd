@@ -12,10 +12,13 @@
 # -----------------------------------------------------------------------------
 CompileFlags:
   # 指定 compile_commands.json 所在目录（相对 .clangd 文件位置）
-  # 默认情况下 clangd 会从源文件向上递归找，但 build 目录不在源文件路径上，
-  # 因此必须显式指定。VS Code 的 --compile-commands-dir CLI 参数会覆盖此项。
-  # 切换 preset 时需要同步修改这一行。
-  CompilationDatabase: build/clang-cl-relwithdebinfo
+  # 顶层 CMakeLists.txt 通过 mcpp_link_compile_commands 自定义 target 把
+  # build/<active-preset>/compile_commands.json 镜像到源码根目录，所以这里
+  # 直接用 "." 即可，无论你跑的是 gcc-debug、msvc-relwithdebinfo 还是
+  # mingw-clang-* 都能正确生效，不需要每次切 preset 都改这一行。
+  # 多配置生成器（VS）不产 compile_commands.json，相应用户需走 IDE 自带的
+  # IntelliSense 或装 LLVM 插件。
+  CompilationDatabase: .
 
   # 追加到所有编译命令的 flag，对 compile_commands.json 中已有的文件也生效
   # 主要作用：保护「不在 DB 中的文件」（如临时新建的 .cpp）也能拿到正确的标准

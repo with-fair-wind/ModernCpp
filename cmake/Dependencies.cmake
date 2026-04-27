@@ -9,8 +9,14 @@
 #   * GoogleTest  (only if MCPP_BUILD_TESTS is ON)
 
 if(MCPP_BUILD_TESTS)
-    # MSVC CRT alignment: gtest defaults to static CRT; force shared CRT to
-    # match the default CMAKE_MSVC_RUNTIME_LIBRARY so linking does not fail.
+    # MSVC CRT alignment: gtest defaults to static CRT (/MT); force shared CRT
+    # (/MD) to match this repo's vcpkg triplet (x64-windows = dynamic CRT) and
+    # CMake's default CMAKE_MSVC_RUNTIME_LIBRARY (also dynamic).
+    #
+    # If you ever switch to a static-CRT triplet (x64-windows-static, etc.),
+    # change this to OFF AND set CMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded"
+    # accordingly — leaving them mismatched causes LNK2038 "RuntimeLibrary
+    # mismatch" linker errors.
     if(MSVC)
         set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     endif()

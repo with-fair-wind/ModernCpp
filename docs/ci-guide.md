@@ -226,7 +226,15 @@ env:
 - `if:` 条件执行，只在 linux-gcc job 跑
 - `run:` 执行 shell 命令（Linux 默认 bash，Windows 默认 PowerShell）
 
-clang job 装 clang-18 + libstdc++-13（C++23 库要新版 libstdc++）。
+**为什么 `linux-clang` job 也要装 GCC 13？**
+
+Clang 自己**不带 C++ 标准库**，它通过 `-stdlib=libstdc++` 或 `-stdlib=libc++` 选挂哪一份。
+本仓库的 `clang-*` preset 没有显式指定 `-stdlib`，所以 Clang 用系统默认（Ubuntu 上是
+libstdc++）。Ubuntu 24.04 自带的 libstdc++ 来自 g++-13 包，**它带的 `<print>` /
+`std::expected` / 第二批 ranges 等 C++23 库特性是 demos 用到的**——所以 clang job
+必须额外 `apt install g++-13`，不是用来"运行 g++"，而是用来**提供 libstdc++-13 头与库**。
+也可以用 libc++（`apt install libc++-18-dev libc++abi-18-dev`）替代，但 Ubuntu 24.04 的
+libc++-18 在 C++23 库覆盖度上比 libstdc++-13 略弱，所以本仓库选 libstdc++ 路线。
 
 #### Step 4：MSVC 环境
 

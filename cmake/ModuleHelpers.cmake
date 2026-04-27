@@ -29,6 +29,10 @@ function(_mcpp_apply_standard TARGET STANDARD)
 endfunction()
 
 function(mcpp_add_demo)
+    if(NOT MCPP_BUILD_DEMOS)
+        return()
+    endif()
+
     set(options)
     set(oneValueArgs NAME STANDARD)
     set(multiValueArgs SOURCES)

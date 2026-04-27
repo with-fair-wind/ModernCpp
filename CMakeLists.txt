@@ -32,6 +32,21 @@ endif()
 # Always emit compile_commands.json for clangd.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Mirror compile_commands.json into the source root so .clangd's default search
+# (which walks up from the source file) finds the active preset's DB regardless
+# of which build/<preset>/ directory the user picked. Skipped on multi-config
+# generators (VS) where compile_commands.json is not produced by CMake.
+get_property(_mcpp_is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(NOT _mcpp_is_multi_config)
+    add_custom_target(mcpp_link_compile_commands ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_BINARY_DIR}/compile_commands.json"
+            "${CMAKE_SOURCE_DIR}/compile_commands.json"
+        BYPRODUCTS "${CMAKE_SOURCE_DIR}/compile_commands.json"
+        COMMENT "Mirroring compile_commands.json into source root for clangd"
+        VERBATIM)
+endif()
+
 # Keep binaries grouped under build/<preset>/bin.
 if(NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
@@ -60,6 +75,37 @@ if(MCPP_BUILD_TESTS)
 endif()
 
 # ----------------------------------------------------------------------------
+# `format` target: run clang-format -i over every tracked C/C++ source.
+# Only registered if clang-format is on PATH (so non-developer machines still
+# configure cleanly). Skipped in non-git checkouts (e.g. tarball releases).
+# ----------------------------------------------------------------------------
+find_program(MCPP_CLANG_FORMAT_EXECUTABLE
+    NAMES clang-format-18 clang-format
+    DOC "clang-format binary used by the `format` target")
+
+if(MCPP_CLANG_FORMAT_EXECUTABLE AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
+    add_custom_target(format
+        COMMAND ${CMAKE_COMMAND} -E echo
+            "Running ${MCPP_CLANG_FORMAT_EXECUTABLE} -i over tracked C/C++ sources..."
+        COMMAND git -C "${CMAKE_SOURCE_DIR}" ls-files
+            "*.cpp" "*.cc" "*.cxx" "*.hpp" "*.h" "*.hxx"
+            | xargs -r ${MCPP_CLANG_FORMAT_EXECUTABLE} -i
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        COMMENT "Formatting tracked C/C++ sources in-place via clang-format"
+        VERBATIM USES_TERMINAL)
+
+    add_custom_target(format-check
+        COMMAND ${CMAKE_COMMAND} -E echo
+            "Running ${MCPP_CLANG_FORMAT_EXECUTABLE} --dry-run --Werror over tracked sources..."
+        COMMAND git -C "${CMAKE_SOURCE_DIR}" ls-files
+            "*.cpp" "*.cc" "*.cxx" "*.hpp" "*.h" "*.hxx"
+            | xargs -r ${MCPP_CLANG_FORMAT_EXECUTABLE} --dry-run --Werror
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        COMMENT "Checking formatting of tracked C/C++ sources (dry-run)"
+        VERBATIM USES_TERMINAL)
+endif()
+
+# ----------------------------------------------------------------------------
 # Add every modules/NN_* subdirectory that has its own CMakeLists.txt.
 # New modules drop in with zero top-level edits.
 # ----------------------------------------------------------------------------
@@ -79,7 +125,6 @@ endforeach()
 # ----------------------------------------------------------------------------
 # Summary (printed at configure time)
 # ----------------------------------------------------------------------------
-get_property(_mcpp_is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(_mcpp_is_multi_config)
     set(_mcpp_build_type_display "multi-config: ${CMAKE_CONFIGURATION_TYPES}")
 else()
