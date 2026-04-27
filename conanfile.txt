@@ -11,3 +11,10 @@ CMakeToolchain
 # Without a layout, --output-folder=X puts conan_toolchain.cmake directly at
 # X/conan_toolchain.cmake, which the _conan preset then references as
 # ${sourceDir}/build/${presetName}/conan_toolchain.cmake. Simple and stable.
+#
+# IMPORTANT: pass `-s build_type=<Type>` matching the CMake preset's build type
+# (e.g. -s build_type=RelWithDebInfo for *-relwithdebinfo-conan presets).
+# CMakeDeps only emits per-config target files for the requested build_type;
+# a mismatch leaves INTERFACE_INCLUDE_DIRECTORIES empty under generator
+# expressions, configure passes, build fails with `gtest/gtest.h: No such file`.
+# cmake/Dependencies.cmake guards against this with a configure-time check.
