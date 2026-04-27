@@ -1,0 +1,42 @@
+# Windows + MSYS2 CLANG64 Clang profile for ModernCpp.
+#
+# Pairs with the mingw-clang-{debug,release,relwithdebinfo,minsizerel}-conan
+# presets when run from the MSYS2 CLANG64 shell. CLANG64 ships Clang built
+# with libc++ as the default standard library, against UCRT.
+#
+# If instead you want to use Clang from the UCRT64 shell (which uses
+# libstdc++ from the gcc toolchain), copy this profile and change:
+#     compiler.libcxx = libstdc++11
+# Save the copy as e.g. `conan/profiles/mingw-ucrt64-clang` and point the CLI
+# at it. The UCRT64 shell + clang combo doesn't ship a vendored profile
+# because it's a less common setup; the cache-aliasing warning from
+# `mingw-ucrt64` applies equally there.
+#
+# ABI WARNING: CLANG64 and UCRT64 share `os=Windows / arch=x86_64` in Conan's
+# settings space — they only differ on `compiler` (clang vs gcc) and
+# `libcxx` (libc++ vs libstdc++11), which IS enough to disambiguate the
+# cache. So no CONAN_HOME juggling is needed between CLANG64 and UCRT64
+# specifically. The aliasing risk is between UCRT64 and the legacy MINGW64
+# (both gcc, both libstdc++11), which this repo does not support.
+#
+# Usage (in MSYS2 CLANG64 shell):
+#   conan install . -pr=./conan/profiles/mingw-clang64 \
+#       -s build_type=RelWithDebInfo \
+#       --output-folder=build/mingw-clang-relwithdebinfo-conan \
+#       --build=missing
+
+[settings]
+os=Windows
+arch=x86_64
+compiler=clang
+compiler.version=18
+compiler.cppstd=23
+compiler.libcxx=libc++
+build_type=Release
+
+# Lock the compiler binaries so Conan invokes CLANG64's clang/clang++, not the
+# `clang.exe` from a non-MSYS2 LLVM toolchain that may sit earlier on PATH
+# (e.g. scoop/chocolatey LLVM, or VS-bundled clang-cl). Mismatch produces
+# `corrupt .drectve` from GNU ld at the final link step.
+[conf]
+tools.build:compiler_executables={"c": "clang", "cpp": "clang++"}

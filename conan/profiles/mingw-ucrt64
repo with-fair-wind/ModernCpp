@@ -1,0 +1,56 @@
+# Windows + MSYS2 UCRT64 GCC profile for ModernCpp.
+#
+# Pairs with the mingw-gcc-{debug,release,relwithdebinfo,minsizerel}-conan
+# presets. UCRT64 is the MSYS2 environment this repo officially supports
+# (MinGW-w64 GCC built against the Universal C Runtime, not legacy MSVCRT).
+#
+# Run from the MSYS2 UCRT64 shell, or with `<msys2>/ucrt64/bin` on PATH so
+# `gcc` / `g++` resolve to the UCRT64 toolchain.
+#
+# ABI WARNING — MSYS2 cache aliasing
+# ----------------------------------
+# Conan settings cannot distinguish UCRT64 (UCRT) from MINGW64 (MSVCRT) — both
+# look like `os=Windows / arch=x86_64 / compiler=gcc / libcxx=libstdc++11` to
+# Conan. If you switch between MSYS2 environments on the same machine, the
+# Conan cache will hand back the binary built under the *other* runtime,
+# producing link/runtime mismatches.
+#
+# Mitigation: if you actively use more than one MSYS2 environment, point each
+# shell at its own Conan home before invoking conan:
+#     # in your UCRT64 shell rc
+#     export CONAN_HOME=$HOME/.conan2-ucrt64
+# This repo officially recommends UCRT64 only. The legacy MINGW64 environment
+# is not supported.
+#
+# compiler.version is pinned to the MSYS2 UCRT64 default (gcc 15 as of late
+# 2025/early 2026). Override on the CLI (`-s compiler.version=14`) if your
+# local pacman snapshot is older.
+#
+# Usage:
+#   conan install . -pr=./conan/profiles/mingw-ucrt64 \
+#       -s build_type=RelWithDebInfo \
+#       --output-folder=build/mingw-gcc-relwithdebinfo-conan \
+#       --build=missing
+
+[settings]
+os=Windows
+arch=x86_64
+compiler=gcc
+compiler.version=15
+compiler.cppstd=23
+compiler.libcxx=libstdc++11
+# MSYS2 UCRT64 gcc is built with posix threads + SEH unwinding. Setting these
+# explicitly gives Conan a more accurate ABI description and lets recipes that
+# branch on threading model pick MinGW-correct paths.
+compiler.threads=posix
+compiler.exception=seh
+build_type=Release
+
+# Lock the compiler binaries so Conan invokes UCRT64's gcc/g++, not whatever
+# `cc`/`c++` happens to come first on PATH (e.g. LLVM clang++ shipped by
+# scoop/chocolatey). Without this, Conan's CMakeToolchain leaves
+# CMAKE_C_COMPILER / CMAKE_CXX_COMPILER unset and CMake may pick a foreign
+# compiler whose object files GNU ld then refuses to link, producing a
+# `corrupt .drectve` failure at the final link of dependent targets.
+[conf]
+tools.build:compiler_executables={"c": "gcc", "cpp": "g++"}
