@@ -41,19 +41,17 @@ jobs:
             cxx: g++-13
             extra-config: -DMCPP_ENABLE_SANITIZERS=ON
 
-          # TODO(conan): re-enable once CMakeDeps + find_package(GTest CONFIG)
-          # path is debugged. Symptom is "fatal error: gtest/gtest.h: No such
-          # file or directory" at build time even though configure succeeds.
-          # Likely root cause: <Pkg>Config.cmake placement under --output-folder
-          # doesn't match where CMAKE_PREFIX_PATH (set by conan_toolchain.cmake)
-          # tells find_package to look. Steps and conanfile.txt notes are kept
-          # below in this file so re-enabling is just removing the comment-out.
-          # - name: linux-gcc-conan
-          #   os: ubuntu-24.04
-          #   preset: gcc-relwithdebinfo-conan
-          #   cc: gcc-13
-          #   cxx: g++-13
-          #   uses-conan: true
+          # Conan path. Must pass `-s build_type=` matching the preset's
+          # CMAKE_BUILD_TYPE — otherwise CMakeDeps generates per-config target
+          # files for the wrong config and INTERFACE_INCLUDE_DIRECTORIES is
+          # empty at build time. cmake/Dependencies.cmake catches this.
+          - name: linux-gcc-conan
+            os: ubuntu-24.04
+            preset: gcc-relwithdebinfo-conan
+            cc: gcc-13
+            cxx: g++-13
+            uses-conan: true
+            build-type: RelWithDebInfo
 
           - name: windows-msvc
             os: windows-2022
@@ -131,6 +129,7 @@ jobs:
           conan install . \
             --output-folder=build/${{ matrix.preset }} \
             --build=missing \
+            -s build_type=${{ matrix.build-type }} \
             -s compiler.cppstd=23
 
       # ------------------------------------------------------------------

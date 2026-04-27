@@ -415,6 +415,17 @@ build"，是日常开发的安全默认。
 
 覆盖 profile 里的 `build_type`。本仓库需要这一行，因为 profile 默认 Release。
 
+> ⚠️ **必须与 preset 的 `CMAKE_BUILD_TYPE` 完全一致**。`gcc-debug-conan` 用
+> `-s build_type=Debug`，`gcc-relwithdebinfo-conan` 用 `-s build_type=RelWithDebInfo`，
+> 类推。CMakeDeps 只为请求的 build_type 生成 per-config 目标文件
+> （`GTest-Target-<lower>.cmake` + `GTest-<lower>-x86_64-data.cmake`）；mismatch
+> 时 `find_package(GTest)` 仍然返回成功（`GTest::gtest_main` target 在
+> `GTestTargets.cmake` 里被无条件 `add_library(... INTERFACE IMPORTED)`），但
+> `INTERFACE_INCLUDE_DIRECTORIES` 被 `$<$<CONFIG:OtherType>:...>` 包起来，对当前
+> build_type 求值为空 —— configure 通过、build 时炸 `gtest/gtest.h: No such file`。
+> `cmake/Dependencies.cmake` 已经加了一道 configure 期检查捕获这种情况，撞上时会
+> 直接 FATAL_ERROR 提示重跑命令。
+
 #### `-s compiler.cppstd=23`
 
 覆盖 C++ 标准。本仓库要 C++23，profile 默认可能是 17。
