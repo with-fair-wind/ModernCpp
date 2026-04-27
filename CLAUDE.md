@@ -53,10 +53,13 @@ mcpp_add_test(NAME test_x  SOURCES tests/test_x.cpp  [STANDARD 23])
 
 ## 跨平台不可破坏的约定
 
-- **vcpkg triplet 已固化在 `CMakePresets.json`**（gcc/clang 用 `x64-linux`，
-  msvc/clang-cl 用 `x64-windows`）。MinGW UCRT64 用户通过 gitignored 的
-  `CMakeUserPresets.json` 叠加，并用 `"condition": null` 解除主机 OS 门控；模式见
-  `README.md`。
+- **vcpkg triplet 在 Windows preset 内显式固化**：`msvc-*` / `clang-cl-*` 用
+  `x64-windows`，`mingw-gcc-*` / `mingw-clang-*` 用 `x64-mingw-dynamic`；Linux/macOS
+  上的 `gcc-*` / `clang-*` 不固化，由 vcpkg 按主机自动检测。`mingw-*` 两组 preset
+  以 `${hostSystemName} == Windows` 门控，需要在 MSYS2 UCRT64 shell 里跑（或把
+  `<msys2>/ucrt64/bin` 放进 PATH）。`CMakeUserPresets.json` 仍然 gitignored，但
+  仅用于"覆盖编译器绝对路径 / 切到非默认 triplet" 这类个人化场景，不再是 MinGW 的
+  必需步骤。
 - **MSVC `/std:c++latest`** 在顶层 `CMakeLists.txt` 中强制启用，因为当前 MSVC 上
   `CMAKE_CXX_STANDARD=23` 还无法启用 `<print>` / `std::expected` / 新一批 ranges。
 - **MSVC ASan 会剥离 `/RTC1`** —— 在 `cmake/CompilerSanitizers.cmake` 中处理（两者
