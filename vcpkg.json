@@ -3,7 +3,11 @@
     "name": "moderncpp",
     "version": "0.1.0",
     "description": "Modern C++ learning modules",
+    "builtin-baseline": "5ee5eee0d3e9c6098b24d263e9099edcdcef6631",
     "dependencies": [
-        "gtest"
+        {
+            "name": "gtest",
+            "version>=": "1.15.2"
+        }
     ]
 }

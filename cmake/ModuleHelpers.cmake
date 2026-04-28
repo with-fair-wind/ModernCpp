@@ -52,6 +52,10 @@ function(mcpp_add_demo)
     target_link_libraries(${_target} PRIVATE mcpp::warnings mcpp::sanitizers)
     set_target_properties(${_target} PROPERTIES
         OUTPUT_NAME "${ARG_NAME}"
+        # Per-module output directory keeps demo / test executables from
+        # different modules from colliding when they happen to share a NAME
+        # (e.g. two modules both register a `playground` demo).
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/${_module}"
         FOLDER "modules/${_module}/demos")
     _mcpp_apply_standard(${_target} "${ARG_STANDARD}")
 endfunction()
@@ -79,12 +83,13 @@ function(mcpp_add_test)
     add_executable(${_target} ${ARG_SOURCES})
     target_link_libraries(${_target}
         PRIVATE
-            mcpp::warnings
-            mcpp::sanitizers
-            GTest::gtest
-            GTest::gtest_main)
+        mcpp::warnings
+        mcpp::sanitizers
+        GTest::gtest
+        GTest::gtest_main)
     set_target_properties(${_target} PROPERTIES
         OUTPUT_NAME "${ARG_NAME}"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/${_module}"
         FOLDER "modules/${_module}/tests")
     _mcpp_apply_standard(${_target} "${ARG_STANDARD}")
 

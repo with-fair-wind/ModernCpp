@@ -37,6 +37,16 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
 
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # /fsanitize=address conflicts with /RTC1; strip it from Debug flags.
+    #
+    # CAVEAT — global side effect, not scoped to mcpp::sanitizers:
+    # this rewrites the cache variables CMAKE_*_FLAGS_{DEBUG,RELWITHDEBINFO},
+    # which CMake injects into every C/C++ target in the build tree (not just
+    # the ones that link mcpp::sanitizers). MSVC has no per-target way to
+    # un-inject /RTC1, so this is the practical option, but be aware that
+    # turning on MCPP_ENABLE_SANITIZERS under MSVC means the whole build
+    # loses /RTC1 — including any third-party subdirectory you might add
+    # later. If you need /RTC1 preserved on some targets, keep
+    # MCPP_ENABLE_SANITIZERS OFF and instrument them with ASan separately.
     foreach(_flag_var
             CMAKE_C_FLAGS_DEBUG CMAKE_CXX_FLAGS_DEBUG
             CMAKE_C_FLAGS_RELWITHDEBINFO CMAKE_CXX_FLAGS_RELWITHDEBINFO)

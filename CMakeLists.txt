@@ -38,13 +38,22 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # generators (VS) where compile_commands.json is not produced by CMake.
 get_property(_mcpp_is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(NOT _mcpp_is_multi_config)
-    add_custom_target(mcpp_link_compile_commands ALL
+    # Drive the mirror through add_custom_command(OUTPUT ...) so the rule
+    # actually depends on the build-tree compile_commands.json. Without an
+    # explicit DEPENDS the previous ALL custom target re-ran on every build
+    # (copy_if_different made it harmless but wasteful) and never declared
+    # to Ninja that its input was the build-tree DB.
+    add_custom_command(
+        OUTPUT  "${CMAKE_SOURCE_DIR}/compile_commands.json"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${CMAKE_BINARY_DIR}/compile_commands.json"
             "${CMAKE_SOURCE_DIR}/compile_commands.json"
-        BYPRODUCTS "${CMAKE_SOURCE_DIR}/compile_commands.json"
+        DEPENDS "${CMAKE_BINARY_DIR}/compile_commands.json"
         COMMENT "Mirroring compile_commands.json into source root for clangd"
         VERBATIM)
+
+    add_custom_target(mcpp_link_compile_commands ALL
+        DEPENDS "${CMAKE_SOURCE_DIR}/compile_commands.json")
 endif()
 
 # Keep binaries grouped under build/<preset>/bin.
@@ -107,6 +116,44 @@ if(MCPP_CLANG_FORMAT_EXECUTABLE AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
             -P "${_mcpp_run_clang_format}"
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
         COMMENT "Checking formatting of tracked C/C++ sources (dry-run)"
+        VERBATIM USES_TERMINAL)
+endif()
+
+# ----------------------------------------------------------------------------
+# `tidy` / `tidy-check` targets: run clang-tidy across every tracked module
+# source. Mirrors the format / format-check pair. clang-tidy needs the active
+# build's compile_commands.json, so the targets are gated on a single-config
+# generator (multi-config doesn't emit one).
+# ----------------------------------------------------------------------------
+find_program(MCPP_CLANG_TIDY_EXECUTABLE
+    NAMES clang-tidy-18 clang-tidy
+    DOC "clang-tidy binary used by the `tidy` target")
+
+if(MCPP_CLANG_TIDY_EXECUTABLE
+        AND EXISTS "${CMAKE_SOURCE_DIR}/.git"
+        AND NOT _mcpp_is_multi_config)
+    set(_mcpp_run_clang_tidy "${CMAKE_SOURCE_DIR}/cmake/RunClangTidy.cmake")
+
+    add_custom_target(tidy
+        COMMAND ${CMAKE_COMMAND}
+            "-DCLANG_TIDY=${MCPP_CLANG_TIDY_EXECUTABLE}"
+            "-DSOURCE_DIR=${CMAKE_SOURCE_DIR}"
+            "-DBUILD_DIR=${CMAKE_BINARY_DIR}"
+            "-DMODE=fix"
+            -P "${_mcpp_run_clang_tidy}"
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        COMMENT "Running clang-tidy --fix over tracked module sources"
+        VERBATIM USES_TERMINAL)
+
+    add_custom_target(tidy-check
+        COMMAND ${CMAKE_COMMAND}
+            "-DCLANG_TIDY=${MCPP_CLANG_TIDY_EXECUTABLE}"
+            "-DSOURCE_DIR=${CMAKE_SOURCE_DIR}"
+            "-DBUILD_DIR=${CMAKE_BINARY_DIR}"
+            "-DMODE=check"
+            -P "${_mcpp_run_clang_tidy}"
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        COMMENT "Running clang-tidy (read-only, --warnings-as-errors=*)"
         VERBATIM USES_TERMINAL)
 endif()
 
