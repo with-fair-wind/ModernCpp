@@ -86,6 +86,16 @@ jobs:
             test-preset:  mingw-gcc-relwithdebinfo
             uses-msys2: true
 
+          # macOS / Apple Clang. The clang-* presets are conditioned on
+          # anyOf(Linux, Darwin); this job is what actually exercises the
+          # Darwin branch and catches Apple libc++ vs libstdc++ skew before
+          # contributors hit it locally.
+          - name: macos-clang
+            os: macos-14
+            preset: clang-relwithdebinfo
+            cc: clang
+            cxx: clang++
+
     env:
       VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
@@ -100,7 +110,10 @@ jobs:
       - uses: actions/checkout@v4
 
       # ------------------------------------------------------------------
-      # Toolchain (Linux: install desired GCC/Clang; Windows: rely on VS)
+      # Toolchain
+      #   Linux  — apt-install desired GCC/Clang
+      #   Windows — rely on VS dev cmd (or MSYS2 for the MinGW job)
+      #   macOS  — Apple Clang ships preinstalled, install Ninja via brew
       # ------------------------------------------------------------------
       - name: Install GCC 13 (Linux)
         if: startsWith(matrix.name, 'linux-gcc')
@@ -114,6 +127,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang-18 lld-18 ninja-build g++-13
+
+      - name: Install Ninja (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
 
       - name: Install Ninja (Windows, non-MinGW)
         if: runner.os == 'Windows' && !matrix.uses-msys2
@@ -188,8 +205,8 @@ jobs:
       # ------------------------------------------------------------------
       # Configure
       # ------------------------------------------------------------------
-      - name: Configure (Linux)
-        if: runner.os == 'Linux'
+      - name: Configure (Linux / macOS)
+        if: runner.os == 'Linux' || runner.os == 'macOS'
         env:
           CC:  ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
@@ -213,12 +230,12 @@ jobs:
       # ------------------------------------------------------------------
       # Build & test
       # ------------------------------------------------------------------
-      - name: Build (Linux)
-        if: runner.os == 'Linux'
+      - name: Build (Linux / macOS)
+        if: runner.os == 'Linux' || runner.os == 'macOS'
         run: cmake --build --preset ${{ matrix.preset }} --parallel
 
-      - name: Test (Linux)
-        if: runner.os == 'Linux'
+      - name: Test (Linux / macOS)
+        if: runner.os == 'Linux' || runner.os == 'macOS'
         run: ctest --preset ${{ matrix.preset }}
 
       - name: Build (Windows)

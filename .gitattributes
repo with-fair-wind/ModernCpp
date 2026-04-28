@@ -1,0 +1,56 @@
+# Default: auto-detect text vs. binary; normalise text to LF in the repo.
+# Working-tree end-of-line is determined by the user's core.autocrlf setting,
+# but git always stores LF — so cross-platform commits stop producing the
+# "LF will be replaced by CRLF" warnings on Windows.
+* text=auto eol=lf
+
+# Sources / config that must always be LF, regardless of platform.
+*.cpp       text eol=lf
+*.cc        text eol=lf
+*.cxx       text eol=lf
+*.hpp       text eol=lf
+*.h         text eol=lf
+*.hxx       text eol=lf
+*.cmake     text eol=lf
+CMakeLists.txt text eol=lf
+*.json      text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.md        text eol=lf
+*.txt       text eol=lf
+*.toml      text eol=lf
+.clang-format text eol=lf
+.clang-tidy   text eol=lf
+.clangd       text eol=lf
+.editorconfig text eol=lf
+.gitignore    text eol=lf
+.gitattributes text eol=lf
+
+# Windows-only scripts must keep CRLF (cmd.exe / PowerShell expect it).
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+*.ps1       text eol=crlf
+
+# POSIX shell scripts must stay LF even on Windows checkouts.
+*.sh        text eol=lf
+
+# Binary types — never normalise.
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.pdf       binary
+*.zip       binary
+*.tar       binary
+*.tar.gz    binary
+*.gz        binary
+*.7z        binary
+*.exe       binary
+*.dll       binary
+*.so        binary
+*.dylib     binary
+*.lib       binary
+*.a         binary
+*.o         binary
+*.obj       binary
