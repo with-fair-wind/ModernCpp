@@ -19,7 +19,9 @@ struct Tag {
     Tag(Tag&&) = delete;
     Tag& operator=(Tag const&) = delete;
     Tag& operator=(Tag&&) = delete;
-    ~Tag() { std::cout << "  dtor " << name << '\n'; }
+    ~Tag() {
+        std::cout << "  dtor " << name << '\n';
+    }
 };
 
 Tag const g_static{"static"};

@@ -8,12 +8,20 @@ namespace {
 
 struct Counter {
     int* live;
-    explicit Counter(int* l) : live(l) { ++*live; }
-    Counter(Counter const& other) : live(other.live) { ++*live; }
-    Counter(Counter&& other) noexcept : live(other.live) { ++*live; }
+    explicit Counter(int* l) : live(l) {
+        ++*live;
+    }
+    Counter(Counter const& other) : live(other.live) {
+        ++*live;
+    }
+    Counter(Counter&& other) noexcept : live(other.live) {
+        ++*live;
+    }
     Counter& operator=(Counter const&) = default;
     Counter& operator=(Counter&&) noexcept = default;
-    ~Counter() { --*live; }
+    ~Counter() {
+        --*live;
+    }
 };
 
 }  // namespace
