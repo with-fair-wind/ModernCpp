@@ -8,10 +8,11 @@
 #include <gtest/gtest.h>
 
 TEST(IntCmp, NegativeIsLessThanUnsigned) {
-    EXPECT_TRUE(std::cmp_less(-1, 1u));
-    EXPECT_FALSE(std::cmp_greater_equal(-1, 0u));
+    EXPECT_TRUE(std::cmp_less(-1, 1U));
+    EXPECT_FALSE(std::cmp_greater_equal(-1, 0U));
     // The naive comparison would give the opposite answer:
-    EXPECT_TRUE(-1 > 0u);
+    // NOLINTNEXTLINE(clang-diagnostic-sign-conversion) - intentional: documents the bug
+    EXPECT_TRUE(-1 > 0U);
 }
 
 TEST(IntCmp, InRangeChecksRepresentability) {
@@ -21,22 +22,22 @@ TEST(IntCmp, InRangeChecksRepresentability) {
 }
 
 TEST(BitOps, PowerOfTwoHelpers) {
-    EXPECT_TRUE(std::has_single_bit(8u));
-    EXPECT_FALSE(std::has_single_bit(6u));
-    EXPECT_EQ(std::bit_ceil(5u), 8u);
-    EXPECT_EQ(std::bit_floor(5u), 4u);
-    EXPECT_EQ(std::bit_width(5u), 3);
+    EXPECT_TRUE(std::has_single_bit(8U));
+    EXPECT_FALSE(std::has_single_bit(6U));
+    EXPECT_EQ(std::bit_ceil(5U), 8U);
+    EXPECT_EQ(std::bit_floor(5U), 4U);
+    EXPECT_EQ(std::bit_width(5U), 3);
 }
 
 TEST(BitOps, PopcountAndLeadingZeros) {
-    EXPECT_EQ(std::popcount(0b1011u), 3);
+    EXPECT_EQ(std::popcount(0b1011U), 3);
 
-    constexpr std::uint8_t v = 0b0000'1100u;
-    EXPECT_EQ(std::countl_zero(v), 4);
-    EXPECT_EQ(std::countr_zero(v), 2);
+    constexpr std::uint8_t kV = 0b0000'1100U;
+    EXPECT_EQ(std::countl_zero(kV), 4);
+    EXPECT_EQ(std::countr_zero(kV), 2);
 }
 
 TEST(BitCast, FloatSignBit) {
-    EXPECT_EQ(std::bit_cast<std::uint32_t>(0.0f), 0u);
-    EXPECT_EQ(std::bit_cast<std::uint32_t>(-0.0f), 0x8000'0000u);
+    EXPECT_EQ(std::bit_cast<std::uint32_t>(0.0F), 0U);
+    EXPECT_EQ(std::bit_cast<std::uint32_t>(-0.0F), 0x8000'0000U);
 }

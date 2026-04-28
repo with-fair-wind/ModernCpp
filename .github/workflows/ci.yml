@@ -256,10 +256,17 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Install toolchain (gcc-13, ninja, clang-format-18, clang-tidy-18)
+      # The lint job uses the clang-relwithdebinfo preset on purpose: the
+      # apt clang-18 on ubuntu-24.04 doesn't always pick a libstdc++ that
+      # exposes <expected>, and the 11_error_handling module's <expected>
+      # try_compile guard then skips its targets — keeping them out of
+      # compile_commands.json and out of clang-tidy's input set.
+      # g++-13 is still installed because clang's libstdc++ resolution
+      # walks the system GCC install path.
+      - name: Install toolchain (clang-18, g++-13, ninja, clang-format-18, clang-tidy-18)
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-13 g++-13 ninja-build \
+          sudo apt-get install -y clang-18 lld-18 g++-13 ninja-build \
                                    clang-format-18 clang-tidy-18
 
       - name: Setup vcpkg
@@ -272,13 +279,13 @@ jobs:
       # any compiled targets to lint, so go straight to the lint targets.
       - name: Configure
         env:
-          CC:  gcc-13
-          CXX: g++-13
+          CC:  clang-18
+          CXX: clang++-18
           VCPKG_ROOT: ${{ github.workspace }}/vcpkg
-        run: cmake --preset gcc-relwithdebinfo
+        run: cmake --preset clang-relwithdebinfo
 
       - name: clang-format (dry-run)
-        run: cmake --build --preset gcc-relwithdebinfo --target format-check
+        run: cmake --build --preset clang-relwithdebinfo --target format-check
 
       - name: clang-tidy
-        run: cmake --build --preset gcc-relwithdebinfo --target tidy-check
+        run: cmake --build --preset clang-relwithdebinfo --target tidy-check

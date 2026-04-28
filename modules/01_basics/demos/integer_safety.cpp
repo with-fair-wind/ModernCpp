@@ -9,12 +9,13 @@
 #include <utility>
 
 int main() {
-    constexpr int signed_value = -1;
-    constexpr unsigned int unsigned_value = 1;
+    constexpr int kSignedValue = -1;
+    constexpr unsigned int kUnsignedValue = 1;
 
     std::cout << std::boolalpha;
-    std::cout << "(-1 < 1u) naive         : " << (signed_value < unsigned_value) << '\n';
-    std::cout << "std::cmp_less(-1, 1u)   : " << std::cmp_less(signed_value, unsigned_value)
+    // NOLINTNEXTLINE(clang-diagnostic-sign-conversion) - intentional: shows the naive bug
+    std::cout << "(-1 < 1u) naive         : " << (kSignedValue < kUnsignedValue) << '\n';
+    std::cout << "std::cmp_less(-1, 1u)   : " << std::cmp_less(kSignedValue, kUnsignedValue)
               << '\n';
 
     // in_range answers "can this value be represented as T?" safely.
@@ -22,8 +23,8 @@ int main() {
     std::cout << "in_range<int8_t>(100)   : " << std::in_range<std::int8_t>(100) << '\n';
 
     // Prefer fixed-width types at ABI / serialization boundaries.
-    constexpr std::uint64_t mask = 0xFFFF'FFFF'0000'0000ULL;
-    std::cout << "mask = " << std::hex << mask << std::dec << '\n';
+    constexpr std::uint64_t kMask = 0xFFFF'FFFF'0000'0000ULL;
+    std::cout << "mask = " << std::hex << kMask << std::dec << '\n';
 
     return 0;
 }

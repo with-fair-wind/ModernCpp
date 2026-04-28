@@ -24,7 +24,7 @@ struct Tag {
     }
 };
 
-Tag const g_static{"static"};
+Tag const kGlobalStatic{"static"};
 
 }  // namespace
 
@@ -32,5 +32,6 @@ int main() {
     std::cout << "main entered\n";
     Tag const local{"automatic"};
     std::cout << "main leaving\n";
+    (void)kGlobalStatic;
     return 0;
 }
