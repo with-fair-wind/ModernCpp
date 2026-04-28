@@ -67,6 +67,25 @@ jobs:
             build-preset: clang-cl-relwithdebinfo
             test-preset:  clang-cl-relwithdebinfo
 
+          # MSVC + ASan: catches Windows-specific UB / heap issues that the
+          # Linux ASan job can't see (different allocator, different ABI).
+          - name: windows-msvc-asan
+            os: windows-2022
+            preset: msvc
+            build-preset: msvc-debug
+            test-preset:  msvc-debug
+            extra-config: -DMCPP_ENABLE_SANITIZERS=ON
+
+          # MinGW-w64 (UCRT64) GCC via MSYS2. Validates the mingw-gcc-* preset
+          # family, which targets a non-MSVC ABI (needs the x64-mingw-dynamic
+          # vcpkg triplet, pinned in the preset).
+          - name: windows-mingw-gcc
+            os: windows-2022
+            preset: mingw-gcc-relwithdebinfo
+            build-preset: mingw-gcc-relwithdebinfo
+            test-preset:  mingw-gcc-relwithdebinfo
+            uses-msys2: true
+
     env:
       VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
@@ -96,15 +115,30 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang-18 lld-18 ninja-build g++-13
 
-      - name: Install Ninja (Windows)
-        if: runner.os == 'Windows'
+      - name: Install Ninja (Windows, non-MinGW)
+        if: runner.os == 'Windows' && !matrix.uses-msys2
         run: choco install ninja -y
 
       - name: Setup MSVC dev environment
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && !matrix.uses-msys2
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
+
+      # MinGW path: install MSYS2 UCRT64 with GCC + Ninja + CMake. The
+      # mingw-gcc-* preset expects gcc/g++ on PATH and Ninja generator;
+      # subsequent cmake/build/test steps for this matrix entry run inside
+      # the msys2 shell so the UCRT64 bin dir takes precedence.
+      - name: Setup MSYS2 (UCRT64)
+        if: matrix.uses-msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: false
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
 
       # ------------------------------------------------------------------
       # Conan (only for jobs with uses-conan: true)
@@ -163,10 +197,17 @@ jobs:
         run: cmake --preset ${{ matrix.preset }} ${{ matrix.extra-config }}
 
       - name: Configure (Windows)
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && !matrix.uses-msys2
         env:
           VCPKG_ROOT: ${{ github.workspace }}/vcpkg
         shell: pwsh
+        run: cmake --preset ${{ matrix.preset }} ${{ matrix.extra-config }}
+
+      - name: Configure (Windows, MSYS2/UCRT64)
+        if: matrix.uses-msys2
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+        shell: msys2 {0}
         run: cmake --preset ${{ matrix.preset }} ${{ matrix.extra-config }}
 
       # ------------------------------------------------------------------
@@ -181,29 +222,70 @@ jobs:
         run: ctest --preset ${{ matrix.preset }}
 
       - name: Build (Windows)
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && !matrix.uses-msys2
         shell: pwsh
         run: cmake --build --preset ${{ matrix.build-preset || matrix.preset }} --parallel
 
       - name: Test (Windows)
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && !matrix.uses-msys2
         shell: pwsh
         run: ctest --preset ${{ matrix.test-preset || matrix.preset }}
 
+      - name: Build (Windows, MSYS2/UCRT64)
+        if: matrix.uses-msys2
+        shell: msys2 {0}
+        run: cmake --build --preset ${{ matrix.build-preset || matrix.preset }} --parallel
+
+      - name: Test (Windows, MSYS2/UCRT64)
+        if: matrix.uses-msys2
+        shell: msys2 {0}
+        run: ctest --preset ${{ matrix.test-preset || matrix.preset }}
+
   lint:
-    name: clang-format check
+    name: clang-format + clang-tidy
     runs-on: ubuntu-24.04
+    env:
+      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
     steps:
+      - name: Export GitHub Actions cache env (vcpkg binary cache)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
       - uses: actions/checkout@v4
 
-      - name: Install clang-format 18
-        run: sudo apt-get update && sudo apt-get install -y clang-format-18
-
-      - name: Verify formatting
+      # The lint job uses the clang-relwithdebinfo preset on purpose: the
+      # apt clang-18 on ubuntu-24.04 doesn't always pick a libstdc++ that
+      # exposes <expected>, and the 11_error_handling module's <expected>
+      # try_compile guard then skips its targets — keeping them out of
+      # compile_commands.json and out of clang-tidy's input set.
+      # g++-13 is still installed because clang's libstdc++ resolution
+      # walks the system GCC install path.
+      - name: Install toolchain (clang-18, g++-13, ninja, clang-format-18, clang-tidy-18)
         run: |
-          mapfile -t files < <(git ls-files '*.cpp' '*.hpp' '*.h' '*.cc' '*.cxx')
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "No C++ sources to check."
-            exit 0
-          fi
-          clang-format-18 --dry-run --Werror "${files[@]}"
+          sudo apt-get update
+          sudo apt-get install -y clang-18 lld-18 g++-13 ninja-build \
+                                   clang-format-18 clang-tidy-18
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: '5ee5eee0d3e9c6098b24d263e9099edcdcef6631'
+
+      # Configure + a no-op build: configure produces compile_commands.json,
+      # the format-check / tidy-check targets read it. We don't need to build
+      # any compiled targets to lint, so go straight to the lint targets.
+      - name: Configure
+        env:
+          CC:  clang-18
+          CXX: clang++-18
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+        run: cmake --preset clang-relwithdebinfo
+
+      - name: clang-format (dry-run)
+        run: cmake --build --preset clang-relwithdebinfo --target format-check
+
+      - name: clang-tidy
+        run: cmake --build --preset clang-relwithdebinfo --target tidy-check

@@ -2,7 +2,7 @@
 #
 # Demos and tests covering object lifetime, storage duration,
 # references, type safety, union safety, placement new.
-#
-# Example:
-#   mcpp_add_demo(NAME storage_duration SOURCES demos/storage_duration.cpp)
-#   mcpp_add_test(NAME test_lifetime    SOURCES tests/test_lifetime.cpp)
+
+mcpp_add_demo(NAME storage_duration SOURCES demos/storage_duration.cpp)
+
+mcpp_add_test(NAME test_lifetime    SOURCES tests/test_lifetime.cpp)

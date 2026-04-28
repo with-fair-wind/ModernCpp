@@ -42,9 +42,11 @@
                 "CMAKE_CXX_COMPILER": "g++"
             },
             "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Linux"
+                "type": "anyOf",
+                "conditions": [
+                    { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" },
+                    { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" }
+                ]
             }
         },
         {
@@ -227,9 +229,11 @@
                 "CMAKE_CXX_COMPILER": "g++"
             },
             "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Linux"
+                "type": "anyOf",
+                "conditions": [
+                    { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" },
+                    { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" }
+                ]
             }
         },
         {
