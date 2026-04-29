@@ -154,7 +154,7 @@ host/build profile 做交叉编译，可分 compiler.libcxx 与 libcxx ABI 等�
 [requires]
 # Keep this version aligned with vcpkg.json's `version>=` floor so the two
 # package managers don't disagree about which gtest gets shipped.
-gtest/1.15.2
+gtest/1.15.0
 
 [generators]
 CMakeDeps
@@ -172,7 +172,7 @@ CMakeToolchain
 
 ```ini
 [requires]
-gtest/1.15.2
+gtest/1.15.0
 fmt/[>=10.0 <11.0]
 boost/1.84.0
 ```
@@ -829,7 +829,7 @@ output-folder 必须也是 `build/gcc-debug-conan`，不是 `build/gcc-debug`。
 ### profile 与编译器版本不匹配
 
 ```
-ERROR: Missing prebuilt package for 'gtest/1.15.2'
+ERROR: Missing prebuilt package for 'gtest/1.15.0'
 ... compiler.version=14 ...
 You can try:
     'conan install ... --build=missing'

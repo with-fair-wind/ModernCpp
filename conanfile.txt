@@ -1,7 +1,10 @@
 [requires]
 # Keep this version aligned with vcpkg.json's `version>=` floor so the two
 # package managers don't disagree about which gtest gets shipped.
-gtest/1.15.2
+# NOTE: pin to a version that ConanCenter actually ships (1.15.x only has
+# 1.15.0 there at the time of writing; 1.15.2 was a vcpkg-only patch). If you
+# bump this, verify the version exists at https://conan.io/center/recipes/gtest
+gtest/1.15.0
 
 [generators]
 CMakeDeps
