@@ -34,8 +34,9 @@ Preset 家族：`gcc-*`、`clang-*`（仅 Linux —— 通过 `hostSystemName !=
 `./build/gcc-debug/bin/test_basics --gtest_filter=...`。
 
 顶层开关：`-DMCPP_BUILD_DEMOS=OFF`（不构建 demo 可执行）、`-DMCPP_BUILD_TESTS=OFF`
-（跳过 gtest 依赖）、`-DMCPP_ENABLE_SANITIZERS=ON`（GCC/Clang 上启用 ASan + UBSan，
-MSVC 上启用 ASan；仅 Debug/RelWithDebInfo 生效）、`-DMCPP_WARNINGS_AS_ERRORS=ON`。
+（跳过 gtest 依赖）、`-DMCPP_ENABLE_SANITIZERS=ON`（GCC/Clang Unix 驱动启用 ASan +
+UBSan；MSVC ABI 下的 cl.exe 与 clang-cl 都启用 ASan，UBSan 不可用；仅 Debug/RelWithDebInfo
+生效）、`-DMCPP_WARNINGS_AS_ERRORS=ON`。
 
 格式化：`cmake --build --preset <p> --target format`（原地修复）/ `--target format-check`
 （dry-run，与 CI 行为一致）。clang-format 不在 PATH 时这两个 target 不会注册。

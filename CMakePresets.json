@@ -35,6 +35,7 @@
         {
             "name": "_gcc",
             "hidden": true,
+            "description": "GNU GCC. Linux only — on macOS `gcc`/`g++` are Apple Clang shims, so users on Darwin must pick `clang-*` instead. Hiding this preset on macOS keeps the CLI output honest.",
             "inherits": ["_vcpkg", "_base"],
             "generator": "Ninja",
             "cacheVariables": {
@@ -42,11 +43,7 @@
                 "CMAKE_CXX_COMPILER": "g++"
             },
             "condition": {
-                "type": "anyOf",
-                "conditions": [
-                    { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" },
-                    { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" }
-                ]
+                "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux"
             }
         },
         {
@@ -222,6 +219,7 @@
         {
             "name": "_gcc-conan",
             "hidden": true,
+            "description": "GNU GCC + Conan. Linux only — same shim caveat as `_gcc`.",
             "inherits": ["_conan", "_base"],
             "generator": "Ninja",
             "cacheVariables": {
@@ -229,11 +227,7 @@
                 "CMAKE_CXX_COMPILER": "g++"
             },
             "condition": {
-                "type": "anyOf",
-                "conditions": [
-                    { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" },
-                    { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" }
-                ]
+                "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux"
             }
         },
         {
@@ -513,7 +507,7 @@
             "name": "_test-base",
             "hidden": true,
             "output": { "outputOnFailure": true, "shortProgress": true },
-            "execution": { "noTestsAction": "ignore", "stopOnFailure": false }
+            "execution": { "noTestsAction": "error", "stopOnFailure": false }
         },
 
         { "name": "gcc-debug",          "inherits": "_test-base", "configurePreset": "gcc-debug" },

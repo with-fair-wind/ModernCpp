@@ -1,7 +1,8 @@
 # ModernCpp
 
-现代 C++ 学习仓库：每篇笔记对应一个可编译、可测试的模块，能在 **gcc / clang / msvc**
-三种主流编译器下验证。
+现代 C++ 学习仓库：每篇笔记对应一个可编译、可测试的模块，可在 **GCC / Clang / MSVC /
+clang-cl / MinGW GCC / MinGW Clang** 这一族编译器下验证（vcpkg 与 Conan 双轨支持，
+Linux / Windows / macOS 全平台）。
 
 A Modern C++ learning repo — every knowledge-point doc is paired with a runnable
 module (demos + optional unit tests), buildable on gcc, clang, and MSVC.
@@ -119,8 +120,9 @@ ctest   --preset mingw-gcc-relwithdebinfo
 
 ## 编译器 × 平台 × triplet 速查
 
-仓库一份 `CMakePresets.json` 同时支持三种主流编译器；与之配套的 vcpkg triplet
-**必须**与编译器 ABI 匹配，否则会出现 GoogleTest 链接失败。
+仓库一份 `CMakePresets.json` 同时支持五个单配置编译器家族（GCC / Clang / clang-cl /
+MinGW GCC / MinGW Clang）和两个多配置 family（MSVC VS / Ninja Multi-Config）；与之配套的
+vcpkg triplet **必须**与编译器 ABI 匹配，否则会出现 GoogleTest 链接失败。
 
 策略：**Linux / macOS 上 vcpkg 会按主机自动检测 triplet**（一种 OS 一种主流 ABI，
 检测可靠），preset 不固化；**Windows 上必须固化**，因为 MSVC ABI 与 MinGW ABI 共存，
@@ -281,7 +283,7 @@ CLANG64 把 `mingw-ucrt64` profile 名 + `mingw-gcc-*-conan` preset 名同时换
 ## 构建与测试 / Build & Test
 
 项目支持 CMake 的四种构建类型：`Debug` / `Release` / `RelWithDebInfo` / `MinSizeRel`，
-并在三种编译器上都可用。
+在所有受支持的编译器家族上都可用。
 
 | 编译器 | 生成器 / Generator | 选择 build type 的方式 |
 | --- | --- | --- |
@@ -334,7 +336,7 @@ ctest --preset msvc-release
 | `MCPP_BUILD_DEMOS` | ON | 构建所有 demo 可执行 |
 | `MCPP_BUILD_TESTS` | ON | 构建 GoogleTest 测试；关掉可跳过依赖解析 |
 | `MCPP_WARNINGS_AS_ERRORS` | OFF | 把 `-Wall/-Wextra/...` 或 `/W4` 提升为错误 |
-| `MCPP_ENABLE_SANITIZERS` | OFF | 开启 AddressSanitizer（+ UBSan，仅 GCC/Clang），仅作用于 Debug / RelWithDebInfo |
+| `MCPP_ENABLE_SANITIZERS` | OFF | 开启 AddressSanitizer（GCC/Clang Unix 驱动 + UBSan；MSVC / clang-cl 仅 ASan，UBSan 不可用），仅作用于 Debug / RelWithDebInfo。MSVC ABI 下会去掉 `/RTC1`（与 ASan 不兼容） |
 
 例：`cmake --preset gcc-debug -DMCPP_BUILD_TESTS=OFF`。
 开 sanitizer 的常用组合：`cmake --preset gcc-debug -DMCPP_ENABLE_SANITIZERS=ON`。
@@ -393,16 +395,22 @@ mcpp_add_test(NAME test_my_topic SOURCES tests/test_my_topic.cpp)
 
 ## 持续集成 / CI
 
-GitHub Actions（`.github/workflows/ci.yml`）会在每次 push 与 PR 上验证：
+GitHub Actions（`.github/workflows/ci.yml`）在每次 push 与 PR 上跑一个 9 路 build/test 矩阵 + 一个 lint job：
 
 | Job | 平台 | 内容 |
 | --- | --- | --- |
-| `linux-gcc`     | ubuntu-24.04 | GCC 13 + vcpkg + `gcc-relwithdebinfo` preset，跑 ctest |
-| `linux-clang`   | ubuntu-24.04 | Clang 18 + libstdc++-13 + `clang-relwithdebinfo` preset，跑 ctest |
-| `windows-msvc`  | windows-2022 | MSVC (VS 2022) + `msvc-relwithdebinfo`，跑 ctest |
-| `lint`          | ubuntu-24.04 | `clang-format-18 --dry-run --Werror` 检查所有 .cpp/.hpp/.h |
+| `linux-gcc`        | ubuntu-24.04 | GCC 13 + vcpkg + `gcc-relwithdebinfo` |
+| `linux-clang`      | ubuntu-24.04 | Clang 18 + libstdc++-13 + `clang-relwithdebinfo` |
+| `linux-gcc-asan`   | ubuntu-24.04 | GCC 13 + `gcc-debug` + `MCPP_ENABLE_SANITIZERS=ON`（ASan + UBSan） |
+| `linux-gcc-conan`  | ubuntu-24.04 | GCC 13 + Conan 2.x + `gcc-relwithdebinfo-conan` |
+| `windows-msvc`     | windows-2022 | MSVC (VS 2022) + `msvc-relwithdebinfo` |
+| `windows-clang-cl` | windows-2022 | LLVM clang-cl + `clang-cl-relwithdebinfo` |
+| `windows-msvc-asan`| windows-2022 | MSVC + `msvc-debug` + `MCPP_ENABLE_SANITIZERS=ON`（MSVC ASan） |
+| `windows-mingw-gcc`| windows-2022 | MSYS2 UCRT64 GCC + `mingw-gcc-relwithdebinfo`（验证非-MSVC ABI 路径 + `x64-mingw-dynamic` triplet） |
+| `macos-clang`      | macos-14     | Apple Clang + `clang-relwithdebinfo`（验证 `_clang` preset 的 Darwin 分支） |
+| `lint`             | ubuntu-24.04 | `clang-format-18 --dry-run --Werror` + `clang-tidy-18`（target `format-check` / `tidy-check`） |
 
-任一 job 失败即阻止 PR 合并，确保三编译器始终可编译且代码风格一致。
+任一 job 失败即阻止 PR 合并。该矩阵不仅覆盖三种主流编译器，还把 sanitizer、Conan、MinGW、clang-cl、macOS 都纳入主线，避免某条路径"名义支持但长期未跑"。
 
 详细使用与配置说明：[`docs/ci-guide.md`](docs/ci-guide.md) —— CI 完整指南（触发、matrix、缓存、调试、分支保护、扩展功能）。
 

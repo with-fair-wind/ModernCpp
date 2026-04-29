@@ -7,12 +7,20 @@
 # Only takes effect in Debug and RelWithDebInfo; Release/MinSizeRel stay clean
 # (sanitizers defeat the point of those configs).
 #
-#   GCC / Clang : -fsanitize=address,undefined -fno-omit-frame-pointer
-#                 (compile + link flags; linker autoselects the runtime)
-#   MSVC        : /fsanitize=address
-#                 UBSan is not supported. ASan on MSVC is incompatible with the
-#                 default /RTC1 runtime checks injected into Debug, so we strip
-#                 /RTC1 from the Debug flags of this build tree.
+#   GCC / Clang (Unix-driver) : -fsanitize=address,undefined -fno-omit-frame-pointer
+#                               (compile + link flags; linker autoselects the runtime)
+#   MSVC / clang-cl           : /fsanitize=address
+#                               UBSan is not supported on the MSVC ABI.
+#                               ASan is incompatible with /RTC1, which the default
+#                               Debug flags inject — we strip /RTC1 from the Debug
+#                               flags of this build tree.
+#
+# Why clang-cl is grouped with MSVC, not Clang:
+# clang-cl has CMAKE_CXX_COMPILER_ID == "Clang", but it is the MSVC-compatible
+# driver — it accepts /MD/MDd, links against the MSVC CRT, and supports the
+# /fsanitize=address spelling that links the MSVC ASan runtime. Routing it
+# through the GNU/Clang branch produces "-MDd not allowed with -fsanitize=address"
+# and unresolved __asan_*/__ubsan_* symbols at link time.
 
 include_guard(GLOBAL)
 
@@ -25,7 +33,9 @@ endif()
 
 set(_san_configs $<CONFIG:Debug,RelWithDebInfo>)
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+# MSVC ABI = cl.exe OR clang-cl. The MSVC variable is TRUE for both; that's
+# what we key on so the GNU-driver Clang (linux/mac) still hits the Unix branch.
+if(NOT MSVC AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
     set(_san_flags
         -fsanitize=address
         -fsanitize=undefined
@@ -35,7 +45,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
     target_link_options   (mcpp_sanitizers INTERFACE $<${_san_configs}:${_san_flags}>)
     message(STATUS "Sanitizers: AddressSanitizer + UBSan (Debug, RelWithDebInfo)")
 
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+elseif(MSVC)
     # /fsanitize=address conflicts with /RTC1; strip it from Debug flags.
     #
     # CAVEAT — global side effect, not scoped to mcpp::sanitizers:
@@ -57,7 +67,11 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     endforeach()
 
     target_compile_options(mcpp_sanitizers INTERFACE $<${_san_configs}:/fsanitize=address>)
-    message(STATUS "Sanitizers: AddressSanitizer (Debug, RelWithDebInfo); UBSan unavailable on MSVC")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        message(STATUS "Sanitizers: AddressSanitizer (Debug, RelWithDebInfo) via clang-cl /fsanitize=address; UBSan unavailable on MSVC ABI")
+    else()
+        message(STATUS "Sanitizers: AddressSanitizer (Debug, RelWithDebInfo); UBSan unavailable on MSVC")
+    endif()
 
 else()
     message(WARNING "MCPP_ENABLE_SANITIZERS: unknown compiler '${CMAKE_CXX_COMPILER_ID}', no sanitizer flags applied.")
