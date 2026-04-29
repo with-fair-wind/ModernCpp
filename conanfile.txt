@@ -1,5 +1,7 @@
 [requires]
-gtest/1.15.0
+# Keep this version aligned with vcpkg.json's `version>=` floor so the two
+# package managers don't disagree about which gtest gets shipped.
+gtest/1.15.2
 
 [generators]
 CMakeDeps
