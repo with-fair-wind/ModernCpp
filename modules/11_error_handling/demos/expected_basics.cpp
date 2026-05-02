@@ -5,6 +5,7 @@
 
 #include <expected>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <string_view>
 
@@ -14,12 +15,18 @@ std::expected<int, std::string> parse_positive(std::string_view s) {
     if (s.empty()) {
         return std::unexpected("empty input");
     }
+    constexpr int kMax = std::numeric_limits<int>::max();
     int value = 0;
     for (char const c : s) {
         if (c < '0' || c > '9') {
             return std::unexpected(std::string{"non-digit: "} + c);
         }
-        value = (value * 10) + (c - '0');
+        int const digit = c - '0';
+        // Reject before the multiply/add can overflow into UB.
+        if (value > (kMax - digit) / 10) {
+            return std::unexpected("overflow");
+        }
+        value = (value * 10) + digit;
     }
     if (value == 0) {
         return std::unexpected("zero is not positive");
@@ -30,7 +37,7 @@ std::expected<int, std::string> parse_positive(std::string_view s) {
 }  // namespace
 
 int main() {
-    for (std::string_view const s : {"42", "", "12a", "0", "7"}) {
+    for (std::string_view const s : {"42", "", "12a", "0", "7", "9999999999"}) {
         auto const r = parse_positive(s);
         if (r) {
             std::cout << "ok    \"" << s << "\" -> " << *r << '\n';

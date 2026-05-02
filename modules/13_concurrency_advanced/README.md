@@ -7,5 +7,5 @@
 
 ## 内容 / Contents
 
-- Demos: `demos/`
-- Tests: `tests/`
+> ⚠️ **WIP** — 本模块当前仅有上述文档；`demos/` 与 `tests/` 尚未落地。
+> WIP — only the docs above exist for now; `demos/` and `tests/` are not yet implemented.

@@ -95,12 +95,16 @@ vcpkg 会根据主机自动选 `x64-osx`（Intel）或 `arm64-osx`（Apple Silic
 ```powershell
 # 在 "x64 Native Tools Command Prompt for VS 2022" 或 Developer PowerShell 中：
 $env:VCPKG_ROOT = "D:\path\to\vcpkg"
-cmake --preset msvc
+cmake --preset msvc                                  # 多配置：configure 一次
 cmake --build --preset msvc-relwithdebinfo --parallel
 ctest   --preset msvc-relwithdebinfo
 ```
 
-clang-cl 同上，preset 改成 `clang-cl-relwithdebinfo`。
+> `msvc` 是多配置 preset：configure 一次后，`msvc-{debug,release,relwithdebinfo,minsizerel}`
+> 四个 buildPreset 共享同一份工程，按需切换无需重 configure。
+
+clang-cl 同上，preset 改成 `clang-cl-relwithdebinfo`（单配置 Ninja，每个 build type
+一个 preset）。
 
 ### Windows (MinGW UCRT64)
 
@@ -418,20 +422,22 @@ GitHub Actions（`.github/workflows/ci.yml`）在每次 push 与 PR 上跑一个
 
 ## Module Index / 模块索引
 
-| # | 模块 | 主题 |
-| - | --- | --- |
-| 01 | [`modules/01_basics`](modules/01_basics/) | 基础复习与扩展 / Basics Review & Extensions |
-| 02 | [`modules/02_lifetime_type_safety`](modules/02_lifetime_type_safety/) | 生命周期与类型安全 / Lifetime & Type Safety |
-| 03 | [`modules/03_multi_file`](modules/03_multi_file/) | 多文件编程 / Multi-file Programming |
-| 04 | [`modules/04_streams_strings`](modules/04_streams_strings/) | 流与字符串 / Streams & Strings |
-| 05 | [`modules/05_containers_ranges_p1`](modules/05_containers_ranges_p1/) | 容器、ranges 与算法 Part 1 |
-| 06 | [`modules/06_containers_ranges_p2`](modules/06_containers_ranges_p2/) | 容器、ranges 与算法 Part 2 |
-| 07 | [`modules/07_value_categories`](modules/07_value_categories/) | 值分类与移动语义 / Value Categories & Move Semantics |
-| 08 | [`modules/08_templates_basics`](modules/08_templates_basics/) | 模板基础与移动语义 / Templates Basics & Move Semantics |
-| 09 | [`modules/09_templates_advanced`](modules/09_templates_advanced/) | 模板进阶 / Advanced Templates |
-| 10 | [`modules/10_memory`](modules/10_memory/) | 内存管理 / Memory Management |
-| 11 | [`modules/11_error_handling`](modules/11_error_handling/) | 错误处理 / Error Handling |
-| 12 | [`modules/12_threading`](modules/12_threading/) | 多线程（新）/ Threading (Modern) |
-| 13 | [`modules/13_concurrency_advanced`](modules/13_concurrency_advanced/) | 并发进阶 / Advanced Concurrency |
-| 14 | [`modules/14_move_semantics_basics`](modules/14_move_semantics_basics/) | Move Semantics Basics |
-| 15 | [`modules/15_summary`](modules/15_summary/) | 补充与总结 / Supplements & Summary |
+图例：✅ 已落地 demos/tests · ⚠️ WIP（仅文档，无 demos/tests）。
+
+| # | 模块 | 主题 | 状态 |
+| - | --- | --- | --- |
+| 01 | [`modules/01_basics`](modules/01_basics/) | 基础复习与扩展 / Basics Review & Extensions | ✅ |
+| 02 | [`modules/02_lifetime_type_safety`](modules/02_lifetime_type_safety/) | 生命周期与类型安全 / Lifetime & Type Safety | ✅ |
+| 03 | [`modules/03_multi_file`](modules/03_multi_file/) | 多文件编程 / Multi-file Programming | ⚠️ WIP |
+| 04 | [`modules/04_streams_strings`](modules/04_streams_strings/) | 流与字符串 / Streams & Strings | ⚠️ WIP |
+| 05 | [`modules/05_containers_ranges_p1`](modules/05_containers_ranges_p1/) | 容器、ranges 与算法 Part 1 | ⚠️ WIP |
+| 06 | [`modules/06_containers_ranges_p2`](modules/06_containers_ranges_p2/) | 容器、ranges 与算法 Part 2 | ⚠️ WIP |
+| 07 | [`modules/07_value_categories`](modules/07_value_categories/) | 值分类与移动语义 / Value Categories & Move Semantics | ⚠️ WIP |
+| 08 | [`modules/08_templates_basics`](modules/08_templates_basics/) | 模板基础与移动语义 / Templates Basics & Move Semantics | ⚠️ WIP |
+| 09 | [`modules/09_templates_advanced`](modules/09_templates_advanced/) | 模板进阶 / Advanced Templates | ⚠️ WIP |
+| 10 | [`modules/10_memory`](modules/10_memory/) | 内存管理 / Memory Management | ⚠️ WIP |
+| 11 | [`modules/11_error_handling`](modules/11_error_handling/) | 错误处理 / Error Handling | ✅ |
+| 12 | [`modules/12_threading`](modules/12_threading/) | 多线程（新）/ Threading (Modern) | ✅ |
+| 13 | [`modules/13_concurrency_advanced`](modules/13_concurrency_advanced/) | 并发进阶 / Advanced Concurrency | ⚠️ WIP |
+| 14 | [`modules/14_move_semantics_basics`](modules/14_move_semantics_basics/) | Move Semantics Basics | ⚠️ WIP |
+| 15 | [`modules/15_summary`](modules/15_summary/) | 补充与总结 / Supplements & Summary | ⚠️ WIP |
