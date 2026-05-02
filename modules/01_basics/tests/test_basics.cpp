@@ -3,6 +3,7 @@
 
 #include <bit>
 #include <cstdint>
+#include <limits>
 #include <utility>
 
 #include <gtest/gtest.h>
@@ -10,9 +11,13 @@
 TEST(IntCmp, NegativeIsLessThanUnsigned) {
     EXPECT_TRUE(std::cmp_less(-1, 1U));
     EXPECT_FALSE(std::cmp_greater_equal(-1, 0U));
-    // The naive comparison would give the opposite answer:
-    // NOLINTNEXTLINE(clang-diagnostic-sign-conversion) - intentional: documents the bug
+
+    // Why std::cmp_* exists: the naive `>` silently promotes -1 to unsigned,
+    // wrapping it to UINT_MAX, so the answer flips to "true" — the trap that
+    // std::cmp_less protects you from.
+    // NOLINTNEXTLINE(clang-diagnostic-sign-conversion) - intentional, demonstrates the trap
     EXPECT_TRUE(-1 > 0U);
+    EXPECT_EQ(static_cast<unsigned>(-1), std::numeric_limits<unsigned>::max());
 }
 
 TEST(IntCmp, InRangeChecksRepresentability) {
