@@ -92,6 +92,12 @@ find_program(MCPP_CLANG_FORMAT_EXECUTABLE
     NAMES clang-format-18 clang-format
     DOC "clang-format binary used by the `format` target")
 
+if(MCPP_CLANG_FORMAT_EXECUTABLE)
+    message(STATUS "Found clang-format: ${MCPP_CLANG_FORMAT_EXECUTABLE}")
+else()
+    message(STATUS "clang-format not found — `format` / `format-check` targets will not be registered")
+endif()
+
 if(MCPP_CLANG_FORMAT_EXECUTABLE AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
     # Drive clang-format through a cmake -P script so the targets work
     # identically on Linux/macOS/Windows without depending on a host shell,
@@ -129,6 +135,12 @@ find_program(MCPP_CLANG_TIDY_EXECUTABLE
     NAMES clang-tidy-18 clang-tidy
     DOC "clang-tidy binary used by the `tidy` target")
 
+if(MCPP_CLANG_TIDY_EXECUTABLE)
+    message(STATUS "Found clang-tidy: ${MCPP_CLANG_TIDY_EXECUTABLE}")
+else()
+    message(STATUS "clang-tidy not found — `tidy` / `tidy-check` targets will not be registered")
+endif()
+
 if(MCPP_CLANG_TIDY_EXECUTABLE
         AND EXISTS "${CMAKE_SOURCE_DIR}/.git"
         AND NOT _mcpp_is_multi_config)
@@ -160,10 +172,16 @@ endif()
 # ----------------------------------------------------------------------------
 # Add every modules/NN_* subdirectory that has its own CMakeLists.txt.
 # New modules drop in with zero top-level edits.
+#
+# CONFIGURE_DEPENDS makes CMake re-evaluate the glob on every build, so adding
+# a new modules/NN_*/ directory auto-registers without a manual reconfigure.
+# The cost is one extra directory stat per build for ~15 entries — negligible
+# compared to the "I added a module and CMake silently ignored it" trap.
 # ----------------------------------------------------------------------------
 file(GLOB _mcpp_module_dirs
     LIST_DIRECTORIES true
     RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/modules"
+    CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/modules/*")
 list(SORT _mcpp_module_dirs)
 
