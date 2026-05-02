@@ -136,6 +136,18 @@ jobs:
         if: runner.os == 'Windows' && !matrix.uses-msys2
         run: choco install ninja -y
 
+      # ccache speeds up repeat configures on the same matrix entry. We expose
+      # it via CMAKE_<LANG>_COMPILER_LAUNCHER on the Configure step (set there,
+      # not here, so it's local to that step). Skipped on Windows: MSVC cl.exe
+      # isn't compatible with ccache, and the MinGW path uses its own MSYS2
+      # toolchain that's awkward to wire up.
+      - name: Setup ccache (Linux/macOS)
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ matrix.name }}-${{ matrix.preset }}
+          max-size: 500M
+
       - name: Setup MSVC dev environment
         if: runner.os == 'Windows' && !matrix.uses-msys2
         uses: ilammy/msvc-dev-cmd@v1
@@ -211,6 +223,11 @@ jobs:
           CC:  ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
           VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+          # CMake honors CMAKE_<LANG>_COMPILER_LAUNCHER as an env var at
+          # configure time (CMake 3.22+), so this routes every compile through
+          # ccache without changing the preset's CMAKE_C_COMPILER setting.
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
         run: cmake --preset ${{ matrix.preset }} ${{ matrix.extra-config }}
 
       - name: Configure (Windows)
@@ -236,7 +253,10 @@ jobs:
 
       - name: Test (Linux / macOS)
         if: runner.os == 'Linux' || runner.os == 'macOS'
-        run: ctest --preset ${{ matrix.preset }}
+        # _test-base preset already sets outputOnFailure:true; we add --parallel
+        # so ctest fans out across the runner's cores, and --output-junit so the
+        # PR page can surface per-test results via the upload-artifact step below.
+        run: ctest --preset ${{ matrix.preset }} --parallel 4 --output-junit ctest-results.xml
 
       - name: Build (Windows)
         if: runner.os == 'Windows' && !matrix.uses-msys2
@@ -246,7 +266,7 @@ jobs:
       - name: Test (Windows)
         if: runner.os == 'Windows' && !matrix.uses-msys2
         shell: pwsh
-        run: ctest --preset ${{ matrix.test-preset || matrix.preset }}
+        run: ctest --preset ${{ matrix.test-preset || matrix.preset }} --parallel 4 --output-junit ctest-results.xml
 
       - name: Build (Windows, MSYS2/UCRT64)
         if: matrix.uses-msys2
@@ -256,7 +276,17 @@ jobs:
       - name: Test (Windows, MSYS2/UCRT64)
         if: matrix.uses-msys2
         shell: msys2 {0}
-        run: ctest --preset ${{ matrix.test-preset || matrix.preset }}
+        run: ctest --preset ${{ matrix.test-preset || matrix.preset }} --parallel 4 --output-junit ctest-results.xml
+
+      # Upload the JUnit XML even on test failure so reviewers can see exactly
+      # which cases failed without scrolling through the raw build log.
+      - name: Upload ctest JUnit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctest-results-${{ matrix.name }}
+          path: ${{ github.workspace }}/build/${{ matrix.preset }}/ctest-results.xml
+          if-no-files-found: ignore
 
   lint:
     name: clang-format + clang-tidy
