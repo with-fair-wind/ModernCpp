@@ -21,12 +21,16 @@ public:
 
 class Dog : public Animal {
 public:
-    std::string speak() const override { return "woof"; }
+    std::string speak() const override {
+        return "woof";
+    }
 };
 
 class Cat final : public Animal {
 public:
-    std::string speak() const override { return "meow"; }
+    std::string speak() const override {
+        return "meow";
+    }
 };
 
 class CountingBase {
@@ -36,7 +40,9 @@ public:
     CountingBase& operator=(CountingBase const&) = delete;
     CountingBase(CountingBase&&) = delete;
     CountingBase& operator=(CountingBase&&) = delete;
-    virtual ~CountingBase() { ++*counter_; }
+    virtual ~CountingBase() {
+        ++*counter_;
+    }
 
 private:
     int* counter_;
@@ -44,9 +50,10 @@ private:
 
 class CountingDerived : public CountingBase {
 public:
-    CountingDerived(int* base, int* derived)
-        : CountingBase{base}, derived_counter_{derived} {}
-    ~CountingDerived() override { ++*derived_counter_; }
+    CountingDerived(int* base, int* derived) : CountingBase{base}, derived_counter_{derived} {}
+    ~CountingDerived() override {
+        ++*derived_counter_;
+    }
 
 private:
     int* derived_counter_;
@@ -65,8 +72,7 @@ TEST(Polymorphism, VirtualDestructorRunsBothLayers) {
     int base = 0;
     int derived = 0;
     {
-        std::unique_ptr<CountingBase> p =
-            std::make_unique<CountingDerived>(&base, &derived);
+        std::unique_ptr<CountingBase> p = std::make_unique<CountingDerived>(&base, &derived);
     }
     EXPECT_EQ(base, 1);
     EXPECT_EQ(derived, 1);

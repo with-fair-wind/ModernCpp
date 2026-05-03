@@ -40,7 +40,7 @@ int main() {
         case 0:
         case 1:
             std::cout << "fast path\n";
-            [[fallthrough]];                              // 故意贯穿
+            [[fallthrough]];  // 故意贯穿
         case 2:
             std::cout << "shared tail\n";
             break;

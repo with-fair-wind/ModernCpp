@@ -34,16 +34,12 @@ TEST(Spaceship, DefaultsAllSixComparisons) {
 }
 
 TEST(Spaceship, IntegralComparisonsAreStrong) {
-    static_assert(std::is_same_v<
-                  std::compare_three_way_result_t<Point>,
-                  std::strong_ordering>);
+    static_assert(std::is_same_v<std::compare_three_way_result_t<Point>, std::strong_ordering>);
     SUCCEED();
 }
 
 TEST(Spaceship, FloatingPointComparisonsArePartial) {
-    static_assert(std::is_same_v<
-                  std::compare_three_way_result_t<Mass>,
-                  std::partial_ordering>);
+    static_assert(std::is_same_v<std::compare_three_way_result_t<Mass>, std::partial_ordering>);
 
     Mass const nan{std::numeric_limits<double>::quiet_NaN()};
     Mass const one{1.0};

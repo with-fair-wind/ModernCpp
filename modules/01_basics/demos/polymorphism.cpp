@@ -16,8 +16,10 @@ class Animal {
 public:
     explicit Animal(std::string name) : name_{std::move(name)} {}
     virtual ~Animal() = default;
-    virtual std::string speak() const = 0;        // 纯虚 -> 抽象类
-    std::string const& name() const { return name_; }
+    virtual std::string speak() const = 0;  // 纯虚 -> 抽象类
+    std::string const& name() const {
+        return name_;
+    }
 
 private:
     std::string name_;
@@ -26,7 +28,9 @@ private:
 class Dog : public Animal {
 public:
     using Animal::Animal;
-    std::string speak() const override { return "woof"; }
+    std::string speak() const override {
+        return "woof";
+    }
 };
 
 // `final` 终止重写链。通过 `Cat&` / `Cat*` 调用时，编译器可放心做
@@ -34,7 +38,9 @@ public:
 class Cat final : public Animal {
 public:
     using Animal::Animal;
-    std::string speak() const override { return "meow"; }
+    std::string speak() const override {
+        return "meow";
+    }
 };
 
 }  // namespace

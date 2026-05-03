@@ -32,8 +32,7 @@ int main() {
         counter += 100;
         return counter;
     };
-    std::cout << "cached() = " << cached()
-              << ", outer counter = " << counter << " (untouched)\n";
+    std::cout << "cached() = " << cached() << ", outer counter = " << counter << " (untouched)\n";
 
     // 泛型 lambda：闭包本身不是模板，但其 operator() 是模板。
     auto twice = [](auto const& v) { return v + v; };

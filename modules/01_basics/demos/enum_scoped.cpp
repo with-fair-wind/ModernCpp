@@ -42,17 +42,21 @@ int main() {
 
     switch (kToday) {
         using enum Day;
-        case Mon: case Tue: case Wed: case Thu: case Fri:
+        case Mon:
+        case Tue:
+        case Wed:
+        case Thu:
+        case Fri:
             std::cout << "weekday\n";
             break;
-        case Sat: case Sun:
+        case Sat:
+        case Sun:
             std::cout << "weekend\n";
             break;
     }
 
     constexpr Flag kPerms = Flag::Read | Flag::Write;
-    std::cout << std::boolalpha
-              << "has Read  = " << has(kPerms, Flag::Read) << '\n'
+    std::cout << std::boolalpha << "has Read  = " << has(kPerms, Flag::Read) << '\n'
               << "has Write = " << has(kPerms, Flag::Write) << '\n'
               << "has Exec  = " << has(kPerms, Flag::Exec) << '\n';
 

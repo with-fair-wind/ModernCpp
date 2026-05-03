@@ -14,12 +14,12 @@ namespace {
 struct Point {
     int x;
     int y;
-    auto operator<=>(Point const&) const = default;     // strong_ordering
+    auto operator<=>(Point const&) const = default;  // strong_ordering
 };
 
 struct Mass {
     double kg;
-    auto operator<=>(Mass const&) const = default;      // partial_ordering
+    auto operator<=>(Mass const&) const = default;  // partial_ordering
 };
 
 }  // namespace
@@ -28,8 +28,7 @@ int main() {
     constexpr Point kA{1, 2};
     constexpr Point kB{1, 3};
 
-    std::cout << std::boolalpha
-              << "a <  b = " << (kA < kB) << '\n'
+    std::cout << std::boolalpha << "a <  b = " << (kA < kB) << '\n'
               << "a == b = " << (kA == kB) << '\n'
               << "a != b = " << (kA != kB) << '\n';
 
@@ -41,8 +40,7 @@ int main() {
     auto const fp_cat = nan_mass <=> one_kg;
     std::cout << "nan <  1kg     = " << (nan_mass < one_kg) << '\n'
               << "nan == 1kg     = " << (nan_mass == one_kg) << '\n'
-              << "fp_cat unordered = "
-              << (fp_cat == std::partial_ordering::unordered) << '\n';
+              << "fp_cat unordered = " << (fp_cat == std::partial_ordering::unordered) << '\n';
 
     return 0;
 }
