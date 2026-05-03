@@ -72,8 +72,8 @@ TEST(Polymorphism, VirtualDestructorRunsBothLayers) {
     int base = 0;
     int derived = 0;
     {
-        std::unique_ptr<CountingBase> p =
-            std::make_unique<CountingDerived>(&base, &derived);
+        using PtrT = std::unique_ptr<CountingBase>;
+        PtrT p = std::make_unique<CountingDerived>(&base, &derived);
     }
     EXPECT_EQ(base, 1);
     EXPECT_EQ(derived, 1);
