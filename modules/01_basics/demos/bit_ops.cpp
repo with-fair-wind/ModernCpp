@@ -1,8 +1,8 @@
-// Highlights from <bit> (C++20) plus std::bit_cast for float punning.
+// <bit>（C++20）的常用辅助函数，外加用 std::bit_cast 查看浮点位模式。
 //
-// All <bit> helpers require unsigned integer inputs. For signed / floating
-// values, std::bit_cast reinterprets the bit pattern without undefined
-// behaviour (unlike C-style casts through pointers).
+// <bit> 里所有函数都要求无符号整数输入；对带符号 / 浮点值，
+// std::bit_cast 可以在不引入 UB 的前提下重解释位模式
+// （比通过指针 C 风格转型安全得多）。
 
 #include <bit>
 #include <cstdint>
@@ -19,7 +19,7 @@ int main() {
     std::cout << "countr_zero(x)      = " << std::countr_zero(kX) << '\n';
     std::cout << "popcount(0b1011u)   = " << std::popcount(0b1011U) << '\n';
 
-    // Inspect the IEEE-754 bit pattern of a float without UB.
+    // 不触发 UB 地查看 IEEE-754 浮点的位模式。
     constexpr float kF = -0.0F;
     auto const bits = std::bit_cast<std::uint32_t>(kF);
     std::cout << "bits(-0.0f)         = 0x" << std::hex << bits << std::dec << '\n';

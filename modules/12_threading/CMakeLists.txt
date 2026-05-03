@@ -1,14 +1,13 @@
 # modules/12_threading — 多线程（新） / Threading (Modern)
 #
-# Demos for std::jthread, std::stop_token, mutex/atomic basics.
+# 演示：std::jthread、std::stop_token、mutex / atomic 基础。
 #
-# Threads::Threads is needed by jthread on Linux (-lpthread); on Windows /
-# MSVC it's a no-op but linking the imported target is harmless.
+# 在 Linux 上 jthread 需要 Threads::Threads（-lpthread）；在 Windows / MSVC
+# 上它是 no-op，但链接 imported target 没有副作用。
 #
-# std::jthread / std::stop_token need libstdc++ 11+ / MSVC STL 17.0+ /
-# libc++ 18+ (Apple Clang on macos-14 still ships an older libc++ where
-# they are missing). Probe and skip if absent — same pattern as the
-# <expected> guard in 11_error_handling.
+# std::jthread / std::stop_token 需要 libstdc++ 11+ / MSVC STL 17.0+ /
+# libc++ 18+（macos-14 上的 Apple Clang 仍然附带老版 libc++，没有这些设施）。
+# 探测一下，缺就跳过 —— 与 11_error_handling 中 <expected> 的守卫同模式。
 
 include(CheckCXXSourceCompiles)
 

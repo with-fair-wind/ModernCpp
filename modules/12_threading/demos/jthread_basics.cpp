@@ -1,8 +1,8 @@
-// Smoke demo for module 12: std::jthread + std::stop_token cooperative cancel.
+// 模块 12 的小演示：std::jthread + std::stop_token 协作式取消。
 //
-// jthread joins on destruction (RAII) and threads its stop_token through to
-// the worker, so the main thread can ask the worker to wind down cleanly
-// without raw flags or detached threads.
+// jthread 在析构时自动 join（RAII），并把 stop_token 透传给工作线程；
+// 这样主线程就可以请求工作线程优雅退出，而无需自行管理裸标志或
+// 使用 detached 线程。
 
 #include <chrono>
 #include <iostream>
@@ -10,7 +10,7 @@
 #include <thread>
 
 int main() {
-    // NOLINTNEXTLINE(performance-unnecessary-value-param) - canonical jthread signature
+    // NOLINTNEXTLINE(performance-unnecessary-value-param) - jthread 的标准签名要求按值传递
     std::jthread worker([](std::stop_token st) {
         int ticks = 0;
         while (!st.stop_requested()) {
@@ -22,6 +22,6 @@ int main() {
 
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
     worker.request_stop();
-    // jthread dtor joins automatically.
+    // jthread 析构时会自动 join。
     return 0;
 }

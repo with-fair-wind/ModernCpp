@@ -111,3 +111,11 @@ Conan 路径不走 vcpkg cache。完整指南见 `docs/ci-guide.md`。
   `modules/NN_*/docs/{zh-CN,en-US}.md`）；项目级 `docs/` 目录专门用于工具链指南
   （clangd / clang-format / clang-tidy / CI）。
 - 完整的模块索引与快速开始见 `README.md`。
+
+## 注释语言约定
+
+- 项目相关文件（`modules/**/*.cpp`、`modules/**/CMakeLists.txt`、顶层 `CMakeLists.txt`、`cmake/*.cmake`）里的注释一律使用**中文**。
+- 适用范围包括：文件头说明、行内注释、`//` 与 `/* … */` 注释、CMake 的 `#` 注释。
+- 标识符（变量名、函数名、target 名等）仍保持英文，以匹配 `.clang-tidy` 规则。
+- 文档文件（`*.md`）保留中英双语版本（`docs/zh-CN.md` / `docs/en-US.md`）的现有规则不变。
+- 引用标准库术语、错误信息、第三方接口名时可保留原文（例如 `std::expected`、`gtest_discover_tests`），但围绕它们的解释用中文
