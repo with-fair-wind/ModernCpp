@@ -26,7 +26,8 @@ enum class Flag : std::uint8_t {
 
 constexpr Flag operator|(Flag a, Flag b) noexcept {
     using T = std::underlying_type_t<Flag>;
-    return Flag{static_cast<T>(a) | static_cast<T>(b)};
+    // uint8_t 在表达式里被提升为 int，外层显式转回 T 不是冗余的。
+    return static_cast<Flag>(static_cast<T>(static_cast<T>(a) | static_cast<T>(b)));
 }
 
 constexpr bool has(Flag set, Flag bit) noexcept {
