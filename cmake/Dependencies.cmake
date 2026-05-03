@@ -1,22 +1,20 @@
 # Dependencies.cmake
 #
-# Resolves third-party dependencies via `find_package`. Users are expected
-# to provision dependencies with either vcpkg (vcpkg.json manifest) or
-# Conan (conanfile.txt) and point CMake at the resulting toolchain file.
-# See README.md for setup instructions.
+# 通过 `find_package` 解析第三方依赖。约定由用户用 vcpkg（vcpkg.json manifest）
+# 或 Conan（conanfile.txt）来准备依赖，再把对应的 toolchain 文件传给 CMake。
+# 安装步骤见 README.md。
 #
-# Currently managed deps:
-#   * GoogleTest  (only if MCPP_BUILD_TESTS is ON)
+# 当前管理的依赖：
+#   * GoogleTest（仅当 MCPP_BUILD_TESTS 为 ON 时）
 
 if(MCPP_BUILD_TESTS)
-    # MSVC CRT alignment: gtest defaults to static CRT (/MT); force shared CRT
-    # (/MD) to match this repo's vcpkg triplet (x64-windows = dynamic CRT) and
-    # CMake's default CMAKE_MSVC_RUNTIME_LIBRARY (also dynamic).
+    # MSVC CRT 对齐：gtest 默认用静态 CRT（/MT），这里强制成动态 CRT（/MD），
+    # 与本仓库使用的 vcpkg triplet（x64-windows = 动态 CRT）以及 CMake 的默认
+    # CMAKE_MSVC_RUNTIME_LIBRARY（也是动态）保持一致。
     #
-    # If you ever switch to a static-CRT triplet (x64-windows-static, etc.),
-    # change this to OFF AND set CMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded"
-    # accordingly — leaving them mismatched causes LNK2038 "RuntimeLibrary
-    # mismatch" linker errors.
+    # 如果你将来切换到静态 CRT 的 triplet（x64-windows-static 等），这里改成
+    # OFF，并相应地把 CMAKE_MSVC_RUNTIME_LIBRARY 设为 "MultiThreaded" ——
+    # 二者不一致会触发 LNK2038 "RuntimeLibrary mismatch" 链接错误。
     if(MSVC)
         set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     endif()
@@ -38,21 +36,20 @@ if(MCPP_BUILD_TESTS)
             "To skip tests entirely pass -DMCPP_BUILD_TESTS=OFF.")
     endif()
 
-    # Defensive check for the Conan + CMakeDeps build_type mismatch trap:
-    # CMakeDeps only emits per-config target files (GTest-Target-<lower>.cmake)
-    # for the build_type passed to `conan install -s build_type=...`. If that
-    # doesn't match the active CMake config, the IMPORTED targets get created
-    # (so GTest_FOUND is TRUE) but their INTERFACE_INCLUDE_DIRECTORIES is
-    # wrapped in $<$<CONFIG:OtherType>:...> generator expressions that
-    # evaluate to empty for our config — configure passes, build later
-    # explodes with `gtest/gtest.h: No such file`. Catch this at configure time.
+    # 防御性检查 —— Conan + CMakeDeps 的 build_type 不一致陷阱：
+    # CMakeDeps 只会为 `conan install -s build_type=...` 传入的那个 build_type
+    # 生成 per-config target 文件（GTest-Target-<lower>.cmake）。如果它跟当前
+    # CMake config 不匹配，IMPORTED target 仍会被创建（GTest_FOUND = TRUE），
+    # 但它们的 INTERFACE_INCLUDE_DIRECTORIES 会被包在
+    # $<$<CONFIG:OtherType>:...> 这种 generator expression 里，针对当前 config
+    # 求值为空 —— configure 阶段一切正常，构建期才会以 `gtest/gtest.h: No
+    # such file` 炸掉。这里把它在 configure 时就拦下。
     #
-    # We need to validate against EVERY config CMake will actually drive:
-    #   * single-config (Ninja, Makefiles, ...): just CMAKE_BUILD_TYPE
-    #   * multi-config (VS, Ninja Multi-Config): every entry of
-    #     CMAKE_CONFIGURATION_TYPES — Conan's per-build-type toolchain only
-    #     populates one of them, so the others would silently break at build
-    #     time. We catch that at configure time too.
+    # 我们要对 CMake 实际驱动的每一个 config 都做校验：
+    #   * 单配置生成器（Ninja、Makefiles 等）：只有 CMAKE_BUILD_TYPE
+    #   * 多配置生成器（VS、Ninja Multi-Config）：CMAKE_CONFIGURATION_TYPES
+    #     的每一项 —— Conan 的 per-build-type toolchain 只能填充其中一个，
+    #     其它的会在构建期静默炸。我们把它也在 configure 时检出。
     if(TARGET GTest::gtest_main)
         set(_mcpp_configs_to_check)
         if(CMAKE_CONFIGURATION_TYPES)

@@ -1,12 +1,11 @@
 # modules/11_error_handling — 错误处理 / Error Handling
 #
-# Demos for exceptions, std::error_code, std::expected (C++23), assertions.
+# 演示：异常、std::error_code、std::expected（C++23）、断言。
 #
-# std::expected requires libstdc++ 12+ / libc++ 16+ / MSVC 17.4+.
-# On ubuntu-24.04 the apt clang-18 sometimes resolves to a libstdc++ that
-# does not yet expose <expected>, so guard the registration with a probe
-# rather than failing the build outright. Modules whose feature mix isn't
-# satisfied print STATUS and skip — the rest of the matrix keeps green.
+# std::expected 需要 libstdc++ 12+ / libc++ 16+ / MSVC 17.4+。
+# 在 ubuntu-24.04 上，apt 装的 clang-18 有时会拉到尚未暴露 <expected> 的
+# libstdc++，所以这里用一次探测而不是直接让构建失败。当工具链不满足
+# 所需特性组合时，本模块只打印一条 STATUS 并跳过 —— 其余矩阵继续保持绿。
 
 include(CheckCXXSourceCompiles)
 

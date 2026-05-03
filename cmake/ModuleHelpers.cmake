@@ -1,23 +1,23 @@
 # ModuleHelpers.cmake
 #
-# Per-module helpers that keep each modules/NN_*/CMakeLists.txt short.
+# 让每个 modules/NN_*/CMakeLists.txt 都能保持简短的辅助函数。
 #
 # mcpp_add_demo(NAME <name>
 #               SOURCES <files...>
 #               [STANDARD <n>]
 #               [LINK_LIBS <targets...>])
-#   Builds one executable per demo, linked against mcpp::warnings.
-#   Target name is "<module>__<name>" to stay globally unique.
-#   STANDARD overrides CMAKE_CXX_STANDARD for this single target.
-#   LINK_LIBS adds extra PRIVATE link dependencies (e.g. Threads::Threads)
-#   without modules having to know the internal target name pattern.
+#   每个 demo 编译成一个可执行文件，链接到 mcpp::warnings。
+#   target 名为 "<module>__<name>"，确保全局唯一。
+#   STANDARD 用于覆盖单 target 的 CMAKE_CXX_STANDARD。
+#   LINK_LIBS 追加 PRIVATE 链接依赖（例如 Threads::Threads），
+#   这样模块就不需要知道内部 target 命名规则。
 #
 # mcpp_add_test(NAME <name>
 #               SOURCES <files...>
 #               [STANDARD <n>]
 #               [LINK_LIBS <targets...>])
-#   Same as demo but additionally links GTest::gtest_main and registers
-#   test cases via gtest_discover_tests.
+#   行为同 mcpp_add_demo，但额外链接 GTest::gtest_main，
+#   并通过 gtest_discover_tests 注册测试用例。
 
 include_guard(GLOBAL)
 
@@ -63,9 +63,8 @@ function(mcpp_add_demo)
     endif()
     set_target_properties(${_target} PROPERTIES
         OUTPUT_NAME "${ARG_NAME}"
-        # Per-module output directory keeps demo / test executables from
-        # different modules from colliding when they happen to share a NAME
-        # (e.g. two modules both register a `playground` demo).
+        # 给每个模块一个独立的输出目录，避免不同模块下同名（NAME 冲突）的
+        # demo / test 可执行文件互相覆盖（例如两个模块都叫 `playground`）。
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/${_module}"
         FOLDER "modules/${_module}/demos")
     _mcpp_apply_standard(${_target} "${ARG_STANDARD}")

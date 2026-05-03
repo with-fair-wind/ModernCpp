@@ -1,7 +1,7 @@
-// Smoke demo for module 11: std::expected as a value-based error channel.
+// 模块 11 的小演示：把 std::expected 当作"按值"返回的错误通道。
 //
-// std::expected<T, E> models "either a T or an E"; unlike exceptions, the
-// failure path is part of the function signature and zero-cost on success.
+// std::expected<T, E> 表示"要么是 T，要么是 E"；与异常不同，失败路径
+// 写在函数签名里，且成功路径上没有任何额外开销。
 
 #include <expected>
 #include <iostream>
@@ -22,7 +22,7 @@ std::expected<int, std::string> parse_positive(std::string_view s) {
             return std::unexpected(std::string{"non-digit: "} + c);
         }
         int const digit = c - '0';
-        // Reject before the multiply/add can overflow into UB.
+        // 在乘加运算溢出为 UB 之前先拒绝。
         if (value > (kMax - digit) / 10) {
             return std::unexpected("overflow");
         }

@@ -1,10 +1,9 @@
 # CompilerWarnings.cmake
 #
-# Defines the INTERFACE target `mcpp::warnings` which carries a unified
-# warning set across GCC, Clang, and MSVC. Link any demo/test target to it
-# to pick the warnings up.
+# 定义 INTERFACE target `mcpp::warnings`，统一了在 GCC / Clang / MSVC 下的
+# 警告集合。任何 demo / test target 链接到它即可获得这套警告。
 #
-# Honors the top-level option MCPP_WARNINGS_AS_ERRORS (default OFF).
+# 受顶层选项 MCPP_WARNINGS_AS_ERRORS（默认 OFF）控制。
 
 add_library(mcpp_warnings INTERFACE)
 add_library(mcpp::warnings ALIAS mcpp_warnings)
@@ -32,8 +31,8 @@ set(_mcpp_msvc_flags
     /Zc:__cplusplus
     /Zc:preprocessor
 )
-# Note: /EHsc is the MSVC default exception model — CMake injects it for C++
-# targets automatically, so we don't repeat it here.
+# 说明：/EHsc 是 MSVC 的默认异常模型 —— CMake 会自动把它注入到 C++ target，
+# 这里就不重复添加了。
 
 target_compile_options(mcpp_warnings INTERFACE
     $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:${_mcpp_gnu_like_flags}>

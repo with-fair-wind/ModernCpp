@@ -1,11 +1,10 @@
-# Cross-platform driver for the `format` / `format-check` build targets.
+# `format` / `format-check` target 的跨平台驱动脚本。
 #
-# Invoked via `cmake -P` so we never depend on a host shell, xargs, or any
-# GNU-specific extension. Required cache variables (set on the command line
-# from the parent project):
-#   CLANG_FORMAT  - absolute path to the clang-format executable
-#   SOURCE_DIR    - repository root (must contain a .git directory)
-#   MODE          - "fix" (clang-format -i) or "check" (--dry-run --Werror)
+# 通过 `cmake -P` 调用，这样就不用依赖宿主 shell、xargs，也不用任何 GNU 特有
+# 的扩展。需要由父项目从命令行传入的 cache 变量：
+#   CLANG_FORMAT  - clang-format 可执行文件的绝对路径
+#   SOURCE_DIR    - 仓库根（必须包含 .git 目录）
+#   MODE          - "fix"（clang-format -i）或 "check"（--dry-run --Werror）
 
 if(NOT CLANG_FORMAT)
     message(FATAL_ERROR "RunClangFormat.cmake: CLANG_FORMAT is not set")
@@ -32,7 +31,7 @@ endif()
 
 string(REPLACE "\n" ";" _files "${_files_str}")
 
-# Make paths absolute so clang-format works regardless of cwd at invocation.
+# 把路径转成绝对路径，这样无论调用时 cwd 是什么，clang-format 都能正常工作。
 set(_abs_files "")
 foreach(_f IN LISTS _files)
     list(APPEND _abs_files "${SOURCE_DIR}/${_f}")

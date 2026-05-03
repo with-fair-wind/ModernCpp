@@ -1,4 +1,4 @@
-// Smoke test for module 11: std::expected happy path / error path.
+// 模块 11 的烟雾测试：std::expected 的成功路径与错误路径。
 
 #include <expected>
 #include <limits>
@@ -51,15 +51,15 @@ TEST(Expected, ValueOrFallsBackOnError) {
 }
 
 TEST(Expected, OverflowReturnsError) {
-    // 19 digits — way past INT_MAX whatever its size; overflow must be caught
-    // before the multiply/add runs into UB (otherwise UBSan fails the test).
+    // 19 位数 —— 不论 INT_MAX 多大都铁定溢出；必须在乘加进入 UB 之前
+    // 拦下（否则 UBSan 会让测试挂掉）。
     auto const r = parse_positive("9999999999999999999");
     ASSERT_FALSE(r.has_value());
     EXPECT_EQ(r.error(), "overflow");
 }
 
 TEST(Expected, AcceptsIntMaxBoundary) {
-    // INT_MAX itself must still parse — the guard rejects only true overflow.
+    // INT_MAX 本身仍应能成功解析 —— 防护逻辑只拒绝真正的溢出。
     auto const r = parse_positive(std::to_string(std::numeric_limits<int>::max()));
     ASSERT_TRUE(r.has_value());
     EXPECT_EQ(*r, std::numeric_limits<int>::max());

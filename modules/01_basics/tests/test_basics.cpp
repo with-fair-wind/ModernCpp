@@ -1,5 +1,5 @@
-// Covers the observable behaviour of the 01_basics demos: safe integer
-// comparison (std::cmp_xxx / std::in_range) and the <bit> helpers.
+// 覆盖 01_basics 模块各 demo 的可观测行为：安全整数比较
+// （std::cmp_xxx / std::in_range）以及 <bit> 辅助函数。
 
 #include <bit>
 #include <cstdint>
@@ -12,10 +12,10 @@ TEST(IntCmp, NegativeIsLessThanUnsigned) {
     EXPECT_TRUE(std::cmp_less(-1, 1U));
     EXPECT_FALSE(std::cmp_greater_equal(-1, 0U));
 
-    // Why std::cmp_* exists: the naive `>` silently promotes -1 to unsigned,
-    // wrapping it to UINT_MAX, so the answer flips to "true" — the trap that
-    // std::cmp_less protects you from.
-    // NOLINTNEXTLINE(clang-diagnostic-sign-conversion) - intentional, demonstrates the trap
+    // std::cmp_* 存在的意义：朴素 `>` 会把 -1 静默提升为无符号，
+    // 绕回到 UINT_MAX，结果反转为 "true" —— 这正是 std::cmp_less
+    // 帮你回避的陷阱。
+    // NOLINTNEXTLINE(clang-diagnostic-sign-conversion) - 故意为之，演示陷阱
     EXPECT_TRUE(-1 > 0U);
     EXPECT_EQ(static_cast<unsigned>(-1), std::numeric_limits<unsigned>::max());
 }

@@ -1,8 +1,8 @@
-// Smoke demo for module 02: storage durations and lifetime printing.
+// 模块 02 的小演示：存储期与生命周期打印。
 //
-// Demonstrates static-vs-automatic storage and the construction order
-// guaranteed by the language: static is initialised before main() runs,
-// automatics in declaration order on entry to their block.
+// 演示静态存储期与自动存储期的对比，以及语言保证的构造顺序：
+// 静态对象在 main() 之前完成初始化；自动对象按声明顺序在进入其
+// 所属作用域时构造。
 
 #include <iostream>
 #include <string>

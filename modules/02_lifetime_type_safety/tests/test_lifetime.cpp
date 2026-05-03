@@ -1,4 +1,4 @@
-// Smoke test for module 02: object lifetime and reference rebinding rules.
+// 模块 02 的烟雾测试：对象生命周期与引用绑定规则。
 
 #include <string>
 
@@ -44,7 +44,7 @@ TEST(Lifetime, ReferenceBindsToInitializerNotLater) {
     std::string a{"first"};
     std::string b{"second"};
     std::string& ref = a;
-    ref = b;  // assigns through ref into a; does NOT rebind ref to b
+    ref = b;  // 经由 ref 写入 a；不会把 ref 重绑到 b
     EXPECT_EQ(a, "second");
     EXPECT_EQ(&ref, &a);
 }

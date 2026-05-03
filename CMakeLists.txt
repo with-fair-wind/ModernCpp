@@ -6,7 +6,7 @@ project(ModernCpp
     LANGUAGES C CXX)
 
 # ----------------------------------------------------------------------------
-# Guardrails
+# 防护栏
 # ----------------------------------------------------------------------------
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
     message(FATAL_ERROR
@@ -15,34 +15,32 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
 endif()
 
 # ----------------------------------------------------------------------------
-# Baseline C++ standard (per-target override available via mcpp_add_demo STANDARD)
+# 基线 C++ 标准（mcpp_add_demo 的 STANDARD 参数可针对单 target 覆盖）
 # ----------------------------------------------------------------------------
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# MSVC: CMAKE_CXX_STANDARD=23 maps to /std:c++23, but parts of the C++23 library
-# (e.g. <print>, std::expected, second-batch ranges) only land under /std:c++latest
-# in current MSVC versions. Force the latest flag globally so demos using newer
-# library features still compile under the msvc preset.
+# MSVC：CMAKE_CXX_STANDARD=23 会映射到 /std:c++23，但 C++23 标准库的部分内容
+# （例如 <print>、std::expected、第二批 ranges）在当前的 MSVC 版本上只有用
+# /std:c++latest 才能启用。这里全局强制 latest，让用到这些较新库特性的 demo
+# 在 msvc preset 下也能编过。
 if(MSVC)
     add_compile_options(/std:c++latest)
 endif()
 
-# Always emit compile_commands.json for clangd.
+# 始终输出 compile_commands.json，供 clangd 使用。
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Mirror compile_commands.json into the source root so .clangd's default search
-# (which walks up from the source file) finds the active preset's DB regardless
-# of which build/<preset>/ directory the user picked. Skipped on multi-config
-# generators (VS) where compile_commands.json is not produced by CMake.
+# 把 compile_commands.json 镜像一份到源码根目录 —— .clangd 默认会从源码文件
+# 一路向上查找，这样无论用户当前用的是哪个 build/<preset>/，都能找到当前激活
+# preset 的 DB。多配置生成器（VS）下 CMake 不产 compile_commands.json，跳过此机制。
 get_property(_mcpp_is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(NOT _mcpp_is_multi_config)
-    # Drive the mirror through add_custom_command(OUTPUT ...) so the rule
-    # actually depends on the build-tree compile_commands.json. Without an
-    # explicit DEPENDS the previous ALL custom target re-ran on every build
-    # (copy_if_different made it harmless but wasteful) and never declared
-    # to Ninja that its input was the build-tree DB.
+    # 镜像动作通过 add_custom_command(OUTPUT ...) 驱动，让规则真正依赖
+    # build-tree 里的 compile_commands.json。之前用 ALL custom target 时，
+    # 没有显式 DEPENDS 会导致每次构建都重跑（虽然 copy_if_different 让它
+    # 无害，但仍是浪费），且没有把"输入是 build-tree DB"这一事实告诉 Ninja。
     add_custom_command(
         OUTPUT  "${CMAKE_SOURCE_DIR}/compile_commands.json"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -56,13 +54,13 @@ if(NOT _mcpp_is_multi_config)
         DEPENDS "${CMAKE_SOURCE_DIR}/compile_commands.json")
 endif()
 
-# Keep binaries grouped under build/<preset>/bin.
+# 把可执行文件统一放在 build/<preset>/bin 下。
 if(NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 endif()
 
 # ----------------------------------------------------------------------------
-# Options
+# 顶层选项
 # ----------------------------------------------------------------------------
 option(MCPP_BUILD_DEMOS        "Build per-module demo executables" ON)
 option(MCPP_BUILD_TESTS        "Build GoogleTest unit tests"       ON)
@@ -70,7 +68,7 @@ option(MCPP_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 option(MCPP_ENABLE_SANITIZERS  "Enable ASan (+UBSan on GCC/Clang) for Debug/RelWithDebInfo" OFF)
 
 # ----------------------------------------------------------------------------
-# CMake module path
+# CMake 模块搜索路径
 # ----------------------------------------------------------------------------
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -84,9 +82,9 @@ if(MCPP_BUILD_TESTS)
 endif()
 
 # ----------------------------------------------------------------------------
-# `format` target: run clang-format -i over every tracked C/C++ source.
-# Only registered if clang-format is on PATH (so non-developer machines still
-# configure cleanly). Skipped in non-git checkouts (e.g. tarball releases).
+# `format` target：对所有被 git 跟踪的 C/C++ 源文件原地跑 clang-format -i。
+# 仅当 PATH 中能找到 clang-format 时才注册（这样非开发机也能干净 configure）。
+# 非 git 检出（例如 tarball 发布）下也跳过。
 # ----------------------------------------------------------------------------
 find_program(MCPP_CLANG_FORMAT_EXECUTABLE
     NAMES clang-format-18 clang-format
@@ -99,9 +97,8 @@ else()
 endif()
 
 if(MCPP_CLANG_FORMAT_EXECUTABLE AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
-    # Drive clang-format through a cmake -P script so the targets work
-    # identically on Linux/macOS/Windows without depending on a host shell,
-    # xargs, or GNU-specific flags like `xargs -r`.
+    # 通过 cmake -P 脚本驱动 clang-format，这样 Linux/macOS/Windows 上行为
+    # 完全一致 —— 不依赖宿主 shell、xargs，也不依赖 `xargs -r` 这种 GNU 扩展。
     set(_mcpp_run_clang_format "${CMAKE_SOURCE_DIR}/cmake/RunClangFormat.cmake")
 
     add_custom_target(format
@@ -126,10 +123,10 @@ if(MCPP_CLANG_FORMAT_EXECUTABLE AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
 endif()
 
 # ----------------------------------------------------------------------------
-# `tidy` / `tidy-check` targets: run clang-tidy across every tracked module
-# source. Mirrors the format / format-check pair. clang-tidy needs the active
-# build's compile_commands.json, so the targets are gated on a single-config
-# generator (multi-config doesn't emit one).
+# `tidy` / `tidy-check` target：对所有被跟踪的模块源文件跑 clang-tidy。
+# 与 format / format-check 配对。clang-tidy 需要当前 build 的
+# compile_commands.json，所以这两个 target 用单配置生成器作为门槛
+# （多配置生成器不产 compile_commands.json）。
 # ----------------------------------------------------------------------------
 find_program(MCPP_CLANG_TIDY_EXECUTABLE
     NAMES clang-tidy-18 clang-tidy
@@ -170,13 +167,13 @@ if(MCPP_CLANG_TIDY_EXECUTABLE
 endif()
 
 # ----------------------------------------------------------------------------
-# Add every modules/NN_* subdirectory that has its own CMakeLists.txt.
-# New modules drop in with zero top-level edits.
+# 自动收录每个带 CMakeLists.txt 的 modules/NN_* 子目录。
+# 新增模块无需改动顶层 CMakeLists.txt。
 #
-# CONFIGURE_DEPENDS makes CMake re-evaluate the glob on every build, so adding
-# a new modules/NN_*/ directory auto-registers without a manual reconfigure.
-# The cost is one extra directory stat per build for ~15 entries — negligible
-# compared to the "I added a module and CMake silently ignored it" trap.
+# CONFIGURE_DEPENDS 让 CMake 在每次构建时重新评估 glob，所以新建一个
+# modules/NN_*/ 目录后无需手动 reconfigure 就能被收录。代价是每次构建
+# 多 ~15 次目录 stat —— 与"我加了个模块结果 CMake 静默忽略了"这种坑相比
+# 完全可以接受。
 # ----------------------------------------------------------------------------
 file(GLOB _mcpp_module_dirs
     LIST_DIRECTORIES true
@@ -193,7 +190,7 @@ foreach(_dir IN LISTS _mcpp_module_dirs)
 endforeach()
 
 # ----------------------------------------------------------------------------
-# Summary (printed at configure time)
+# 配置摘要（configure 时打印）
 # ----------------------------------------------------------------------------
 if(_mcpp_is_multi_config)
     set(_mcpp_build_type_display "multi-config: ${CMAKE_CONFIGURATION_TYPES}")
