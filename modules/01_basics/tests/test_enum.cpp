@@ -11,16 +11,22 @@ namespace {
 
 enum class Day : std::uint8_t { Mon = 1, Tue, Wed };
 
-enum class Flag : std::uint32_t {
+// 把所有 1~7 的位组合都列出来，避免 clang-analyzer 抱怨 `Read | Write`
+// 落在 enumerator 范围之外。底层类型 uint8_t 已足够。
+enum class Flag : std::uint8_t {
     None = 0,
     Read = 1U,
     Write = 2U,
+    ReadWrite = Read | Write,
     Exec = 4U,
+    ReadExec = Read | Exec,
+    WriteExec = Write | Exec,
+    All = Read | Write | Exec,
 };
 
 constexpr Flag operator|(Flag a, Flag b) noexcept {
     using T = std::underlying_type_t<Flag>;
-    return Flag{static_cast<T>(static_cast<T>(a) | static_cast<T>(b))};
+    return Flag{static_cast<T>(a) | static_cast<T>(b)};
 }
 
 constexpr bool has(Flag set, Flag bit) noexcept {

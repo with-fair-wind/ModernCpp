@@ -16,19 +16,19 @@ public:
     Animal(Animal&&) = default;
     Animal& operator=(Animal&&) = default;
     virtual ~Animal() = default;
-    virtual std::string speak() const = 0;
+    [[nodiscard]] virtual std::string speak() const = 0;
 };
 
 class Dog : public Animal {
 public:
-    std::string speak() const override {
+    [[nodiscard]] std::string speak() const override {
         return "woof";
     }
 };
 
 class Cat final : public Animal {
 public:
-    std::string speak() const override {
+    [[nodiscard]] std::string speak() const override {
         return "meow";
     }
 };
@@ -51,6 +51,10 @@ private:
 class CountingDerived : public CountingBase {
 public:
     CountingDerived(int* base, int* derived) : CountingBase{base}, derived_counter_{derived} {}
+    CountingDerived(CountingDerived const&) = delete;
+    CountingDerived& operator=(CountingDerived const&) = delete;
+    CountingDerived(CountingDerived&&) = delete;
+    CountingDerived& operator=(CountingDerived&&) = delete;
     ~CountingDerived() override {
         ++*derived_counter_;
     }

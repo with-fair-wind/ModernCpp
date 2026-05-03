@@ -16,8 +16,8 @@ class Animal {
 public:
     explicit Animal(std::string name) : name_{std::move(name)} {}
     virtual ~Animal() = default;
-    virtual std::string speak() const = 0;  // 纯虚 -> 抽象类
-    std::string const& name() const {
+    [[nodiscard]] virtual std::string speak() const = 0;  // 纯虚 -> 抽象类
+    [[nodiscard]] std::string const& name() const {
         return name_;
     }
 
@@ -28,7 +28,7 @@ private:
 class Dog : public Animal {
 public:
     using Animal::Animal;
-    std::string speak() const override {
+    [[nodiscard]] std::string speak() const override {
         return "woof";
     }
 };
@@ -38,7 +38,7 @@ public:
 class Cat final : public Animal {
 public:
     using Animal::Animal;
-    std::string speak() const override {
+    [[nodiscard]] std::string speak() const override {
         return "meow";
     }
 };

@@ -11,6 +11,8 @@ TEST(Lambda, CaptureByValueFreezesAtConstruction) {
     auto get = [n] { return n; };
     n = 99;
     EXPECT_EQ(get(), 1);
+    // 同时观察外层 n 已变 —— 用一下 n，绕过"值赋给后未读"的告警。
+    EXPECT_EQ(n, 99);
 }
 
 TEST(Lambda, CaptureByReferenceTracksOuter) {

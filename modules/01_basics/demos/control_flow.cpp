@@ -6,6 +6,7 @@
 // 初始化器把变量名约束在所属语句中，避免泄漏到外层作用域。
 // 配合 std::map / std::find 这种返回迭代器的接口尤其顺手。
 
+#include <cstdint>
 #include <iostream>
 #include <map>
 #include <string>
@@ -13,7 +14,7 @@
 
 namespace {
 
-enum class Status { Ok, Warn, Err };
+enum class Status : std::uint8_t { Ok, Warn, Err };
 
 }  // namespace
 

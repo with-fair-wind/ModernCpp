@@ -12,12 +12,16 @@
 #include <gtest/gtest.h>
 
 TEST(FloatingPoint, NaNFailsAllOrderingExceptInequality) {
-    constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
-    EXPECT_FALSE(kNaN == kNaN);
-    EXPECT_FALSE(kNaN < 1.0);
-    EXPECT_FALSE(kNaN > 1.0);
-    EXPECT_TRUE(kNaN != kNaN);
-    EXPECT_TRUE(std::isnan(kNaN));
+    // 用 volatile 局部变量持有 NaN，阻止编译器把比较运算常量折叠 ——
+    // MSVC 的 RelWithDebInfo 在 constexpr NaN 上偶有把 `nan < 1.0`
+    // 折叠成 true 的情况，这违反 IEEE-754 但确实出现过。
+    double volatile nan_v = std::numeric_limits<double>::quiet_NaN();
+    double const nan = nan_v;
+    EXPECT_FALSE(nan == nan);
+    EXPECT_FALSE(nan < 1.0);
+    EXPECT_FALSE(nan > 1.0);
+    EXPECT_TRUE(nan != nan);
+    EXPECT_TRUE(std::isnan(nan));
 }
 
 TEST(FloatingPoint, SignedZerosCompareEqualButDifferInBits) {
