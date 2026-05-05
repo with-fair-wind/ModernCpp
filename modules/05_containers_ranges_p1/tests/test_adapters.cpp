@@ -52,7 +52,7 @@ TEST(PriorityQueue, MaxHeapByDefault) {
 }
 
 TEST(PriorityQueue, MinHeapWithGreater) {
-    std::priority_queue<int, std::vector<int>, std::greater<int>> pq;
+    std::priority_queue<int, std::vector<int>, std::greater<>> pq;
     for (int x : {3, 1, 4, 1, 5, 9, 2, 6}) {
         pq.push(x);
     }

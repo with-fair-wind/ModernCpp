@@ -22,7 +22,8 @@ int main() {
     {
         auto x = vi[1];
         x = 42;
-        std::cout << "vector<int>  vi[1]=" << vi[1] << " (auto 是值副本，写不回去)\n";
+        std::cout << "vector<int>  x=" << x << ", vi[1]=" << vi[1]
+                  << " (auto 是值副本，写不回去)\n";
     }
 
     // 对 vector<bool>，auto 推导出代理；赋值"穿透"到位数组
@@ -39,7 +40,7 @@ int main() {
     // 想"只读"，最稳的做法是写明 bool（强制拷贝出真值）
     bool ro = vb[1];
     ro = false;
-    std::cout << "after writing local bool, vb[1]=" << vb[1] << " (确实没改)\n";
+    std::cout << "local bool ro=" << ro << ", vb[1]=" << vb[1] << " (确实没改)\n";
 
     // flip 翻转所有位，代理也支持 ~/flip()
     vb.flip();
