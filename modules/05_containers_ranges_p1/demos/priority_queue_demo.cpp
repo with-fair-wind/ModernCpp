@@ -45,7 +45,7 @@ int main() {
     std::cout << '\n';
 
     // === min-heap：第三个模板参数填 std::greater ===
-    std::priority_queue<int, std::vector<int>, std::greater<int>> min_heap;
+    std::priority_queue<int, std::vector<int>, std::greater<>> min_heap;
     for (int x : {3, 1, 4, 1, 5, 9, 2, 6}) {
         min_heap.push(x);
     }
