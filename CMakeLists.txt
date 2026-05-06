@@ -25,7 +25,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # （例如 <print>、std::expected、第二批 ranges）在当前的 MSVC 版本上只有用
 # /std:c++latest 才能启用。这里全局强制 latest，让用到这些较新库特性的 demo
 # 在 msvc preset 下也能编过。
-if(MSVC)
+#
+# 仅对真 cl.exe 注入：clang-cl 的 CMAKE_CXX_COMPILER_ID 是 "Clang" 而不是
+# "MSVC"，CMAKE_CXX_STANDARD=23 已经经由 -clang:-std=c++23 喂给 clang frontend，
+# 再追加 /std:c++latest 会被 clang-cl 视作 "argument unused" 并对每个 TU 刷一行
+# 警告。下面用 CXX_COMPILER_ID 把 clang-cl 排除掉。
+if(MSVC AND CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     add_compile_options(/std:c++latest)
 endif()
 
