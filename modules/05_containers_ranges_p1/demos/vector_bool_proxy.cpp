@@ -21,8 +21,9 @@ int main() {
     std::vector<int> vi{0, 0, 0};
     {
         auto x = vi[1];
+        std::cout << "vector<int>  init: x=" << x << " (copied from vi[1])\n";
         x = 42;
-        std::cout << "vector<int>  x=" << x << ", vi[1]=" << vi[1]
+        std::cout << "vector<int>  after x=42: x=" << x << ", vi[1]=" << vi[1]
                   << " (auto 是值副本，写不回去)\n";
     }
 
@@ -39,8 +40,9 @@ int main() {
 
     // 想"只读"，最稳的做法是写明 bool（强制拷贝出真值）
     bool ro = vb[1];
+    std::cout << "local bool init: ro=" << ro << " (copied from vb[1])\n";
     ro = false;
-    std::cout << "local bool ro=" << ro << ", vb[1]=" << vb[1] << " (确实没改)\n";
+    std::cout << "local bool after ro=false: ro=" << ro << ", vb[1]=" << vb[1] << " (vb 没改)\n";
 
     // flip 翻转所有位，代理也支持 ~/flip()
     vb.flip();

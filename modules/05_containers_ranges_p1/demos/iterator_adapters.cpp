@@ -21,6 +21,9 @@ int main() {
 
     // 1) reverse_iterator —— ++ 实际是 --
     std::cout << "reverse iterate vec : ";
+    // 教学示例：本节重点演示 reverse_iterator 的传统迭代器写法，
+    // 故意保留显式 rbegin()/rend() 循环，不改成 range-based for。
+    // NOLINTNEXTLINE(modernize-loop-convert)
     for (auto it = src.rbegin(); it != src.rend(); ++it) {
         std::cout << *it << ' ';
     }

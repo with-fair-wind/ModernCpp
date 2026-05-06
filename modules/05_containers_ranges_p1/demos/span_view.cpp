@@ -49,8 +49,8 @@ int main() {
 
     // 静态 extent：编译期长度 → sizeof(span) 通常只有一个指针
     std::span<int, 4> static_view{arr};
-    constexpr auto ext = decltype(static_view)::extent;
-    std::cout << "static extent = " << ext << ", dynamic_extent? " << (ext == std::dynamic_extent)
+    constexpr auto kExt = decltype(static_view)::extent;
+    std::cout << "static extent = " << kExt << ", dynamic_extent? " << (kExt == std::dynamic_extent)
               << '\n';
 
     // 转字节视图：常用于二进制 IO
