@@ -20,13 +20,23 @@ CompileFlags:
   # IntelliSense 或装 LLVM 插件。
   CompilationDatabase: .
 
-  # 追加到所有编译命令的 flag，对 compile_commands.json 中已有的文件也生效
-  # 主要作用：保护「不在 DB 中的文件」（如临时新建的 .cpp）也能拿到正确的标准
+  # 追加到所有编译命令的 flag。它的合法用途是给「不在 DB 中的文件」
+  # （如刚 git pull 但还没 reconfigure 的 .cpp，或编辑器临时新建的草稿）兜底
+  # 一个正确的语言标准，而不是承担项目的警告策略。
+  #
+  # 历史上这里也写了 -Wall / -Wextra / -Wpedantic，但项目的警告策略已经由
+  # cmake/CompilerWarnings.cmake 按平台分流写进 compile_commands.json：
+  #   - Linux/macOS/MinGW（MSVC=FALSE）：_mcpp_gnu_like_flags，含 -Wall/-Wextra
+  #     /-Wpedantic/-Wshadow/-Wconversion 等
+  #   - Windows MSVC + clang-cl（MSVC=TRUE）：_mcpp_msvc_flags，走 /W4 /permissive-
+  #     /utf-8 /Zc:__cplusplus 这套
+  # 在 .clangd 里再 Add 一份 -Wall 等于双份覆盖，且因为 .clangd 平台无关，
+  # clang-cl driver 一旦看到 -Wall（dash）就会激进展开成 -Wc++98-compat /
+  # -Wpre-c++14-compat / -Wc++98-c++11-compat-binary-literal 等整族兼容性警告
+  # （项目目标 C++23，这一族纯噪声，且每出新标准还会冒新一批 -Wpre-c++NN-compat，
+  # 用 -Wno-* 抑制是打地鼠永无止境）。所以这里只兜底标准，警告交回 JSON。
   Add:
-    - -std=c++23 # C++23 标准（与项目主线一致）
-    - -Wall # 常用警告组
-    - -Wextra # 额外警告
-    - -Wpedantic # 严格 ISO 标准检查
+    - -std=c++23 # 只为不在 DB 中的文件兜底；DB 内文件由 cmake 写好的命令决定
 
   # 从 compile_commands.json 中剥离的 flag（支持 * 通配）
   # 主因：clang-cl + Ninja 生成的命令带 /Fo<obj> /Fd<dir>，clangd 改写命令后
