@@ -58,6 +58,8 @@ TEST(RangesFold, FoldLeftSumsRange) {
 TEST(RangesFold, FoldLeftFirstReturnsOptional) {
     auto product = stdr::fold_left_first(std::vector{1, 2, 3, 4}, std::multiplies<>{});
     ASSERT_TRUE(product.has_value());
+    // 同 test_algo_numeric：ASSERT_TRUE 已守卫；tidy 不识别 gtest 宏 abort。
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     EXPECT_EQ(*product, 24);
 
     auto empty_fold = stdr::fold_left_first(std::vector<int>{}, std::plus<>{});

@@ -99,8 +99,7 @@ TEST(RangesViews, ElementsExtractsTupleColumn) {
 
 TEST(RangesViews, AsConstBlocksWriting) {
     std::vector<int> v{1, 2, 3};
-    auto ro = v | stdv::as_const;
-    using ElemT = std::remove_reference_t<decltype(*ro.begin())>;
+    using ElemT = std::remove_reference_t<decltype(*(v | stdv::as_const).begin())>;
     static_assert(std::is_const_v<ElemT>);
 }
 

@@ -92,6 +92,8 @@ TEST(AlgoNumeric, FoldLeftAndFirst) {
 
     auto product = stdr::fold_left_first(std::vector{1, 2, 3, 4, 5}, std::multiplies<>{});
     ASSERT_TRUE(product.has_value());
+    // ASSERT_TRUE 在前一行已经守卫；clang-tidy 不识别 gtest 宏的 abort 语义。
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     EXPECT_EQ(*product, 120);
 }
 

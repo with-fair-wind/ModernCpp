@@ -59,9 +59,7 @@ int main() {
 
     // 5) common_view：iota(1, 6) 的 end 是 sentinel；std:: 算法要求 begin/end 同类型
     auto rng = stdv::iota(1, 6) | stdv::common;
-    auto std_begin = rng.begin();
-    auto std_end = rng.end();
-    static_assert(std::is_same_v<decltype(std_begin), decltype(std_end)>);
+    static_assert(std::is_same_v<decltype(rng.begin()), decltype(rng.end())>);
     int total = 0;
     for (auto x : rng) {
         total += x;

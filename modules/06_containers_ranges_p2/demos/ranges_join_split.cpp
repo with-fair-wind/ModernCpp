@@ -18,6 +18,8 @@
 namespace stdv = std::views;
 namespace stdr = std::ranges;
 
+// demo 的 main 直接 throw 时让进程终止是预期行为，关掉 bugprone 检查。
+// NOLINTNEXTLINE(bugprone-exception-escape)
 int main() {
     // 1) join：把嵌套 vector 压平
     std::vector<std::vector<int>> nested{{1, 2}, {3, 4, 5}, {6}, {7, 8, 9}};

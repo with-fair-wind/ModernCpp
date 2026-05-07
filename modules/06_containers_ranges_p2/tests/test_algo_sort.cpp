@@ -1,6 +1,7 @@
 // 排序与划分：sort / stable_sort / partial_sort / nth_element / partition / merge / heap。
 
 #include <algorithm>
+#include <cstddef>
 #include <functional>
 #include <ranges>
 #include <string>
@@ -64,10 +65,10 @@ TEST(AlgoSort, NthElementPlacesValue) {
     stdr::nth_element(v, v.begin() + 4);
     // v[4] 是第 5 小（索引 4 的值）；左侧都 ≤ 它，右侧都 ≥ 它
     EXPECT_EQ(v[4], 5);
-    for (int i = 0; i < 4; ++i) {
+    for (std::size_t i = 0; i < 4; ++i) {
         EXPECT_LE(v[i], v[4]);
     }
-    for (int i = 5; i < static_cast<int>(v.size()); ++i) {
+    for (std::size_t i = 5; i < v.size(); ++i) {
         EXPECT_GE(v[i], v[4]);
     }
 }
@@ -88,15 +89,8 @@ TEST(AlgoPartition, SeparatesByPredicate) {
 TEST(AlgoPartition, StablePartitionPreservesOrder) {
     std::vector<int> v{1, 2, 3, 4, 5, 6, 7};
     stdr::stable_partition(v, [](int x) { return x % 2 == 0; });
-    // 偶数段保持原相对顺序：2, 4, 6
-    EXPECT_EQ(v[0], 2);
-    EXPECT_EQ(v[1], 4);
-    EXPECT_EQ(v[2], 6);
-    // 奇数段也保持原相对顺序：1, 3, 5, 7
-    EXPECT_EQ(v[3], 1);
-    EXPECT_EQ(v[4], 3);
-    EXPECT_EQ(v[5], 5);
-    EXPECT_EQ(v[6], 7);
+    // 偶数段保持原相对顺序：2, 4, 6；奇数段也保持原相对顺序：1, 3, 5, 7
+    EXPECT_EQ(v, (std::vector{2, 4, 6, 1, 3, 5, 7}));
 }
 
 TEST(AlgoMerge, MergesSortedInputs) {
