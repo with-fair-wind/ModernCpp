@@ -18,6 +18,7 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+#include <version>
 
 namespace {
 
@@ -56,10 +57,16 @@ int main() {
     std::cout << "if(empty)?         : " << static_cast<bool>(empty) << '\n';
 
     // 3) std::move_only_function：可装 unique_ptr 捕获的 lambda
+    //    C++23 P0288R9：libstdc++ 14+ / MSVC 17.4+ 已实现，libc++ 当前还没有；
+    //    用 feature test macro 兜底跳过这一段。
+#if defined(__cpp_lib_move_only_function) && __cpp_lib_move_only_function >= 202110L
     auto p = std::make_unique<int>(42);
     std::move_only_function<int()> mof = [up = std::move(p)] { return *up; };
     std::cout << "move_only_function : " << mof() << '\n';
     // std::function<int()> bad = std::move(mof);  // 编译错：mof 不可拷贝
+#else
+    std::cout << "move_only_function : 当前 stdlib 未实现 std::move_only_function —— 跳过\n";
+#endif
 
     // 4) std::ref / cref：让 function 持有引用而非拷贝（生命周期由调用方负责）
     std::string log{"start"};

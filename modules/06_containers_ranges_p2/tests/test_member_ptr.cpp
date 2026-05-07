@@ -4,6 +4,7 @@
 #include <functional>
 #include <string>
 #include <type_traits>
+#include <version>
 
 #include <gtest/gtest.h>
 
@@ -73,8 +74,10 @@ TEST(BindFront, BindsMemberFunction) {
     EXPECT_EQ(c.value, 10);
 }
 
+#if defined(__cpp_lib_bind_back) && __cpp_lib_bind_back >= 202202L
 TEST(BindBack, FixesTrailingParameters) {
     auto sub = [](int a, int b) { return a - b; };
     auto sub_5 = std::bind_back(sub, 5);
     EXPECT_EQ(sub_5(10), 5);  // 10 - 5
 }
+#endif

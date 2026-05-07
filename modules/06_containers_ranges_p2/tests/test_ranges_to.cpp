@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <version>
 
 #include <gtest/gtest.h>
 
@@ -68,10 +69,14 @@ TEST(RangesAlgo, ContainsAndStartsEndsWith) {
     EXPECT_TRUE(stdr::contains(v, 3));
     EXPECT_FALSE(stdr::contains(v, 99));
 
+    // ranges::starts_with / ends_with（C++23 P1659R3）：libstdc++-15 还没实现，
+    // MSVC STL / libc++ 已经有；缺则跳过这一段断言。
+#if defined(__cpp_lib_ranges_starts_ends_with) && __cpp_lib_ranges_starts_ends_with >= 202106L
     EXPECT_TRUE(stdr::starts_with(v, std::vector{1, 2}));
     EXPECT_FALSE(stdr::starts_with(v, std::vector{2, 3}));
     EXPECT_TRUE(stdr::ends_with(v, std::vector{4, 5}));
     EXPECT_FALSE(stdr::ends_with(v, std::vector{4, 6}));
+#endif
 }
 
 TEST(RangesAlgo, ContainsSubrange) {

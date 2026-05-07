@@ -7,6 +7,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <version>
 
 #include <gtest/gtest.h>
 
@@ -48,6 +49,7 @@ TEST(StdFunction, MemberFunctionPointer) {
     EXPECT_EQ(sz("hello"), 5U);
 }
 
+#if defined(__cpp_lib_move_only_function) && __cpp_lib_move_only_function >= 202110L
 TEST(MoveOnlyFunction, CanCaptureUniquePtr) {
     auto p = std::make_unique<int>(42);
     std::move_only_function<int()> mof = [up = std::move(p)] { return *up; };
@@ -60,6 +62,7 @@ TEST(MoveOnlyFunction, CanCaptureUniquePtr) {
     // 不可拷贝（编译期检查）
     static_assert(!std::is_copy_constructible_v<std::move_only_function<int()>>);
 }
+#endif
 
 TEST(ReferenceWrapper, BehavesLikeRebindablePointer) {
     int a = 1;
