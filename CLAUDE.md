@@ -92,9 +92,9 @@ job + 一个聚合门禁 job：
   - `windows-msvc`、`windows-clang-cl`、`windows-msvc-asan`、
     `windows-mingw-gcc`（MSYS2 UCRT64）
   - `macos-clang`（Apple Clang，验证 `clang-*` preset 的 Darwin 分支）
-- **lint** job：`clang-format-18 --dry-run --Werror`（`format-check` target）+
-  `clang-tidy-18`（`tidy-check` target），都跑在 `clang-relwithdebinfo` configure
-  之上。
+- **lint** job：`clang-format-20 --dry-run --Werror`（`format-check` target）+
+  `clang-tidy-20`（`tidy-check` target），都跑在 `clang-relwithdebinfo` configure
+  之上。Linux jobs 在 `ubuntu:25.10` 容器里跑，apt 默认仓库提供 g++-15 / clang-20。
 - **required-ci** 聚合门禁：`needs: [build-test, lint]` + `if: always()`，把整个
   矩阵的成功/失败汇总成单一稳定状态，分支保护规则只需 require 这一个就够。
 

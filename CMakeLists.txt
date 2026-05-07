@@ -92,7 +92,7 @@ endif()
 # 非 git 检出（例如 tarball 发布）下也跳过。
 # ----------------------------------------------------------------------------
 find_program(MCPP_CLANG_FORMAT_EXECUTABLE
-    NAMES clang-format-18 clang-format
+    NAMES clang-format-20 clang-format-19 clang-format-18 clang-format
     DOC "clang-format binary used by the `format` target")
 
 if(MCPP_CLANG_FORMAT_EXECUTABLE)
@@ -134,7 +134,7 @@ endif()
 # （多配置生成器不产 compile_commands.json）。
 # ----------------------------------------------------------------------------
 find_program(MCPP_CLANG_TIDY_EXECUTABLE
-    NAMES clang-tidy-18 clang-tidy
+    NAMES clang-tidy-20 clang-tidy-19 clang-tidy-18 clang-tidy
     DOC "clang-tidy binary used by the `tidy` target")
 
 if(MCPP_CLANG_TIDY_EXECUTABLE)

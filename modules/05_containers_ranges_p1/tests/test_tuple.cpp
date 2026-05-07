@@ -70,7 +70,7 @@ TEST(Tuple, AggregateStructuredBinding) {
         int x;
         int y;
     };
-    Point p{3, 4};
+    Point p{.x = 3, .y = 4};
     auto& [x, y] = p;
     x = 30;
     EXPECT_EQ(p.x, 30);

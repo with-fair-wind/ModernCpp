@@ -25,8 +25,8 @@ struct Mass {
 }  // namespace
 
 int main() {
-    constexpr Point kA{1, 2};
-    constexpr Point kB{1, 3};
+    constexpr Point kA{.x = 1, .y = 2};
+    constexpr Point kB{.x = 1, .y = 3};
 
     std::cout << std::boolalpha << "a <  b = " << (kA < kB) << '\n'
               << "a == b = " << (kA == kB) << '\n'
