@@ -214,12 +214,11 @@ jobs:
         if: matrix.uses-conan
         run: |
           pip install --upgrade --break-system-packages conan
-          # Default profile is required as Conan's --profile:build (used to
-          # compile build-tools), even when --profile:host points at a vendored
-          # profile under conan/profiles/. detect --force initialises it from
-          # whatever compiler is on PATH; that's fine because matrix.cc/.cxx
-          # are exported into the env below.
-          conan profile detect --force
+          # 不再调 `conan profile detect` —— 它把 default profile 写成宿主当前
+          # 编译器（在 Arch 上是 GCC 16），而 conan 2.28.1 settings.yml 最高
+          # 只承认到 15.2 → "Invalid setting '16'". 后续 install 用
+          # --profile:all 把 host + build profile 同时指向 conan/profiles/...，
+          # 完全绕开 default profile，所以 detect 这步可以省。
 
       - name: Conan install
         if: matrix.uses-conan
@@ -227,8 +226,10 @@ jobs:
           CC:  ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
         run: |
+          # --profile:all 同时设 host & build profile —— 避免 build profile
+          # fallback 到 default（detect 写的、可能含 conan 还不认识的版本号）。
           conan install . \
-            --profile:host=./conan/profiles/${{ matrix.conan-profile }} \
+            --profile:all=./conan/profiles/${{ matrix.conan-profile }} \
             --output-folder=build/${{ matrix.preset }} \
             --build=missing \
             -s build_type=${{ matrix.build-type }}

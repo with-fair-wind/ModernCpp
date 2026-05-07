@@ -7,6 +7,7 @@
 //   - 构造函数继承（using Base::Base）允许派生类直接复用父类构造函数 —— 但
 //     编译器自动生成的特殊成员（如默认构造）不会被继承。
 
+#include <cstddef>
 #include <iostream>
 #include <string>
 #include <utility>
@@ -44,7 +45,7 @@ struct Triathlete : Swimmer, Runner {
 struct StringHolder {
     std::string value;
     explicit StringHolder(std::string v) : value(std::move(v)) {}
-    explicit StringHolder(int n) : value(n, 'x') {}  // n 个 'x'
+    explicit StringHolder(int n) : value(static_cast<std::size_t>(n), 'x') {}  // n 个 'x'
     void show() const {
         std::cout << "  value=" << value << "\n";
     }

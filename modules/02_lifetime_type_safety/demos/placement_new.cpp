@@ -32,8 +32,8 @@ struct Greeter {
 };
 
 // 含 const 成员的类型：替换存储后必须用 std::launder 才能读。
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
 struct WithConst {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
     int const id;
     int value;
 };

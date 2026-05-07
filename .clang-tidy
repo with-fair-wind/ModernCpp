@@ -60,7 +60,18 @@ Checks: >
   -bugprone-easily-swappable-parameters,
   -cert-err58-cpp,
   -cppcoreguidelines-non-private-member-variables-in-classes,
-  -misc-non-private-member-variables-in-classes
+  -misc-non-private-member-variables-in-classes,
+  # ---- 下列检查在 clang-tidy 21/22 新增或被升级到 warning 级，原本 master
+  #      用 clang-tidy 20 时根本没启用过它们；统一关掉以保持检查面与历史一致。
+  #      想开任何一条，要先把对应代码模式（v[i] 索引、聚合 init、static
+  #      object 抛、main 抛、#if defined() 等）逐处治理过再开。
+  -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,
+  -modernize-use-designated-initializers,
+  -modernize-use-auto,
+  -bugprone-throwing-static-initialization,
+  -bugprone-exception-escape,
+  -bugprone-derived-method-shadowing-base-method,
+  -readability-use-concise-preprocessor-directives
 
 
 # -----------------------------------------------------------------------------
