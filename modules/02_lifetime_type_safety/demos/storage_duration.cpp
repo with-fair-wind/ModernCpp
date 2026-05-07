@@ -24,6 +24,9 @@ struct Tag {
     }
 };
 
+// Tag 的 ctor 调 std::cout，clang-tidy 静态分析认为可能抛 ios_base::failure；
+// 这里就是要展示静态对象在 main 之前构造的时机，是 demo 的核心点。
+// NOLINTNEXTLINE(bugprone-throwing-static-initialization,cert-err58-cpp)
 Tag const kGlobalStatic{"static"};
 
 }  // namespace

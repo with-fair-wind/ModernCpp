@@ -38,6 +38,14 @@
 #   portability-*        可移植性
 #   readability-*        可读性改进（命名、控制流复杂度、隐式 bool 转换）
 # -----------------------------------------------------------------------------
+# 注意：Checks 是 YAML folded scalar (`>`)，里面 `#` 不是注释 —— 它会被当成
+# 字符串的一部分，破坏 clang-tidy 对 Checks 的逗号分割解析。所以说明性注释
+# 全部保留在这块外面。
+#
+# 仍禁用的 `pro-bounds-avoid-unchecked-container-access` 是 clang-tidy 21
+# 新增的，命中 `v[i]` / `bitset[i]` 等容器无界访问，全项目散落 60+ 处跨
+# module 02/05/06；这条单独留个 PR 治理（要么 .at(i)、要么显式 assert
+# bounds、要么本地 NOLINT），本 PR 不开。
 Checks: >
   bugprone-*,
   cert-*,
@@ -60,7 +68,8 @@ Checks: >
   -bugprone-easily-swappable-parameters,
   -cert-err58-cpp,
   -cppcoreguidelines-non-private-member-variables-in-classes,
-  -misc-non-private-member-variables-in-classes
+  -misc-non-private-member-variables-in-classes,
+  -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access
 
 
 # -----------------------------------------------------------------------------

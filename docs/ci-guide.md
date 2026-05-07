@@ -177,16 +177,16 @@ strategy:
   fail-fast: false
   matrix:
     include:
-      - { name: linux-gcc,         os: ubuntu-24.04, container: ubuntu:25.10,
-          preset: gcc-relwithdebinfo,    cc: gcc-15,   cxx: g++-15   }
-      - { name: linux-clang,       os: ubuntu-24.04, container: ubuntu:25.10,
-          preset: clang-relwithdebinfo,  cc: clang-20, cxx: clang++-20 }
-      - { name: linux-gcc-asan,    os: ubuntu-24.04, container: ubuntu:25.10,
-          preset: gcc-debug,             cc: gcc-15,   cxx: g++-15,
+      - { name: linux-gcc,         os: ubuntu-24.04, container: archlinux:base-devel,
+          preset: gcc-relwithdebinfo,    cc: gcc,   cxx: g++   }
+      - { name: linux-clang,       os: ubuntu-24.04, container: archlinux:base-devel,
+          preset: clang-relwithdebinfo,  cc: clang, cxx: clang++ }
+      - { name: linux-gcc-asan,    os: ubuntu-24.04, container: archlinux:base-devel,
+          preset: gcc-debug,             cc: gcc,   cxx: g++,
           extra-config: -DMCPP_ENABLE_SANITIZERS=ON }
-      - { name: linux-gcc-conan,   os: ubuntu-24.04, container: ubuntu:25.10,
+      - { name: linux-gcc-conan,   os: ubuntu-24.04, container: archlinux:base-devel,
           preset: gcc-relwithdebinfo-conan,
-          cc: gcc-15, cxx: g++-15, uses-conan: true,
+          cc: gcc, cxx: g++, uses-conan: true,
           conan-profile: linux-gcc, build-type: RelWithDebInfo }
       - { name: windows-msvc,      os: windows-2022, preset: msvc,
           build-preset: msvc-relwithdebinfo, test-preset: msvc-relwithdebinfo }
@@ -202,14 +202,19 @@ strategy:
           cc: clang, cxx: clang++ }
 ```
 
-> **为什么 Linux jobs 走 `container: ubuntu:25.10`？**
+> **为什么 Linux jobs 走 `container: archlinux:base-devel`？**
 > Ubuntu 24.04 LTS 默认 apt 仓库锁在 GCC 13 / Clang 18，但本仓库部分模块用到的
 > C++23 ranges/generator API（`std::ranges::to`、`<generator>`、`views::chunk` /
-> `zip` / `stride` / `cartesian_product` 等）需要 GCC 15 / libstdc++-15、Clang 20。
-> 升 Ubuntu 24.04 host runner 不可行（GitHub-hosted runners 一年内不会升 25.10），
-> 所以 Linux 4 路全部跑在 `ubuntu:25.10` 容器中——容器里 apt 默认仓库就有 g++-15、
-> clang-20、clang-format-20、clang-tidy-20，无需 ppa / LLVM 第三方仓库。host
-> 仍是 `ubuntu-24.04` 因为 GitHub 不直接提供 25.10 runner。Windows / macOS 不走容器。
+> `zip` / `stride` / `cartesian_product` 等）需要 GCC 15+ / libstdc++ 15+、Clang 20+。
+> 升 Ubuntu 24.04 host runner 不可行（GitHub-hosted runners 不主动跟最新非 LTS 版本），
+> 所以 Linux 4 路全部跑在 `archlinux:base-devel` 容器中——Arch 是滚动发行版，
+> pacman 默认仓库的 gcc / clang / clang-format / clang-tidy 始终跟 LLVM/GCC
+> 上游对齐（当前 GCC 15.x / Clang 22.x），与本地 scoop / Homebrew / Arch 的版本
+> 一致，**避免「本地 format/tidy 通过、CI 失败」的版本错配**。host 仍是
+> `ubuntu-24.04` 因为 GitHub 不直接提供 Arch runner。Windows / macOS 不走容器。
+>
+> 折中：rolling release 意味着 LLVM 升大版本时偶尔要跟着 reformat / 调整 lint
+> 规则一次（通常一年一两次的事，每次几十分钟工作量）。
 - `fail-fast: false`：一个 job 挂了，不取消其它，方便一次拿到全部失败信息
 - `include`：显式列举 9 组参数（比组合写法 `os: [...] compiler: [...]` 更直观；这个矩阵
   里组合是稀疏的 —— 比如 `clang-cl` 只在 windows-2022 上有意义，所以走 include 不走笛卡尔积）
@@ -261,34 +266,37 @@ env:
 #### Step 3：装编译器
 
 ```yaml
-- name: Install toolchain (Linux container)
+- name: Install toolchain (Arch container)
   if: runner.os == 'Linux'
   run: |
-    apt-get update
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      g++-15 \
-      clang-20 lld-20 \
-      ninja-build ccache \
-      git curl zip unzip tar pkg-config ca-certificates \
-      python3 python3-pip
+    pacman -Sy --noconfirm --needed \
+      gcc clang lld llvm \
+      cmake ninja make ccache \
+      curl zip unzip tar pkgconf \
+      python python-pip
 ```
-- 在 `ubuntu:25.10` 容器里跑（容器中已经是 root，所以**不需要 sudo**）
-- 一次性把 4 个 Linux job 共用的工具装齐——`g++-15` 给 gcc 系列、`clang-20`/`lld-20`
-  给 clang 系列、`libstdc++-15` 默认随 g++-15 装上（也给 clang job 的 `-stdlib=libstdc++` 用）
-- `git curl zip unzip tar` 是 vcpkg 与 Conan 的运行期依赖（裸 Ubuntu 镜像默认不带）
-- `python3-pip` 留给 Conan job；非 Conan job 多装一点也无害
+- 在 `archlinux:base-devel` 容器里跑（容器已是 root，**不需要 sudo**；`base-devel`
+  group 已含 `gcc` + `make` + 其他 build 工具，但仍显式写出便于阅读）
+- 一次性把 4 个 Linux job 共用的工具装齐——Arch 的 `clang` 包**同时**提供
+  `clang-format` / `clang-tidy` / `clangd`（不像 Ubuntu 拆成 `clang-format-20` 这种
+  -NN 子包），全部走无版本名 → 与 `_clang` preset 里 `CMAKE_C_COMPILER=clang`
+  完全对得上，**不再需要 `update-alternatives`**
+- `curl zip unzip tar pkgconf` 是 vcpkg 与 Conan 的运行期依赖
+- `python python-pip` 留给 Conan job；同时 `python` 也是 lint job `run-clang-tidy`
+  脚本的解释器（缺它会 `env: 'python3': No such file or directory`）
 
 macOS 与 MSYS2 各自有专属安装 step（`brew install ninja` / `msys2/setup-msys2@v2`），
 逻辑相同，按 `runner.os == 'macOS'` / `matrix.uses-msys2` 这种 if 表达式分支。
 
-**为什么 `linux-clang` job 也要装 g++-15？**
+**为什么 `linux-clang` job 也间接需要 gcc / libstdc++？**
 
-Clang 自己**不带 C++ 标准库**，它通过 `-stdlib=libstdc++` 或 `-stdlib=libc++` 选挂哪一份。
-本仓库的 `clang-*` preset 没有显式指定 `-stdlib`，所以 Clang 用系统默认（Ubuntu 上是
-libstdc++）。`ubuntu:25.10` 自带的 libstdc++ 来自 g++-15 包，**它带的 `std::generator` /
-`std::ranges::to` / 第二批 ranges 等 C++23 库特性是 demos 用到的**——所以 clang job
-必须 `apt install g++-15`，不是用来"运行 g++"，而是用来**提供 libstdc++-15 头与库**。
-也可以用 libc++ 替代，但 Ubuntu 25.10 的 libc++ 在 C++23 库覆盖度上比 libstdc++-15 略弱，
+Clang 自己**不带 C++ 标准库**，它通过 `-stdlib=libstdc++` 或 `-stdlib=libc++` 选挂
+哪一份。本仓库的 `clang-*` preset 没有显式指定 `-stdlib`，所以 Clang 用系统默认
+（Linux 上是 libstdc++）。Arch 的 `gcc` 包同时提供 g++ 编译器与匹配版本的
+libstdc++ 头与库（`/usr/include/c++/15/...`），**它带的 `std::generator` /
+`std::ranges::to` / 第二批 ranges 等 C++23 库特性是 demos 用到的**。换言之，clang
+job 必须 `pacman -S gcc`，不是用来"运行 g++"，而是用来**提供匹配版本的 libstdc++ 头与库**。
+也可以用 libc++ 替代，但当前 Arch 的 libc++ 在 C++23 库覆盖度上仍略弱于 libstdc++，
 所以本仓库选 libstdc++ 路线。
 
 #### Step 4：MSVC 环境
@@ -378,22 +386,22 @@ Windows 段同理，只是用 `shell: pwsh` 显式 PowerShell。
 lint:
   name: clang-format + clang-tidy
   runs-on: ubuntu-24.04
-  container: ubuntu:25.10
+  container: archlinux:base-devel
   steps:
     - uses: actions/checkout@v4
-    - name: Install toolchain (clang-20, g++-15, ninja, clang-format-20, clang-tidy-20)
+    - name: Install toolchain (Arch — clang + clang-format + clang-tidy + cmake/ninja)
       run: |
-        apt-get update
-        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-          clang-20 lld-20 g++-15 ninja-build \
-          clang-format-20 clang-tidy-20 \
-          git curl zip unzip tar pkg-config ca-certificates
+        pacman -Sy --noconfirm --needed \
+          clang lld llvm \
+          cmake ninja make \
+          curl zip unzip tar pkgconf \
+          python
     - name: Setup vcpkg
       uses: lukka/run-vcpkg@v11
       with:
         vcpkgGitCommitId: '5ee5eee0d3e9c6098b24d263e9099edcdcef6631'
     - name: Configure
-      env: { CC: clang-20, CXX: clang++-20, VCPKG_ROOT: ${{ github.workspace }}/vcpkg }
+      env: { CC: clang, CXX: clang++, VCPKG_ROOT: ${{ github.workspace }}/vcpkg }
       run: cmake --preset clang-relwithdebinfo
     - name: clang-format (dry-run)
       run: cmake --build --preset clang-relwithdebinfo --target format-check
@@ -402,12 +410,14 @@ lint:
 ```
 **与 build-test 并行运行**的独立 job，跑两件事：
 
-- **`format-check`**：`clang-format-20 --dry-run --Werror`，检测格式偏差但不改文件。
-  仓库根 `.clang-format` 控制规则。
-- **`tidy-check`**：`clang-tidy-20` 跑全仓 .cpp / .hpp / .h，规则在仓库根 `.clang-tidy`。
+- **`format-check`**：`clang-format --dry-run --Werror`（Arch 上即 LLVM 上游最新版），
+  检测格式偏差但不改文件。仓库根 `.clang-format` 控制规则。
+- **`tidy-check`**：`clang-tidy` 跑全仓 .cpp / .hpp / .h，规则在仓库根 `.clang-tidy`。
   必须先 `configure` 一次让 CMake 写出 `compile_commands.json`，clang-tidy 才知道每个 TU 的 flag。
+- `python` 是 LLVM 包里 `run-clang-tidy` 脚本的解释器（缺它 tidy-check 会
+  `env: 'python3': No such file or directory`）。
 
-> 为什么 lint job 用 `clang-relwithdebinfo` 而不是别的：clang-20 + libstdc++-15
+> 为什么 lint job 用 `clang-relwithdebinfo` 而不是别的：clang + Arch 默认 libstdc++
 > 一起能看到 `<expected>` / `<generator>` / `ranges::to` 等完整的 C++23 stdlib 表面，
 > 模块里的 `try_compile` gate 不会跳过任何 target —— 这就保证 `compile_commands.json`
 > 完整、clang-tidy 的输入集完整。换言之，lint 绿等于每个模块都被 tidy 真正扫过。
@@ -680,7 +690,7 @@ GitHub 会自动展开**最后一个失败的 step**，节省排查时间。
   run: |
     echo "PATH = $PATH"
     cmake --version
-    g++-15 --version
+    g++ --version
     env | sort
 ```
 
@@ -742,7 +752,7 @@ act push
 ```bash
 # 模拟 linux-gcc job 的核心步骤
 export VCPKG_ROOT=/path/to/vcpkg
-export CC=gcc-15 CXX=g++-15
+export CC=gcc CXX=g++
 cmake --preset gcc-relwithdebinfo
 cmake --build --preset gcc-relwithdebinfo --parallel
 ctest --preset gcc-relwithdebinfo
@@ -958,7 +968,7 @@ permissions:
 99% 的原因：
 
 - 你装了某个 vcpkg 全局库 / 系统包，CI 没有
-- 你 CMake/编译器版本和 CI 不一致（Linux jobs 跑在 `ubuntu:25.10` 容器里，apt 默认 g++-15 / clang-20）
+- 你 CMake/编译器版本和 CI 不一致（Linux jobs 跑在 `archlinux:base-devel` 容器里，pacman 滚动 GCC / Clang，本地建议装 LLVM 22+）
 - 路径分隔符问题（`\` vs `/`）
 - 文件名大小写（你 Windows 不区分，Linux 区分）
 - 隐藏的 `.gitignore` 文件没提交，CI 拿不到

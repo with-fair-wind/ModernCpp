@@ -16,13 +16,11 @@ jobs:
   build-test:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
-    # Linux jobs run inside an ubuntu:25.10 container so the matrix gets
-    # GCC 15 / Clang 20 from the distro's default apt repos. The host
-    # runner stays ubuntu-24.04 (24.04 LTS apt only ships GCC 13 / Clang 18,
-    # which is too old for the C++23 ranges/generator API surface this
-    # repo demos). 25.10 (questing) is an interim release; the only thing
-    # CI needs from it is a recent libstdc++ + clang, so the 9-month
-    # support window is fine for the runner-side container.
+    # Linux jobs run inside an archlinux:base-devel container so the matrix
+    # tracks LLVM/GCC 上游（rolling release，当前 GCC 15.x / Clang 22.x），
+    # 与本地 scoop / Homebrew / Arch 的版本一致 —— 减少 lint/format 与本地的
+    # 版本错配。host runner 保持 ubuntu-24.04（容器里跑实际工具链就行）。
+    # base-devel 镜像已自带 base-devel group（gcc + make 等）。
     container: ${{ matrix.container }}
     strategy:
       fail-fast: false
@@ -30,26 +28,26 @@ jobs:
         include:
           - name: linux-gcc
             os: ubuntu-24.04
-            container: ubuntu:25.10
+            container: archlinux:base-devel
             preset: gcc-relwithdebinfo
-            cc: gcc-15
-            cxx: g++-15
+            cc: gcc
+            cxx: g++
 
           - name: linux-clang
             os: ubuntu-24.04
-            container: ubuntu:25.10
+            container: archlinux:base-devel
             preset: clang-relwithdebinfo
-            cc: clang-20
-            cxx: clang++-20
+            cc: clang
+            cxx: clang++
 
           # Sanitizer job: Debug + ASan/UBSan via MCPP_ENABLE_SANITIZERS.
           # Catches memory / UB regressions that release-mode jobs miss.
           - name: linux-gcc-asan
             os: ubuntu-24.04
-            container: ubuntu:25.10
+            container: archlinux:base-devel
             preset: gcc-debug
-            cc: gcc-15
-            cxx: g++-15
+            cc: gcc
+            cxx: g++
             extra-config: -DMCPP_ENABLE_SANITIZERS=ON
 
           # Conan path. Must pass `-s build_type=` matching the preset's
@@ -58,10 +56,10 @@ jobs:
           # empty at build time. cmake/Dependencies.cmake catches this.
           - name: linux-gcc-conan
             os: ubuntu-24.04
-            container: ubuntu:25.10
+            container: archlinux:base-devel
             preset: gcc-relwithdebinfo-conan
-            cc: gcc-15
-            cxx: g++-15
+            cc: gcc
+            cxx: g++
             uses-conan: true
             conan-profile: linux-gcc
             build-type: RelWithDebInfo
@@ -125,13 +123,11 @@ jobs:
       # actions/checkout 在容器里跑：若 PATH 上没有 git，它会走 REST API
       # fallback 拉 tarball（没有 .git 目录）。`format` / `tidy` target 用
       # `EXISTS ${CMAKE_SOURCE_DIR}/.git` 守卫，缺 .git 会让 target 静默
-      # 不注册。先单独装一遍 git + ca-certificates，让 checkout 走原生 git 路径。
-      - name: Pre-install git (Linux container)
+      # 不注册。Arch base-devel 镜像不含 git —— 单独 pacman 装一份。
+      - name: Pre-install git (Arch container)
         if: runner.os == 'Linux'
         run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            git ca-certificates
+          pacman -Sy --noconfirm --needed git ca-certificates
 
       - uses: actions/checkout@v4
 
@@ -145,33 +141,24 @@ jobs:
 
       # ------------------------------------------------------------------
       # Toolchain
-      #   Linux  — apt-install GCC/Clang inside the ubuntu:25.10 container
-      #            (running as root, so no sudo). Each Linux matrix entry
-      #            installs the same superset (g++-15 + clang-20 + ninja +
-      #            ccache + vcpkg/conan deps) so this step is reused. The
-      #            preset and matrix.cc/cxx pick which compiler is invoked.
+      #   Linux  — pacman-install GCC/Clang inside the archlinux:base-devel
+      #            container (running as root, so no sudo). 每个 Linux
+      #            matrix 入口都装同一套超集（gcc + clang + lld + ninja +
+      #            ccache + vcpkg/conan deps）。Arch 的 gcc/clang/clang-format
+      #            /clang-tidy/python 都是无版本名 —— 与 _gcc / _clang preset
+      #            的 CMAKE_C_COMPILER=gcc / clang 直接对得上，不需要
+      #            update-alternatives。
       #   Windows — rely on VS dev cmd (or MSYS2 for the MinGW job)
       #   macOS  — Apple Clang ships preinstalled, install Ninja via brew
       # ------------------------------------------------------------------
-      - name: Install toolchain (Linux container)
+      - name: Install toolchain (Arch container)
         if: runner.os == 'Linux'
         run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            g++-15 \
-            clang-20 lld-20 \
-            cmake ninja-build make ccache \
-            git curl zip unzip tar pkg-config ca-certificates \
-            python3 python3-pip
-          # apt 上的版本化包（g++-15 / clang-20 等）只装版本化二进制，
-          # 不创建无版本号的 /usr/bin/{gcc,g++,clang,clang++} 符号链接。
-          # CMakePresets.json 里的 _gcc / _clang preset 写的是无版本名，
-          # 且 cacheVariables 优先级高于 CC/CXX 环境变量 —— 所以在容器里
-          # 必须自己用 update-alternatives 把无版本名指向具体版本。
-          update-alternatives --install /usr/bin/gcc      gcc      /usr/bin/gcc-15      100
-          update-alternatives --install /usr/bin/g++      g++      /usr/bin/g++-15      100
-          update-alternatives --install /usr/bin/clang    clang    /usr/bin/clang-20    100
-          update-alternatives --install /usr/bin/clang++  clang++  /usr/bin/clang++-20  100
+          pacman -Sy --noconfirm --needed \
+            gcc clang lld llvm \
+            cmake ninja make ccache \
+            curl zip unzip tar pkgconf \
+            python python-pip
 
       - name: Install Ninja (macOS)
         if: runner.os == 'macOS'
@@ -227,12 +214,11 @@ jobs:
         if: matrix.uses-conan
         run: |
           pip install --upgrade --break-system-packages conan
-          # Default profile is required as Conan's --profile:build (used to
-          # compile build-tools), even when --profile:host points at a vendored
-          # profile under conan/profiles/. detect --force initialises it from
-          # whatever compiler is on PATH; that's fine because matrix.cc/.cxx
-          # are exported into the env below.
-          conan profile detect --force
+          # 不再调 `conan profile detect` —— 它把 default profile 写成宿主当前
+          # 编译器（在 Arch 上是 GCC 16），而 conan 2.28.1 settings.yml 最高
+          # 只承认到 15.2 → "Invalid setting '16'". 后续 install 用
+          # --profile:all 把 host + build profile 同时指向 conan/profiles/...，
+          # 完全绕开 default profile，所以 detect 这步可以省。
 
       - name: Conan install
         if: matrix.uses-conan
@@ -240,8 +226,10 @@ jobs:
           CC:  ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
         run: |
+          # --profile:all 同时设 host & build profile —— 避免 build profile
+          # fallback 到 default（detect 写的、可能含 conan 还不认识的版本号）。
           conan install . \
-            --profile:host=./conan/profiles/${{ matrix.conan-profile }} \
+            --profile:all=./conan/profiles/${{ matrix.conan-profile }} \
             --output-folder=build/${{ matrix.preset }} \
             --build=missing \
             -s build_type=${{ matrix.build-type }}
@@ -336,7 +324,11 @@ jobs:
   lint:
     name: clang-format + clang-tidy
     runs-on: ubuntu-24.04
-    container: ubuntu:25.10
+    # Arch（rolling release）容器：clang-format / clang-tidy 始终跟 LLVM 上游
+    # 对齐（当前是 22.x），与 scoop / Homebrew / Arch 本地的 LLVM 版本一致，
+    # 避免本地 fmt 完 push 上来 CI 还报 format 不一致的版本错配。代价是：
+    # LLVM 升大版本时偶尔需要跟着 reformat 一遍 —— 通常每年一两次的事。
+    container: archlinux:base-devel
     env:
       VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
     steps:
@@ -349,39 +341,32 @@ jobs:
 
       # 关键：在 actions/checkout 之前先装 git，否则 checkout 走 REST API
       # 不带 .git 目录，`format` / `tidy` target 的 `EXISTS .git` 守卫失败
-      # 会导致 target 静默不注册。
-      - name: Pre-install git (Linux container)
+      # 会导致 target 静默不注册。Arch 镜像 base-devel 已含 base-devel group，
+      # 但默认不带 git / ca-certificates —— 单独装一遍。
+      - name: Pre-install git (Arch container)
         run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            git ca-certificates
+          pacman -Sy --noconfirm --needed git ca-certificates
 
       - uses: actions/checkout@v4
 
       # 同 build-test：注册 workspace 为 safe.directory，否则容器 root 跑
       # `git ls-files`（format/tidy 都依赖）会被 dubious ownership 拒绝。
-      - name: Mark workspace as git safe.directory (Linux container)
+      - name: Mark workspace as git safe.directory (Arch container)
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      # The lint job uses the clang-relwithdebinfo preset on purpose: clang-20
-      # together with libstdc++ from g++-15 sees the full C++23 stdlib surface
-      # (std::expected, std::generator, ranges::to, etc.), so try_compile
-      # guards in the modules don't skip targets out of compile_commands.json
-      # — that keeps clang-tidy's input set complete.
-      - name: Install toolchain (clang-20, g++-15, cmake, ninja, clang-format-20, clang-tidy-20)
+      # Arch 的 clang 包同时提供 clang-format / clang-tidy / clangd（与 Ubuntu
+      # 拆成多个 -NN 子包不同），全部走无版本名 —— 与 _clang preset 里
+      # CMAKE_C_COMPILER=clang 完全一致，无需 update-alternatives。base-devel
+      # 已带 gcc + libstdc++（提供 C++23 STL 头给 clang-tidy 编译时查找）。
+      # python：run-clang-tidy 是 Python 脚本，缺 python 会导致 tidy-check 报
+      # `env: 'python3': No such file or directory`。
+      - name: Install toolchain (Arch — clang/clang-format/clang-tidy + cmake/ninja)
         run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            clang-20 lld-20 g++-15 cmake ninja-build make \
-            clang-format-20 clang-tidy-20 \
-            git curl zip unzip tar pkg-config ca-certificates
-          # 同 build-test job：CMakePresets 里的 _clang preset 用无版本名，
-          # 必须建 alternatives 让 PATH 上的 clang/clang++ 指向 clang-20。
-          # gcc/g++ 也建一份（lint 跑 vcpkg/cmake 时 try_compile 仍需要）。
-          update-alternatives --install /usr/bin/gcc      gcc      /usr/bin/gcc-15      100
-          update-alternatives --install /usr/bin/g++      g++      /usr/bin/g++-15      100
-          update-alternatives --install /usr/bin/clang    clang    /usr/bin/clang-20    100
-          update-alternatives --install /usr/bin/clang++  clang++  /usr/bin/clang++-20  100
+          pacman -Sy --noconfirm --needed \
+            clang lld llvm \
+            cmake ninja make \
+            curl zip unzip tar pkgconf \
+            python
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -393,8 +378,8 @@ jobs:
       # any compiled targets to lint, so go straight to the lint targets.
       - name: Configure
         env:
-          CC:  clang-20
-          CXX: clang++-20
+          CC:  clang
+          CXX: clang++
           VCPKG_ROOT: ${{ github.workspace }}/vcpkg
         run: cmake --preset clang-relwithdebinfo
 
