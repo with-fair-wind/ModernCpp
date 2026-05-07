@@ -13,6 +13,7 @@
 #include <iterator>
 #include <ranges>
 #include <vector>
+#include <version>
 
 namespace stdr = std::ranges;
 namespace stdv = std::views;
@@ -33,8 +34,8 @@ int main() {
     // 1) erase-remove 惯用法：算法不删元素，只把保留项压到前面，再用 .erase 收尾
     std::vector<int> v{1, 2, 2, 3, 2, 4, 5, 2};
     auto [logical_end, _] = stdr::remove(v, 2);  // 返回 subrange<It, It>
-    std::cout << "stdr::remove logical end at index "
-              << std::distance(v.begin(), logical_end) << ", size 仍为 " << v.size() << '\n';
+    std::cout << "stdr::remove logical end at index " << std::distance(v.begin(), logical_end)
+              << ", size 仍为 " << v.size() << '\n';
     v.erase(logical_end, v.end());
     print("after erase-remove   ", v);
 
@@ -67,7 +68,11 @@ int main() {
     stdr::reverse(rv);
     print("reverse              ", rv);
 
-    // 7) stdr::shift_left：左移 2 位（不是 rotate，被挤出去的位置内容未指定）
+    // 7) stdr::shift_left：左移 2 位（不是 rotate，被挤出去的位置内容未指定）。
+    //    C++23 P2440R1 把 shift_left/right 加进 std::ranges；feature test macro
+    //    __cpp_lib_shift 升到 202202L 表示已实现 ranges 版。MSVC STL 17.5+ 已实现，
+    //    libstdc++ 15、libc++ 当前都还没有 —— 缺则跳过这一段，其余 demo 不受影响。
+#if defined(__cpp_lib_shift) && __cpp_lib_shift >= 202202L
     std::vector<int> sl{1, 2, 3, 4, 5};
     auto valid_prefix = stdr::shift_left(sl, 2);
     std::cout << "shift_left(2): valid prefix size = " << stdr::distance(valid_prefix)
@@ -76,6 +81,9 @@ int main() {
         std::cout << x << ' ';
     }
     std::cout << '\n';
+#else
+    std::cout << "shift_left: 当前 stdlib 未实现 std::ranges::shift_left（P2440R1）—— 跳过\n";
+#endif
 
     // 8) iter_swap
     std::vector<int> sw{10, 20, 30, 40};
@@ -83,9 +91,9 @@ int main() {
     print("iter_swap(0,3)       ", sw);
 
     // 9) 流水线收集：filter + transform + reverse + to<vector>
-    std::vector<int> piped = stdv::iota(1, 11) | stdv::filter([](int x) { return x % 2 == 0; })
-                             | stdv::transform([](int x) { return x * x; }) | stdv::reverse
-                             | stdr::to<std::vector<int>>();
+    std::vector<int> piped = stdv::iota(1, 11) | stdv::filter([](int x) { return x % 2 == 0; }) |
+                             stdv::transform([](int x) { return x * x; }) | stdv::reverse |
+                             stdr::to<std::vector<int>>();
     print("piped 偶数^2 反转    ", piped);
 
     return 0;

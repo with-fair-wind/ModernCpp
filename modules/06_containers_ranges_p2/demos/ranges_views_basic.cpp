@@ -33,8 +33,8 @@ int main() {
     dump("iota(1,10)        ", stdv::iota(1, 10));
 
     // 2) 管道：取奇数，再取前 3 个
-    dump("odd | take(3)     ", stdv::iota(1, 10) | stdv::filter([](int x) { return x % 2 == 1; })
-                                   | stdv::take(3));
+    dump("odd | take(3)     ",
+         stdv::iota(1, 10) | stdv::filter([](int x) { return x % 2 == 1; }) | stdv::take(3));
 
     // 3) take_while / drop_while：按谓词截断/跳过
     std::vector<int> v{1, 2, 3, 4, 5, 6, 7};
@@ -61,8 +61,8 @@ int main() {
     dump("after writing evens", v);  // 偶数被放大 10 倍，奇数不变
 
     // 9) 流水线 + 急切收集：把 view 倒回 vector 仍然需要 stdr::to
-    auto squared = stdv::iota(1, 6) | stdv::transform([](int x) { return x * x; })
-                   | stdr::to<std::vector<int>>();
+    auto squared = stdv::iota(1, 6) | stdv::transform([](int x) { return x * x; }) |
+                   stdr::to<std::vector<int>>();
     dump("to<vector>        ", squared);
 
     return 0;

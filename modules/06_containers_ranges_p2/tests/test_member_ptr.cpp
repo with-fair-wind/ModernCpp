@@ -12,8 +12,12 @@ namespace {
 struct Counter {
     int value{};
 
-    void add(int n) { value += n; }
-    [[nodiscard]] int doubled() const { return value * 2; }
+    void add(int n) {
+        value += n;
+    }
+    [[nodiscard]] int doubled() const {
+        return value * 2;
+    }
 };
 
 }  // namespace

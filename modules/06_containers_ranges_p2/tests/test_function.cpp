@@ -17,7 +17,9 @@ int add(int a, int b) {
 }
 
 struct Functor {
-    int operator()(int a, int b) const { return a * b; }
+    int operator()(int a, int b) const {
+        return a * b;
+    }
 };
 
 }  // namespace
@@ -103,11 +105,11 @@ TEST(StdRef, BindsViaFunctionWithoutCopy) {
 }
 
 TEST(StdInvoke, UnifiesCallSyntax) {
-    EXPECT_EQ(std::invoke(&add, 2, 3), 5);                             // 普通函数指针
-    EXPECT_EQ(std::invoke([](int x) { return x * x; }, 5), 25);        // lambda
-    EXPECT_EQ(std::invoke(Functor{}, 2, 3), 6);                        // functor
+    EXPECT_EQ(std::invoke(&add, 2, 3), 5);                       // 普通函数指针
+    EXPECT_EQ(std::invoke([](int x) { return x * x; }, 5), 25);  // lambda
+    EXPECT_EQ(std::invoke(Functor{}, 2, 3), 6);                  // functor
 
     std::string s{"hello"};
-    EXPECT_EQ(std::invoke(&std::string::size, s), 5U);                 // 成员函数指针 + 对象
-    EXPECT_EQ(std::invoke(&std::string::size, &s), 5U);                // 成员函数指针 + 指针
+    EXPECT_EQ(std::invoke(&std::string::size, s), 5U);   // 成员函数指针 + 对象
+    EXPECT_EQ(std::invoke(&std::string::size, &s), 5U);  // 成员函数指针 + 指针
 }

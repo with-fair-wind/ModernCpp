@@ -48,8 +48,8 @@ int main() {
     std::cout << '\n';
 
     // 5) stdr::to<vector>：把 view 物化成容器（终结流水线）
-    auto squares = stdv::iota(1, 6) | stdv::transform([](int x) { return x * x; })
-                   | stdr::to<std::vector<int>>();
+    auto squares = stdv::iota(1, 6) | stdv::transform([](int x) { return x * x; }) |
+                   stdr::to<std::vector<int>>();
     std::cout << "to<vector>       : ";
     for (auto x : squares) {
         std::cout << x << ' ';
@@ -59,8 +59,8 @@ int main() {
     // 6) stdr::to<map>：源是 (key, value) 元组的 view 时，可以直接收成 map
     auto m = stdv::iota(0, 4) | stdv::transform([](int i) {
                  return std::pair{i, std::string(1, static_cast<char>('a' + i))};
-             })
-             | stdr::to<std::map<int, std::string>>();
+             }) |
+             stdr::to<std::map<int, std::string>>();
     std::cout << "to<map>          : ";
     for (auto const& [k, v] : m) {
         std::cout << k << "->" << v << ' ';

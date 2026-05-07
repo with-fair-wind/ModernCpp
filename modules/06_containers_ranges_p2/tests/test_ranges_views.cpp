@@ -25,8 +25,8 @@ TEST(RangesViews, IotaFiniteAndInfinite) {
 }
 
 TEST(RangesViews, FilterAndTake) {
-    auto odd_first3 = stdv::iota(1, 100) | stdv::filter([](int x) { return x % 2 == 1; })
-                      | stdv::take(3);
+    auto odd_first3 =
+        stdv::iota(1, 100) | stdv::filter([](int x) { return x % 2 == 1; }) | stdv::take(3);
     auto out = odd_first3 | stdr::to<std::vector<int>>();
     EXPECT_EQ(out, (std::vector{1, 3, 5}));
 }

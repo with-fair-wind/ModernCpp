@@ -51,16 +51,14 @@ int main() {
     print("sort                ", v);
 
     // 2) projection：按字段排序而不写自定义比较器
-    std::vector<Person> ps{{.name = "alice", .age = 30},
-                           {.name = "bob", .age = 25},
-                           {.name = "carol", .age = 40}};
+    std::vector<Person> ps{
+        {.name = "alice", .age = 30}, {.name = "bob", .age = 25}, {.name = "carol", .age = 40}};
     stdr::sort(ps, std::less<>{}, &Person::age);
     printAges("sort by age (proj)  ", ps);
 
     // 3) stable_sort：保留相等元素的相对顺序
-    std::vector<Person> ps2{{.name = "alice", .age = 30},
-                            {.name = "bob", .age = 30},
-                            {.name = "carol", .age = 25}};
+    std::vector<Person> ps2{
+        {.name = "alice", .age = 30}, {.name = "bob", .age = 30}, {.name = "carol", .age = 25}};
     stdr::stable_sort(ps2, std::less<>{}, &Person::age);
     printAges("stable_sort by age  ", ps2);
 

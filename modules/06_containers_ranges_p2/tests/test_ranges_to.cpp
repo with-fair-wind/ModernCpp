@@ -23,8 +23,8 @@ TEST(RangesTo, MaterializesToVector) {
 TEST(RangesTo, MaterializesToMap) {
     auto m = stdv::iota(0, 3) | stdv::transform([](int i) {
                  return std::pair{i, std::string(static_cast<std::size_t>(i + 1), 'a')};
-             })
-             | stdr::to<std::map<int, std::string>>();
+             }) |
+             stdr::to<std::map<int, std::string>>();
     ASSERT_EQ(m.size(), 3U);
     EXPECT_EQ(m.at(0), "a");
     EXPECT_EQ(m.at(2), "aaa");

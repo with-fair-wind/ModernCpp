@@ -40,8 +40,8 @@ std::generator<int> infiniteIota(int start) {
 // 3) 用协程做 BFS 风格的递归展开：把嵌套结构压平
 std::generator<int> flattenPairs(int low, int high) {
     for (int x = low; x <= high; ++x) {
-        co_yield x;        // 主轴
-        co_yield x * 10;   // 次轴
+        co_yield x;       // 主轴
+        co_yield x * 10;  // 次轴
     }
 }
 
@@ -64,8 +64,8 @@ int main() {
 
     // 3) 与 filter + transform 组合：第一个能被 7 整除的平方数（取前 3 个）
     std::cout << "first 3 squares-of-7m: ";
-    for (int x : infiniteIota(1) | stdv::filter([](int n) { return n % 7 == 0; })
-                     | stdv::transform([](int n) { return n * n; }) | stdv::take(3)) {
+    for (int x : infiniteIota(1) | stdv::filter([](int n) { return n % 7 == 0; }) |
+                     stdv::transform([](int n) { return n * n; }) | stdv::take(3)) {
         std::cout << x << ' ';
     }
     std::cout << '\n';

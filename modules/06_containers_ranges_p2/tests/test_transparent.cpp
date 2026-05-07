@@ -32,9 +32,9 @@ struct StringHash {
 TEST(TransparentLess, SetAcceptsHeterogeneousKey) {
     std::set<std::string, std::less<>> s{"alpha", "beta", "gamma"};
 
-    EXPECT_TRUE(s.contains("alpha"));                            // 字面量 char[]
-    EXPECT_TRUE(s.contains(std::string_view{"beta"}));           // string_view
-    EXPECT_TRUE(s.contains(std::string{"gamma"}));               // 同型
+    EXPECT_TRUE(s.contains("alpha"));                   // 字面量 char[]
+    EXPECT_TRUE(s.contains(std::string_view{"beta"}));  // string_view
+    EXPECT_TRUE(s.contains(std::string{"gamma"}));      // 同型
     EXPECT_FALSE(s.contains("delta"));
 }
 

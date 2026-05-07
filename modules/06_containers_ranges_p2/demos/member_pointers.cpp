@@ -21,7 +21,9 @@ struct Person {
     std::string name;
     int age{};
 
-    void grow(int years) { age += years; }
+    void grow(int years) {
+        age += years;
+    }
     [[nodiscard]] std::string greet(std::string_view from) const {
         return "Hello " + std::string{from} + ", I'm " + name;
     }

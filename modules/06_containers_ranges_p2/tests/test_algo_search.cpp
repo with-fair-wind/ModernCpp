@@ -82,8 +82,7 @@ TEST(AlgoBinary, BinarySearchUsesProjection) {
         int id;
         std::string name;
     };
-    std::vector<Item> items{
-        {.id = 1, .name = "a"}, {.id = 3, .name = "b"}, {.id = 5, .name = "c"}};
+    std::vector<Item> items{{.id = 1, .name = "a"}, {.id = 3, .name = "b"}, {.id = 5, .name = "c"}};
     EXPECT_TRUE(stdr::binary_search(items, 3, std::less<>{}, &Item::id));
     EXPECT_FALSE(stdr::binary_search(items, 4, std::less<>{}, &Item::id));
 }
@@ -91,8 +90,8 @@ TEST(AlgoBinary, BinarySearchUsesProjection) {
 TEST(AlgoSearch, BoyerMoore) {
     std::string text{"the quick brown fox jumps over the lazy dog"};
     std::string pat{"fox"};
-    auto it = std::search(text.begin(), text.end(),
-                          std::boyer_moore_searcher(pat.begin(), pat.end()));
+    auto it =
+        std::search(text.begin(), text.end(), std::boyer_moore_searcher(pat.begin(), pat.end()));
     ASSERT_NE(it, text.end());
     EXPECT_EQ(static_cast<std::size_t>(it - text.begin()), text.find(pat));
 }

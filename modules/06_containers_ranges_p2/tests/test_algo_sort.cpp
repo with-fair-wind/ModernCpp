@@ -28,9 +28,8 @@ TEST(AlgoSort, ProjectionPicksField) {
         std::string name;
         int age;
     };
-    std::vector<Person> v{{.name = "alice", .age = 30},
-                          {.name = "bob", .age = 25},
-                          {.name = "carol", .age = 40}};
+    std::vector<Person> v{
+        {.name = "alice", .age = 30}, {.name = "bob", .age = 25}, {.name = "carol", .age = 40}};
     stdr::sort(v, std::less<>{}, &Person::age);
     EXPECT_EQ(v[0].age, 25);
     EXPECT_EQ(v[1].age, 30);

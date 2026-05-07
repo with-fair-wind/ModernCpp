@@ -4,6 +4,7 @@
 #include <iterator>
 #include <ranges>
 #include <vector>
+#include <version>
 
 #include <gtest/gtest.h>
 
@@ -69,6 +70,7 @@ TEST(AlgoModify, Reverse) {
     EXPECT_EQ(v, (std::vector{5, 4, 3, 2, 1}));
 }
 
+#if defined(__cpp_lib_shift) && __cpp_lib_shift >= 202202L
 TEST(AlgoModify, ShiftLeftLosesElements) {
     std::vector<int> v{1, 2, 3, 4, 5};
     auto valid = stdr::shift_left(v, 2);
@@ -77,6 +79,7 @@ TEST(AlgoModify, ShiftLeftLosesElements) {
     std::vector<int> got{valid.begin(), valid.end()};
     EXPECT_EQ(got, (std::vector{3, 4, 5}));
 }
+#endif
 
 TEST(AlgoModify, CopyAndCopyIf) {
     std::vector<int> v{1, 2, 3, 4, 5, 6};

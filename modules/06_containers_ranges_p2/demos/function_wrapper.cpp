@@ -27,7 +27,9 @@ int add(int a, int b) {
 
 struct Adder {
     int base;
-    int operator()(int a, int b) const { return base + a + b; }
+    int operator()(int a, int b) const {
+        return base + a + b;
+    }
 };
 
 }  // namespace

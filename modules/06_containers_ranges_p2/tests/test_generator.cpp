@@ -52,14 +52,14 @@ TEST(StdGenerator, ComposesWithTake) {
 }
 
 TEST(StdGenerator, ComposesWithFilter) {
-    auto v = infiniteFrom(1) | stdv::filter([](int x) { return x % 3 == 0; }) | stdv::take(4)
-             | stdr::to<std::vector<int>>();
+    auto v = infiniteFrom(1) | stdv::filter([](int x) { return x % 3 == 0; }) | stdv::take(4) |
+             stdr::to<std::vector<int>>();
     EXPECT_EQ(v, (std::vector{3, 6, 9, 12}));
 }
 
 TEST(StdGenerator, ComposesWithTransform) {
-    auto v = countUp(1, 5) | stdv::transform([](int x) { return x * x; })
-             | stdr::to<std::vector<int>>();
+    auto v =
+        countUp(1, 5) | stdv::transform([](int x) { return x * x; }) | stdr::to<std::vector<int>>();
     EXPECT_EQ(v, (std::vector{1, 4, 9, 16, 25}));
 }
 

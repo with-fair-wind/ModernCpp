@@ -71,8 +71,8 @@ int main() {
     std::cout << '\n';
 
     // 7) split + transform：常用于做 "trim & count"
-    auto pieces = sentence | stdv::split(' ')
-                  | stdv::transform([](auto sub) { return stdr::distance(sub); });
+    auto pieces =
+        sentence | stdv::split(' ') | stdv::transform([](auto sub) { return stdr::distance(sub); });
     std::cout << "lengths      : ";
     for (auto n : pieces) {
         std::cout << n << ' ';
