@@ -38,6 +38,14 @@
 #   portability-*        可移植性
 #   readability-*        可读性改进（命名、控制流复杂度、隐式 bool 转换）
 # -----------------------------------------------------------------------------
+# 注意：Checks 是 YAML folded scalar (`>`)，里面 `#` 不是注释 —— 它会被当成
+# 字符串的一部分，破坏 clang-tidy 对 Checks 的逗号分割解析（曾经把后面真正
+# 的 `-check-name` 一并废掉）。所以全部说明性注释保留在这块外面。
+#
+# 末尾这一批是 clang-tidy 21/22 新增 / 升 warning 级的检查，原本 master 用
+# clang-tidy 20 根本没启用过；统一关掉以保持检查面与历史一致。想开任何一条，
+# 要先把对应代码模式（v[i] 索引、聚合 init、static object 抛、main 抛、
+# `#if defined()` 等）逐处治理过再开。
 Checks: >
   bugprone-*,
   cert-*,
@@ -61,10 +69,6 @@ Checks: >
   -cert-err58-cpp,
   -cppcoreguidelines-non-private-member-variables-in-classes,
   -misc-non-private-member-variables-in-classes,
-  # ---- 下列检查在 clang-tidy 21/22 新增或被升级到 warning 级，原本 master
-  #      用 clang-tidy 20 时根本没启用过它们；统一关掉以保持检查面与历史一致。
-  #      想开任何一条，要先把对应代码模式（v[i] 索引、聚合 init、static
-  #      object 抛、main 抛、#if defined() 等）逐处治理过再开。
   -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,
   -modernize-use-designated-initializers,
   -modernize-use-auto,
