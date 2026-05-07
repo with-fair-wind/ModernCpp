@@ -122,6 +122,17 @@ jobs:
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
+      # actions/checkout 在容器里跑：若 PATH 上没有 git，它会走 REST API
+      # fallback 拉 tarball（没有 .git 目录）。`format` / `tidy` target 用
+      # `EXISTS ${CMAKE_SOURCE_DIR}/.git` 守卫，缺 .git 会让 target 静默
+      # 不注册。先单独装一遍 git + ca-certificates，让 checkout 走原生 git 路径。
+      - name: Pre-install git (Linux container)
+        if: runner.os == 'Linux'
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            git ca-certificates
+
       - uses: actions/checkout@v4
 
       # ------------------------------------------------------------------
@@ -327,6 +338,15 @@ jobs:
           script: |
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      # 关键：在 actions/checkout 之前先装 git，否则 checkout 走 REST API
+      # 不带 .git 目录，`format` / `tidy` target 的 `EXISTS .git` 守卫失败
+      # 会导致 target 静默不注册。
+      - name: Pre-install git (Linux container)
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            git ca-certificates
 
       - uses: actions/checkout@v4
 
