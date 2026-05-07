@@ -9,7 +9,7 @@
 
 namespace {
 
-std::expected<int, std::string> parse_positive(std::string_view s) {
+std::expected<int, std::string> parsePositive(std::string_view s) {
     if (s.empty()) {
         return std::unexpected("empty");
     }
@@ -34,33 +34,33 @@ std::expected<int, std::string> parse_positive(std::string_view s) {
 }  // namespace
 
 TEST(Expected, OkCarriesValue) {
-    auto const r = parse_positive("42");
+    auto const r = parsePositive("42");
     ASSERT_TRUE(r.has_value());
     EXPECT_EQ(*r, 42);
 }
 
 TEST(Expected, ErrCarriesReason) {
-    auto const r = parse_positive("12a");
+    auto const r = parsePositive("12a");
     ASSERT_FALSE(r.has_value());
     EXPECT_EQ(r.error(), "non-digit");
 }
 
 TEST(Expected, ValueOrFallsBackOnError) {
-    EXPECT_EQ(parse_positive("").value_or(-1), -1);
-    EXPECT_EQ(parse_positive("9").value_or(-1), 9);
+    EXPECT_EQ(parsePositive("").value_or(-1), -1);
+    EXPECT_EQ(parsePositive("9").value_or(-1), 9);
 }
 
 TEST(Expected, OverflowReturnsError) {
     // 19 位数 —— 不论 INT_MAX 多大都铁定溢出；必须在乘加进入 UB 之前
     // 拦下（否则 UBSan 会让测试挂掉）。
-    auto const r = parse_positive("9999999999999999999");
+    auto const r = parsePositive("9999999999999999999");
     ASSERT_FALSE(r.has_value());
     EXPECT_EQ(r.error(), "overflow");
 }
 
 TEST(Expected, AcceptsIntMaxBoundary) {
     // INT_MAX 本身仍应能成功解析 —— 防护逻辑只拒绝真正的溢出。
-    auto const r = parse_positive(std::to_string(std::numeric_limits<int>::max()));
+    auto const r = parsePositive(std::to_string(std::numeric_limits<int>::max()));
     ASSERT_TRUE(r.has_value());
     EXPECT_EQ(*r, std::numeric_limits<int>::max());
 }

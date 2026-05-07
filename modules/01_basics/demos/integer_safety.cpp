@@ -12,7 +12,9 @@ int main() {
     constexpr unsigned int kUnsignedValue = 1;
 
     std::cout << std::boolalpha;
-    // NOLINTNEXTLINE(clang-diagnostic-sign-conversion) - 故意为之：演示朴素写法的坑
+    // 故意为之：演示朴素写法的坑（clang-tidy-20 在 modernize 组里加了
+    // use-integer-sign-comparison，它建议改用 std::cmp_less —— 这里反例展示）
+    // NOLINTNEXTLINE(clang-diagnostic-sign-conversion,modernize-use-integer-sign-comparison)
     std::cout << "(-1 < 1u) naive         : " << (kSignedValue < kUnsignedValue) << '\n';
     std::cout << "std::cmp_less(-1, 1u)   : " << std::cmp_less(kSignedValue, kUnsignedValue)
               << '\n';

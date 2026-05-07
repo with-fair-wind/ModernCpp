@@ -38,22 +38,22 @@ struct PointHash {
 template <>
 struct std::hash<Point> {
     std::size_t operator()(Point const& p) const noexcept {
-        return std::hash<int>{}(p.x) * 31U + std::hash<int>{}(p.y);
+        return (std::hash<int>{}(p.x) * 31U) + std::hash<int>{}(p.y);
     }
 };
 
 int main() {
     // 方式 A
     std::unordered_set<Point, PointHash> via_functor;
-    via_functor.insert({1, 2});
-    via_functor.insert({3, 4});
+    via_functor.insert({.x = 1, .y = 2});
+    via_functor.insert({.x = 3, .y = 4});
     std::cout << "via PointHash, size=" << via_functor.size() << '\n';
 
     // 方式 B：直接用，无需显式传 Hash
     std::unordered_map<Point, std::string> labels;
-    labels[{0, 0}] = "origin";
-    labels[{1, 1}] = "diag";
-    std::cout << "labels[{0,0}] = " << labels.at({0, 0}) << '\n';
+    labels[{.x = 0, .y = 0}] = "origin";
+    labels[{.x = 1, .y = 1}] = "diag";
+    std::cout << "labels[{.x=0,.y=0}] = " << labels.at({.x = 0, .y = 0}) << '\n';
 
     // 负载因子与 reserve
     std::unordered_map<int, int> table;

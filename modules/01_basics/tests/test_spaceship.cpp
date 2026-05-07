@@ -24,8 +24,8 @@ struct Mass {
 }  // namespace
 
 TEST(Spaceship, DefaultsAllSixComparisons) {
-    constexpr Point kA{1, 2};
-    constexpr Point kB{1, 3};
+    constexpr Point kA{.x = 1, .y = 2};
+    constexpr Point kB{.x = 1, .y = 3};
     EXPECT_TRUE(kA < kB);
     EXPECT_TRUE(kA <= kB);
     EXPECT_FALSE(kA > kB);

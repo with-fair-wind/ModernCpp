@@ -37,18 +37,23 @@ int main() {
     std::cout << "after ++rbegin, base() points to    : " << *r.base() << '\n';
 
     // 2) back_inserter —— *it = val 等价于 push_back(val)
+    // 教学意图：演示传统三参版 std::copy 与输出迭代器适配器的搭配，
+    // 故意保留 (begin, end, out) 形态，不改成 std::ranges::copy。
     std::vector<int> sink;
+    // NOLINTNEXTLINE(modernize-use-ranges)
     std::copy(src.begin(), src.end(), std::back_inserter(sink));
     std::cout << "after back_inserter copy, sink.size = " << sink.size() << '\n';
 
     // front_inserter —— 元素会被反序压入（因为每个 push_front 都是头插）
     std::deque<int> dq;
+    // NOLINTNEXTLINE(modernize-use-ranges)
     std::copy(src.begin(), src.end(), std::front_inserter(dq));
     std::cout << "after front_inserter copy, dq[0] = " << dq.front() << ", dq.back = " << dq.back()
               << '\n';
 
     // inserter —— 每次插入到指定位置之前
     std::list<int> lst{10, 99};
+    // NOLINTNEXTLINE(modernize-use-ranges)
     std::copy(src.begin(), src.end(), std::inserter(lst, std::next(lst.begin())));
     std::cout << "after inserter list  : ";
     for (int v : lst) {
@@ -58,12 +63,15 @@ int main() {
 
     // 3) 流迭代器：ostream_iterator 配合 std::copy 打印
     std::cout << "via ostream_iterator: ";
+    // NOLINTNEXTLINE(modernize-use-ranges)
     std::copy(src.begin(), src.end(), std::ostream_iterator<int>{std::cout, " "});
     std::cout << '\n';
 
     // istream_iterator：从字符串流读入直到流不可解析
     std::istringstream iss{"7 8 9 oops"};
     std::vector<int> read;
+    // istream_iterator 的两端就是经典 (begin, end) 写法，没有 ranges 直接对应。
+    // NOLINTNEXTLINE(modernize-use-ranges)
     std::copy(std::istream_iterator<int>{iss}, std::istream_iterator<int>{},
               std::back_inserter(read));
     std::cout << "from istream_iterator (stops at 'oops'), read.size = " << read.size() << '\n';

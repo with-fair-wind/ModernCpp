@@ -44,7 +44,8 @@ TEST(List, SortIsStable) {
         int idx;
         bool operator==(const Item&) const = default;
     };
-    std::list<Item> items{{2, 0}, {1, 1}, {2, 2}, {1, 3}};
+    std::list<Item> items{
+        {.key = 2, .idx = 0}, {.key = 1, .idx = 1}, {.key = 2, .idx = 2}, {.key = 1, .idx = 3}};
     items.sort([](Item const& l, Item const& r) { return l.key < r.key; });
 
     auto it = items.begin();

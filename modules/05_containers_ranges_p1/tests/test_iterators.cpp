@@ -75,6 +75,8 @@ TEST(StreamIterator, ReadsUntilParseFails) {
 TEST(StreamIterator, OstreamIteratorWritesWithSeparator) {
     std::ostringstream oss;
     std::vector<int> v{1, 2, 3};
+    // 测试 ostream_iterator 适配器，传统三参 std::copy 是它的标准搭配。
+    // NOLINTNEXTLINE(modernize-use-ranges)
     std::copy(v.begin(), v.end(), std::ostream_iterator<int>{oss, "-"});
     EXPECT_EQ(oss.str(), "1-2-3-");
 }

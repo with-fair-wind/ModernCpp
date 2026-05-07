@@ -11,7 +11,7 @@
 
 namespace {
 
-std::expected<int, std::string> parse_positive(std::string_view s) {
+std::expected<int, std::string> parsePositive(std::string_view s) {
     if (s.empty()) {
         return std::unexpected("empty input");
     }
@@ -38,7 +38,7 @@ std::expected<int, std::string> parse_positive(std::string_view s) {
 
 int main() {
     for (std::string_view const s : {"42", "", "12a", "0", "7", "9999999999"}) {
-        auto const r = parse_positive(s);
+        auto const r = parsePositive(s);
         if (r) {
             std::cout << "ok    \"" << s << "\" -> " << *r << '\n';
         } else {
