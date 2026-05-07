@@ -12,7 +12,7 @@
 #include <version>
 
 #if defined(__cpp_lib_start_lifetime_as) && __cpp_lib_start_lifetime_as >= 202207L
-#  include <memory>
+#include <memory>
 #endif
 
 #include <gtest/gtest.h>

@@ -86,8 +86,7 @@ int main() {
         Person& p1 = s1;
         Person const& p2 = s2;
         p1 = p2;  // 实际调用 Person::operator= —— 只覆盖 name
-        std::cout << "  s1.name=" << s1.name << " s1.id=" << s1.student_id
-                  << "  (id 没被覆盖！)\n";
+        std::cout << "  s1.name=" << s1.name << " s1.id=" << s1.student_id << "  (id 没被覆盖！)\n";
     }
 
     std::cout << "\n[3] 修复：把多态对象保存在指针 / 智能指针里\n";

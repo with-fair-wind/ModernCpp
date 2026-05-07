@@ -336,7 +336,11 @@ jobs:
   lint:
     name: clang-format + clang-tidy
     runs-on: ubuntu-24.04
-    container: ubuntu:25.10
+    # Arch（rolling release）容器：clang-format / clang-tidy 始终跟 LLVM 上游
+    # 对齐（当前是 22.x），与 scoop / Homebrew / Arch 本地的 LLVM 版本一致，
+    # 避免本地 fmt 完 push 上来 CI 还报 format 不一致的版本错配。代价是：
+    # LLVM 升大版本时偶尔需要跟着 reformat 一遍 —— 通常每年一两次的事。
+    container: archlinux:base-devel
     env:
       VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
     steps:
@@ -349,39 +353,29 @@ jobs:
 
       # 关键：在 actions/checkout 之前先装 git，否则 checkout 走 REST API
       # 不带 .git 目录，`format` / `tidy` target 的 `EXISTS .git` 守卫失败
-      # 会导致 target 静默不注册。
-      - name: Pre-install git (Linux container)
+      # 会导致 target 静默不注册。Arch 镜像 base-devel 已含 base-devel group，
+      # 但默认不带 git / ca-certificates —— 单独装一遍。
+      - name: Pre-install git (Arch container)
         run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            git ca-certificates
+          pacman -Sy --noconfirm --needed git ca-certificates
 
       - uses: actions/checkout@v4
 
       # 同 build-test：注册 workspace 为 safe.directory，否则容器 root 跑
       # `git ls-files`（format/tidy 都依赖）会被 dubious ownership 拒绝。
-      - name: Mark workspace as git safe.directory (Linux container)
+      - name: Mark workspace as git safe.directory (Arch container)
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      # The lint job uses the clang-relwithdebinfo preset on purpose: clang-20
-      # together with libstdc++ from g++-15 sees the full C++23 stdlib surface
-      # (std::expected, std::generator, ranges::to, etc.), so try_compile
-      # guards in the modules don't skip targets out of compile_commands.json
-      # — that keeps clang-tidy's input set complete.
-      - name: Install toolchain (clang-20, g++-15, cmake, ninja, clang-format-20, clang-tidy-20)
+      # Arch 的 clang 包同时提供 clang-format / clang-tidy / clangd（与 Ubuntu
+      # 拆成多个 -NN 子包不同），全部走无版本名 —— 与 _clang preset 里
+      # CMAKE_C_COMPILER=clang 完全一致，无需 update-alternatives。base-devel
+      # 已带 gcc + libstdc++（提供 C++23 STL 头给 clang-tidy 编译时查找）。
+      - name: Install toolchain (Arch — clang/clang-format/clang-tidy + cmake/ninja)
         run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            clang-20 lld-20 g++-15 cmake ninja-build make \
-            clang-format-20 clang-tidy-20 \
-            git curl zip unzip tar pkg-config ca-certificates
-          # 同 build-test job：CMakePresets 里的 _clang preset 用无版本名，
-          # 必须建 alternatives 让 PATH 上的 clang/clang++ 指向 clang-20。
-          # gcc/g++ 也建一份（lint 跑 vcpkg/cmake 时 try_compile 仍需要）。
-          update-alternatives --install /usr/bin/gcc      gcc      /usr/bin/gcc-15      100
-          update-alternatives --install /usr/bin/g++      g++      /usr/bin/g++-15      100
-          update-alternatives --install /usr/bin/clang    clang    /usr/bin/clang-20    100
-          update-alternatives --install /usr/bin/clang++  clang++  /usr/bin/clang++-20  100
+          pacman -Sy --noconfirm --needed \
+            clang lld llvm \
+            cmake ninja make \
+            curl zip unzip tar pkgconf
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -393,8 +387,8 @@ jobs:
       # any compiled targets to lint, so go straight to the lint targets.
       - name: Configure
         env:
-          CC:  clang-20
-          CXX: clang++-20
+          CC:  clang
+          CXX: clang++
           VCPKG_ROOT: ${{ github.workspace }}/vcpkg
         run: cmake --preset clang-relwithdebinfo
 

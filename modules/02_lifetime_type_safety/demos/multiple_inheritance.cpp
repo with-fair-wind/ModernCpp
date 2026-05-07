@@ -36,8 +36,8 @@ struct Runner {
 // 多重继承：派生类同时是 Swimmer 与 Runner
 struct Triathlete : Swimmer, Runner {
     // 解决同名成员二义性：用 using 显式选择 / 暴露 / 重命名
-    using Runner::move;       // move() 沿用 Runner 版本
-    using Swimmer::stamina;   // stamina() 沿用 Swimmer 版本
+    using Runner::move;      // move() 沿用 Runner 版本
+    using Swimmer::stamina;  // stamina() 沿用 Swimmer 版本
 };
 
 // 构造函数继承：BaseHolder 把 std::string 的构造交给基类
@@ -74,8 +74,8 @@ int main() {
 
     std::cout << "\n[2] 构造函数继承：派生类自动暴露父类的所有构造\n";
     {
-        LoggingHolder a{"abc"};   // 用 std::string 构造
-        LoggingHolder b{3};       // 用 int 构造（n 个 'x'）
+        LoggingHolder a{"abc"};  // 用 std::string 构造
+        LoggingHolder b{3};      // 用 int 构造（n 个 'x'）
         a.show();
         b.show();
     }

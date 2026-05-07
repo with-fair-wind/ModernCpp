@@ -49,17 +49,18 @@ TEST(Variant, GetWrongAlternativeThrows) {
 
 TEST(Variant, VisitDispatchesOnActiveAlternative) {
     std::vector<std::variant<int, double, std::string>> all{
-        1, 2.5, std::string{"x"},
+        1,
+        2.5,
+        std::string{"x"},
     };
     std::vector<std::string> tags;
     for (auto const& v : all) {
-        std::visit(
-            Overloaded{
-                [&](int) { tags.emplace_back("int"); },
-                [&](double) { tags.emplace_back("double"); },
-                [&](std::string const&) { tags.emplace_back("string"); },
-            },
-            v);
+        std::visit(Overloaded{
+                       [&](int) { tags.emplace_back("int"); },
+                       [&](double) { tags.emplace_back("double"); },
+                       [&](std::string const&) { tags.emplace_back("string"); },
+                   },
+                   v);
     }
     ASSERT_EQ(tags.size(), 3U);
     EXPECT_EQ(tags[0], "int");

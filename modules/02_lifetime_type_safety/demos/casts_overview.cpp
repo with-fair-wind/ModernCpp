@@ -48,8 +48,7 @@ int main() {
         Color c = Color::Green;
         auto raw = static_cast<std::uint8_t>(c);
         Color back = static_cast<Color>(raw);
-        std::cout << "  Color(2) <-> raw=" << +raw << " back="
-                  << static_cast<int>(back) << '\n';
+        std::cout << "  Color(2) <-> raw=" << +raw << " back=" << static_cast<int>(back) << '\n';
 
         // 用单参构造函数构造新对象
         auto counted = static_cast<Counted>(42);

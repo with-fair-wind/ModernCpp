@@ -37,8 +37,8 @@ int main() {
         std::cout << "  default index = " << s.index() << "  (monostate)\n";
 
         s = 42;  // 现在是 int
-        std::cout << "  s.index() = " << s.index() << "  std::get<int>(s) = "
-                  << std::get<int>(s) << '\n';
+        std::cout << "  s.index() = " << s.index() << "  std::get<int>(s) = " << std::get<int>(s)
+                  << '\n';
 
         s = std::string{"hello"};
         std::cout << "  s = string\"" << std::get<std::string>(s) << "\"\n";
@@ -61,20 +61,19 @@ int main() {
     std::cout << "\n[3] std::visit + overloaded：访问者模式\n";
     {
         std::vector<Shape> all;
-        all.emplace_back();             // monostate
-        all.emplace_back(7);            // int
-        all.emplace_back(2.5);          // double
-        all.emplace_back("variant");    // string
+        all.emplace_back();           // monostate
+        all.emplace_back(7);          // int
+        all.emplace_back(2.5);        // double
+        all.emplace_back("variant");  // string
 
         for (auto const& v : all) {
-            std::visit(
-                Overloaded{
-                    [](std::monostate) { std::cout << "  <empty>\n"; },
-                    [](int i) { std::cout << "  int    = " << i << '\n'; },
-                    [](double d) { std::cout << "  double = " << d << '\n'; },
-                    [](std::string const& s) { std::cout << "  string = " << s << '\n'; },
-                },
-                v);
+            std::visit(Overloaded{
+                           [](std::monostate) { std::cout << "  <empty>\n"; },
+                           [](int i) { std::cout << "  int    = " << i << '\n'; },
+                           [](double d) { std::cout << "  double = " << d << '\n'; },
+                           [](std::string const& s) { std::cout << "  string = " << s << '\n'; },
+                       },
+                       v);
         }
     }
 
