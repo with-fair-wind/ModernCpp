@@ -135,6 +135,14 @@ jobs:
 
       - uses: actions/checkout@v4
 
+      # actions/checkout 自己也跑过 safe.directory，但它用了临时 HOME，写完就失效。
+      # 后续 step（format/tidy target 里调 `git ls-files`）以容器 root 身份跑，
+      # 容器 root 跟 host runner uid 不同，git 触发 dubious ownership 拒绝执行。
+      # 在真实 HOME 的 .gitconfig 里把 workspace 注册为 safe.directory。
+      - name: Mark workspace as git safe.directory (Linux container)
+        if: runner.os == 'Linux'
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       # ------------------------------------------------------------------
       # Toolchain
       #   Linux  — apt-install GCC/Clang inside the ubuntu:25.10 container
@@ -349,6 +357,11 @@ jobs:
             git ca-certificates
 
       - uses: actions/checkout@v4
+
+      # 同 build-test：注册 workspace 为 safe.directory，否则容器 root 跑
+      # `git ls-files`（format/tidy 都依赖）会被 dubious ownership 拒绝。
+      - name: Mark workspace as git safe.directory (Linux container)
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       # The lint job uses the clang-relwithdebinfo preset on purpose: clang-20
       # together with libstdc++ from g++-15 sees the full C++23 stdlib surface
