@@ -38,7 +38,7 @@ TEST(PlacementNew, ConstructsAndDestroysInExternalBuffer) {
     alignas(Tracker) std::byte buf[sizeof(Tracker)];
     {
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-        Tracker* p = ::new (buf) Tracker{"hello"};
+        auto* p = ::new (buf) Tracker{"hello"};
         EXPECT_EQ(Tracker::alive, 1);
         EXPECT_EQ(p->label, "hello");
         p->~Tracker();
@@ -50,12 +50,12 @@ TEST(PlacementNew, ReuseBufferForSameType) {
     Tracker::alive = 0;
     alignas(Tracker) std::byte buf[sizeof(Tracker)];
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-    Tracker* p1 = ::new (buf) Tracker{"first"};
+    auto* p1 = ::new (buf) Tracker{"first"};
     EXPECT_EQ(p1->label, "first");
     p1->~Tracker();
 
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-    Tracker* p2 = ::new (buf) Tracker{"second"};
+    auto* p2 = ::new (buf) Tracker{"second"};
     EXPECT_EQ(p2->label, "second");
     EXPECT_EQ(Tracker::alive, 1);
     p2->~Tracker();

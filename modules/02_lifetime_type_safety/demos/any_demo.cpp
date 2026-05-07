@@ -35,6 +35,9 @@ void print(std::any const& a) {
 
 }  // namespace
 
+// std::cout / std::any_cast 在路径分析下"理论上"可能抛；demo 里我们就是要
+// 演示 bad_any_cast 等异常 —— 让它们离开 main 是预期行为。
+// NOLINTNEXTLINE(bugprone-exception-escape)
 int main() {
     std::cout << "[1] 装载 / 取出 / 重置\n";
     {

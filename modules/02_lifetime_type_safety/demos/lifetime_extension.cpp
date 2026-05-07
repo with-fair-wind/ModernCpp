@@ -46,7 +46,7 @@ int Probe::alive = 0;
     return Probe{std::move(n)};
 }
 
-#if defined(MCPP_DEMONSTRATE_UB)
+#ifdef MCPP_DEMONSTRATE_UB
 // 反例（默认禁用）：返回的"引用"指向 return 行结束就死亡的临时。
 [[nodiscard]] Probe const& dangerousRef() {
     return Probe{"inside_func"};
@@ -77,7 +77,7 @@ int main() {
     }
 
     std::cout << "\n[4] 反例：返回值经过函数 / 成员就丢失延寿\n";
-#if defined(MCPP_DEMONSTRATE_UB)
+#ifdef MCPP_DEMONSTRATE_UB
     {
         Probe const& bad = dangerousRef();
         std::cout << "  alive after returning dangling ref = " << Probe::alive

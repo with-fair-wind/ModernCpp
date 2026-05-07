@@ -47,7 +47,7 @@ int main() {
         // 枚举类与底层整数互转
         Color c = Color::Green;
         auto raw = static_cast<std::uint8_t>(c);
-        Color back = static_cast<Color>(raw);
+        auto back = static_cast<Color>(raw);
         std::cout << "  Color(2) <-> raw=" << +raw << " back=" << static_cast<int>(back) << '\n';
 
         // 用单参构造函数构造新对象
@@ -58,7 +58,7 @@ int main() {
         Derived d;
         Base* up = static_cast<Base*>(&d);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
-        Derived* down = static_cast<Derived*>(up);  // 已知底层就是 Derived，所以安全
+        auto* down = static_cast<Derived*>(up);  // 已知底层就是 Derived，所以安全
         std::cout << "  up->b=" << up->b << "  down->d=" << down->d << '\n';
     }
 
@@ -88,7 +88,7 @@ int main() {
         std::cout << "  &x as uintptr_t = 0x" << std::hex << p << std::dec << '\n';
         // 转回去得到原指针 —— 与 reinterpret_cast<unsigned int*>(p) 等价
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)
-        unsigned int* q = reinterpret_cast<unsigned int*>(p);
+        auto* q = reinterpret_cast<unsigned int*>(p);
         std::cout << "  *q = 0x" << std::hex << *q << std::dec << '\n';
     }
 

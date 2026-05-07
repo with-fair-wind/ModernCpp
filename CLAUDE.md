@@ -92,9 +92,10 @@ job + 一个聚合门禁 job：
   - `windows-msvc`、`windows-clang-cl`、`windows-msvc-asan`、
     `windows-mingw-gcc`（MSYS2 UCRT64）
   - `macos-clang`（Apple Clang，验证 `clang-*` preset 的 Darwin 分支）
-- **lint** job：`clang-format-20 --dry-run --Werror`（`format-check` target）+
-  `clang-tidy-20`（`tidy-check` target），都跑在 `clang-relwithdebinfo` configure
-  之上。Linux jobs 在 `ubuntu:25.10` 容器里跑，apt 默认仓库提供 g++-15 / clang-20。
+- **lint** job：`clang-format --dry-run --Werror`（`format-check` target）+
+  `clang-tidy`（`tidy-check` target），都跑在 `clang-relwithdebinfo` configure
+  之上。Linux jobs 在 `archlinux:base-devel` 容器里跑，pacman 滚动提供 GCC / Clang
+  / clang-format / clang-tidy（当前 GCC 15.x、Clang 22.x，与本地 LLVM 22+ 一致）。
 - **required-ci** 聚合门禁：`needs: [build-test, lint]` + `if: always()`，把整个
   矩阵的成功/失败汇总成单一稳定状态，分支保护规则只需 require 这一个就够。
 
@@ -119,3 +120,28 @@ Conan 路径不走 vcpkg cache。完整指南见 `docs/ci-guide.md`。
 - 标识符（变量名、函数名、target 名等）仍保持英文，以匹配 `.clang-tidy` 规则。
 - 文档文件（`*.md`）保留中英双语版本（`docs/zh-CN.md` / `docs/en-US.md`）的现有规则不变。
 - 引用标准库术语、错误信息、第三方接口名时可保留原文（例如 `std::expected`、`gtest_discover_tests`），但围绕它们的解释用中文
+
+## 提交流程（针对 C++ 源文件改动）
+
+CI 的 lint job 用 `archlinux:base-devel` 容器里 pacman 滚动的 clang-format / clang-tidy
+（当前 LLVM 22.x）跑 `--target format-check` + `--target tidy-check`，且 clang-tidy 用
+`--warnings-as-errors=*` —— 任何 warning 都会让 PR 红。**修改 `modules/**/*.cpp` 或
+`modules/**/*.h*` 后，commit 之前必须本地依次跑下面三条命令，全部 exit 0 才提交**：
+
+```bash
+cmake --build --preset <你的 preset> --target format        # in-place 修复
+cmake --build --preset <你的 preset> --target format-check  # 复核
+cmake --build --preset <你的 preset> --target tidy-check    # 静态检查
+```
+
+为了让本地 clang-format / clang-tidy 输出与 CI 一致：
+- Windows：`scoop install llvm@22.1.4`（或更高 22.x patch）
+- macOS：`brew install llvm@22`
+- Linux：用 Arch / Tumbleweed 等滚动发行版；或 apt.llvm.org 装 22
+
+低于 22 的版本会出现"本地通过 / CI 失败"的版本错配（默认值随 LLVM 大版本会变 ——
+如 `IndentPPDirectives`、`AlignTrailingComments`，以及 21+ 新增的 lint check）。
+
+**不需要跑这一套的场景**：只改文档（`*.md`）/ CI yml / CMakeLists / .clang-* 配置时
+（这些都不在 format-check / tidy-check 的输入集里）—— 但如果同时改了 `.clang-format`
+/ `.clang-tidy`，记得仍要跑一遍 check 验证规则没把现有代码变红。

@@ -44,11 +44,11 @@ static_assert(!std::is_trivially_destructible_v<NonTrivial>);
 int main() {
     std::cout << "[情况 1] 平凡类型 同类型 替换 —— 旧名字仍可用\n";
     {
-        Trivial t{1, 2};
+        Trivial t{.x = 1, .y = 2};
         Trivial* p = &t;
 
         // 在 t 的存储上构造同类型新对象
-        ::new (&t) Trivial{10, 20};
+        ::new (&t) Trivial{.x = 10, .y = 20};
 
         // 标准允许继续用名字 t 与原指针 p 访问新对象（无需 launder）：
         //   - 类型相同（忽略 cv）

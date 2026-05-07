@@ -53,6 +53,10 @@ struct StringHolder {
 
 struct LoggingHolder : StringHolder {
     using StringHolder::StringHolder;  // 继承所有 StringHolder 构造函数
+
+    // 故意演示"派生类同名非虚函数隐藏基类版本"这一坑 —— 这就是 demo 要传达
+    // 的教学点；clang-tidy 21+ 把它列为新警告，但这里的"隐藏"是有意为之。
+    // NOLINTNEXTLINE(bugprone-derived-method-shadowing-base-method)
     void show() const {
         std::cout << "[log] ";
         StringHolder::show();

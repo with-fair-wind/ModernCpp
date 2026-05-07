@@ -30,6 +30,10 @@ using Shape = std::variant<std::monostate, int, double, std::string>;
 
 }  // namespace
 
+// std::cout / std::get 在路径分析下"理论上"可能抛 std::ios_base::failure /
+// std::bad_variant_access；在 demo 里我们就是要演示这些异常 —— 让它们离开
+// main 是预期行为，而非 bug。
+// NOLINTNEXTLINE(bugprone-exception-escape)
 int main() {
     std::cout << "[1] 基本构造与访问\n";
     {

@@ -80,7 +80,8 @@ int main() {
     std::cout << "[1] 在栈上的对齐缓冲区构造 / 析构\n";
     {
         alignas(Greeter) std::byte buf[sizeof(Greeter)];
-        Greeter* p = ::new (buf) Greeter{"hello"};  // NOLINT(cppcoreguidelines-owning-memory)
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+        auto* p = ::new (buf) Greeter{"hello"};
         std::cout << "  via p: " << p->greeting << "\n";
         p->~Greeter();
     }
@@ -88,11 +89,13 @@ int main() {
     std::cout << "\n[2] 同一缓冲上构造、析构、再构造（同类型，无 const 成员）\n";
     {
         alignas(Greeter) std::byte buf[sizeof(Greeter)];
-        Greeter* p1 = ::new (buf) Greeter{"first"};  // NOLINT(cppcoreguidelines-owning-memory)
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+        auto* p1 = ::new (buf) Greeter{"first"};
         std::cout << "  p1->greeting = " << p1->greeting << "\n";
         p1->~Greeter();
 
-        Greeter* p2 = ::new (buf) Greeter{"second"};  // NOLINT(cppcoreguidelines-owning-memory)
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+        auto* p2 = ::new (buf) Greeter{"second"};
         std::cout << "  p2->greeting = " << p2->greeting << "\n";
         // 注意：原 p1 在新对象生命周期开始后已是悬挂指针；不可再使用。
         p2->~Greeter();
@@ -102,14 +105,14 @@ int main() {
     {
         alignas(WithConst) std::byte buf[sizeof(WithConst)];
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-        auto* p1 = ::new (buf) WithConst{1, 10};
+        auto* p1 = ::new (buf) WithConst{.id = 1, .value = 10};
         std::cout << "  p1: id=" << p1->id << " value=" << p1->value << "\n";
         p1->~WithConst();
 
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-        ::new (buf) WithConst{2, 20};
+        ::new (buf) WithConst{.id = 2, .value = 20};
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        WithConst* p2 = std::launder(reinterpret_cast<WithConst*>(buf));
+        auto* p2 = std::launder(reinterpret_cast<WithConst*>(buf));
         std::cout << "  p2 (laundered): id=" << p2->id << " value=" << p2->value << "\n";
         p2->~WithConst();
     }

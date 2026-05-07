@@ -16,7 +16,7 @@
 
 namespace {
 
-#if defined(MCPP_DEMONSTRATE_UB)
+#ifdef MCPP_DEMONSTRATE_UB
 // 反例 1：返回局部对象的引用
 [[nodiscard]] int const& localRef() {
     int local = 42;
@@ -29,7 +29,7 @@ namespace {
     return local;
 }
 
-#if defined(MCPP_DEMONSTRATE_UB)
+#ifdef MCPP_DEMONSTRATE_UB
 // 反例 2：把"引用捕获的 lambda"赋给比捕获对象活得更久的 std::function
 [[nodiscard]] std::function<int()> makeDanglingCounter() {
     int counter = 100;
@@ -66,7 +66,7 @@ struct Widget {
 int main() {
     std::cout << "[1] 返回局部值 vs 局部引用\n";
     std::cout << "  localValue() = " << localValue() << "\n";
-#if defined(MCPP_DEMONSTRATE_UB)
+#ifdef MCPP_DEMONSTRATE_UB
     std::cout << "  localRef()   = " << localRef() << "  (UB!)\n";
 #else
     std::cout << "  localRef()   = <skipped: see source comments>\n";
@@ -74,7 +74,7 @@ int main() {
 
     std::cout << "\n[2] 引用捕获 lambda 越界使用\n";
     {
-#if defined(MCPP_DEMONSTRATE_UB)
+#ifdef MCPP_DEMONSTRATE_UB
         auto dangling = makeDanglingCounter();
         std::cout << "  dangling() = " << dangling() << "  (读已死栈帧)\n";
 #else
@@ -97,7 +97,7 @@ int main() {
             f3 = w.safeLambdaCopyValue();
         }
         // 离开块后 w 已死。f1 调用是 UB；f2/f3 仍然安全。
-#if defined(MCPP_DEMONSTRATE_UB)
+#ifdef MCPP_DEMONSTRATE_UB
         std::cout << "  f1() = " << f1() << "  (UB!)\n";
 #else
         std::cout << "  f1() = <skipped: w is dead>\n";

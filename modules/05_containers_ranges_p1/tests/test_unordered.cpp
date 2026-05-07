@@ -63,11 +63,11 @@ TEST(UnorderedMap, BucketInterface) {
 
 TEST(UnorderedSet, CustomHashFunctor) {
     std::unordered_set<Point, PointHash> s;
-    s.insert({1, 2});
-    s.insert({3, 4});
-    s.insert({1, 2});  // 重复 → 不插入
+    s.insert({.x = 1, .y = 2});
+    s.insert({.x = 3, .y = 4});
+    s.insert({.x = 1, .y = 2});  // 重复 → 不插入
     EXPECT_EQ(s.size(), 2U);
-    EXPECT_TRUE(s.contains(Point{1, 2}));
+    EXPECT_TRUE(s.contains(Point{.x = 1, .y = 2}));
 }
 
 TEST(UnorderedMultimap, EqualityIgnoresOrderWithinKey) {
