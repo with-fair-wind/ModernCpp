@@ -16,29 +16,40 @@ jobs:
   build-test:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    # Linux jobs run inside an ubuntu:25.10 container so the matrix gets
+    # GCC 15 / Clang 20 from the distro's default apt repos. The host
+    # runner stays ubuntu-24.04 (24.04 LTS apt only ships GCC 13 / Clang 18,
+    # which is too old for the C++23 ranges/generator API surface this
+    # repo demos). 25.10 (questing) is an interim release; the only thing
+    # CI needs from it is a recent libstdc++ + clang, so the 9-month
+    # support window is fine for the runner-side container.
+    container: ${{ matrix.container }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: linux-gcc
             os: ubuntu-24.04
+            container: ubuntu:25.10
             preset: gcc-relwithdebinfo
-            cc: gcc-13
-            cxx: g++-13
+            cc: gcc-15
+            cxx: g++-15
 
           - name: linux-clang
             os: ubuntu-24.04
+            container: ubuntu:25.10
             preset: clang-relwithdebinfo
-            cc: clang-18
-            cxx: clang++-18
+            cc: clang-20
+            cxx: clang++-20
 
           # Sanitizer job: Debug + ASan/UBSan via MCPP_ENABLE_SANITIZERS.
           # Catches memory / UB regressions that release-mode jobs miss.
           - name: linux-gcc-asan
             os: ubuntu-24.04
+            container: ubuntu:25.10
             preset: gcc-debug
-            cc: gcc-13
-            cxx: g++-13
+            cc: gcc-15
+            cxx: g++-15
             extra-config: -DMCPP_ENABLE_SANITIZERS=ON
 
           # Conan path. Must pass `-s build_type=` matching the preset's
@@ -47,9 +58,10 @@ jobs:
           # empty at build time. cmake/Dependencies.cmake catches this.
           - name: linux-gcc-conan
             os: ubuntu-24.04
+            container: ubuntu:25.10
             preset: gcc-relwithdebinfo-conan
-            cc: gcc-13
-            cxx: g++-13
+            cc: gcc-15
+            cxx: g++-15
             uses-conan: true
             conan-profile: linux-gcc
             build-type: RelWithDebInfo
@@ -89,7 +101,10 @@ jobs:
           # macOS / Apple Clang. The clang-* presets are conditioned on
           # anyOf(Linux, Darwin); this job is what actually exercises the
           # Darwin branch and catches Apple libc++ vs libstdc++ skew before
-          # contributors hit it locally.
+          # contributors hit it locally. NOTE: Apple Clang's libc++ lags
+          # the C++23 ranges/views surface significantly — modules that
+          # use those features should `try_compile`-gate them rather than
+          # relying on this job to validate them.
           - name: macos-clang
             os: macos-14
             preset: clang-relwithdebinfo
@@ -111,22 +126,24 @@ jobs:
 
       # ------------------------------------------------------------------
       # Toolchain
-      #   Linux  — apt-install desired GCC/Clang
+      #   Linux  — apt-install GCC/Clang inside the ubuntu:25.10 container
+      #            (running as root, so no sudo). Each Linux matrix entry
+      #            installs the same superset (g++-15 + clang-20 + ninja +
+      #            ccache + vcpkg/conan deps) so this step is reused. The
+      #            preset and matrix.cc/cxx pick which compiler is invoked.
       #   Windows — rely on VS dev cmd (or MSYS2 for the MinGW job)
       #   macOS  — Apple Clang ships preinstalled, install Ninja via brew
       # ------------------------------------------------------------------
-      - name: Install GCC 13 (Linux)
-        if: startsWith(matrix.name, 'linux-gcc')
-        run: sudo apt-get update && sudo apt-get install -y gcc-13 g++-13 ninja-build
-
-      - name: Install Clang 18 (Linux)
-        # linux-clang uses clang as its primary compiler, but it links against
-        # libstdc++ from g++-13 to get full C++23 library coverage (libc++ on
-        # ubuntu-24.04 lags). So we install both.
-        if: matrix.name == 'linux-clang'
+      - name: Install toolchain (Linux container)
+        if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-18 lld-18 ninja-build g++-13
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            g++-15 \
+            clang-20 lld-20 \
+            ninja-build ccache \
+            git curl zip unzip tar pkg-config ca-certificates \
+            python3 python3-pip
 
       - name: Install Ninja (macOS)
         if: runner.os == 'macOS'
@@ -173,7 +190,7 @@ jobs:
       # Conan (only for jobs with uses-conan: true)
       # ------------------------------------------------------------------
       - name: Setup Python (Conan)
-        if: matrix.uses-conan
+        if: matrix.uses-conan && runner.os != 'Linux'
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -181,7 +198,7 @@ jobs:
       - name: Install Conan
         if: matrix.uses-conan
         run: |
-          pip install --upgrade conan
+          pip install --upgrade --break-system-packages conan
           # Default profile is required as Conan's --profile:build (used to
           # compile build-tools), even when --profile:host points at a vendored
           # profile under conan/profiles/. detect --force initialises it from
@@ -291,6 +308,7 @@ jobs:
   lint:
     name: clang-format + clang-tidy
     runs-on: ubuntu-24.04
+    container: ubuntu:25.10
     env:
       VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
     steps:
@@ -303,18 +321,18 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      # The lint job uses the clang-relwithdebinfo preset on purpose: the
-      # apt clang-18 on ubuntu-24.04 doesn't always pick a libstdc++ that
-      # exposes <expected>, and the 11_error_handling module's <expected>
-      # try_compile guard then skips its targets — keeping them out of
-      # compile_commands.json and out of clang-tidy's input set.
-      # g++-13 is still installed because clang's libstdc++ resolution
-      # walks the system GCC install path.
-      - name: Install toolchain (clang-18, g++-13, ninja, clang-format-18, clang-tidy-18)
+      # The lint job uses the clang-relwithdebinfo preset on purpose: clang-20
+      # together with libstdc++ from g++-15 sees the full C++23 stdlib surface
+      # (std::expected, std::generator, ranges::to, etc.), so try_compile
+      # guards in the modules don't skip targets out of compile_commands.json
+      # — that keeps clang-tidy's input set complete.
+      - name: Install toolchain (clang-20, g++-15, ninja, clang-format-20, clang-tidy-20)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-18 lld-18 g++-13 ninja-build \
-                                   clang-format-18 clang-tidy-18
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            clang-20 lld-20 g++-15 ninja-build \
+            clang-format-20 clang-tidy-20 \
+            git curl zip unzip tar pkg-config ca-certificates
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -326,8 +344,8 @@ jobs:
       # any compiled targets to lint, so go straight to the lint targets.
       - name: Configure
         env:
-          CC:  clang-18
-          CXX: clang++-18
+          CC:  clang-20
+          CXX: clang++-20
           VCPKG_ROOT: ${{ github.workspace }}/vcpkg
         run: cmake --preset clang-relwithdebinfo
 

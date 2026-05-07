@@ -42,12 +42,17 @@ ModernCpp/
 
 ## 快速开始 / Quickstart
 
-### Linux (Ubuntu 24.04 / Debian 13)
+### Linux (Ubuntu 25.10+ / Debian trixie+)
+
+部分模块用到的 C++23 ranges/generator API 需要 GCC 15 / libstdc++-15，所以推荐
+Ubuntu 25.10 或更新（apt 默认仓库就带 g++-15、clang-20）。Ubuntu 24.04 LTS 上的 g++-13
+跑模块 0–5 没问题，但 06 起的 ranges/generator demo 会缺 API。CI 在 `ubuntu:25.10`
+容器里跑，本地想完全对齐就用同款 docker 镜像，或者给 24.04 加 `ubuntu-toolchain-r` ppa。
 
 ```bash
-# 1) 工具链
+# 1) 工具链（Ubuntu 25.10+）
 sudo apt update
-sudo apt install -y build-essential gcc-13 g++-13 ninja-build cmake git
+sudo apt install -y build-essential g++-15 ninja-build cmake git
 
 # 2) vcpkg（一次性）
 git clone https://github.com/microsoft/vcpkg ~/vcpkg
@@ -56,13 +61,14 @@ echo 'export VCPKG_ROOT=$HOME/vcpkg' >> ~/.bashrc
 source ~/.bashrc
 
 # 3) 构建 + 测试
+export CC=gcc-15 CXX=g++-15
 cmake --preset gcc-relwithdebinfo
 cmake --build --preset gcc-relwithdebinfo --parallel
 ctest   --preset gcc-relwithdebinfo
 ```
 
-切 Clang：把 `gcc-` 换成 `clang-`，并 `apt install -y clang-18 lld-18`（C++23 库依赖
-`libstdc++-13`，已被 g++-13 包带入）。
+切 Clang：把 `gcc-` 换成 `clang-`，并 `apt install -y clang-20 lld-20`（C++23 库依赖
+`libstdc++-15`，已被 g++-15 包带入）。
 
 ARM64 Linux（Raspberry Pi、AWS Graviton 等）同样可用 —— vcpkg 会自动选 `arm64-linux`
 triplet，无需额外配置。
@@ -233,8 +239,8 @@ ctest --preset gcc-debug-conan
 
 | profile | 目标场景 | 配套 preset 前缀 |
 | --- | --- | --- |
-| `conan/profiles/linux-gcc`     | Linux + GCC 13（Ubuntu 24.04 / Debian 13）         | `gcc-*-conan` |
-| `conan/profiles/linux-clang`   | Linux + Clang 18 + libstdc++（Ubuntu 24.04）       | `clang-*-conan` |
+| `conan/profiles/linux-gcc`     | Linux + GCC 15（Ubuntu 25.10 / Debian trixie）     | `gcc-*-conan` |
+| `conan/profiles/linux-clang`   | Linux + Clang 20 + libstdc++-15（Ubuntu 25.10）    | `clang-*-conan` |
 | `conan/profiles/macos-clang`   | macOS + apple-clang 16+ / libc++（Xcode 16+）      | `clang-*-conan` |
 | `conan/profiles/msvc`          | Windows + MSVC ABI（cl.exe 或 clang-cl）           | `msvc-conan` / `ninja-mc-msvc-conan` / `clang-cl-*-conan` |
 | `conan/profiles/mingw-ucrt64`  | Windows + MSYS2 **UCRT64** GCC（仓库官方支持的 MinGW 入口） | `mingw-gcc-*-conan` |
@@ -347,7 +353,7 @@ ctest --preset msvc-release
 
 ### 格式化 / Formatting
 
-仓库根的 `.clang-format` 控制 C/C++ 风格，CI 用 `clang-format-18 --dry-run --Werror` 校验。
+仓库根的 `.clang-format` 控制 C/C++ 风格，CI 用 `clang-format-20 --dry-run --Werror` 校验。
 本地一键修复 / 校验：
 
 ```bash
@@ -403,16 +409,16 @@ GitHub Actions（`.github/workflows/ci.yml`）在每次 push 与 PR 上跑一个
 
 | Job | 平台 | 内容 |
 | --- | --- | --- |
-| `linux-gcc`        | ubuntu-24.04 | GCC 13 + vcpkg + `gcc-relwithdebinfo` |
-| `linux-clang`      | ubuntu-24.04 | Clang 18 + libstdc++-13 + `clang-relwithdebinfo` |
-| `linux-gcc-asan`   | ubuntu-24.04 | GCC 13 + `gcc-debug` + `MCPP_ENABLE_SANITIZERS=ON`（ASan + UBSan） |
-| `linux-gcc-conan`  | ubuntu-24.04 | GCC 13 + Conan 2.x + `gcc-relwithdebinfo-conan` |
+| `linux-gcc`        | ubuntu-24.04 host + `ubuntu:25.10` container | GCC 15 + vcpkg + `gcc-relwithdebinfo` |
+| `linux-clang`      | ubuntu-24.04 host + `ubuntu:25.10` container | Clang 20 + libstdc++-15 + `clang-relwithdebinfo` |
+| `linux-gcc-asan`   | ubuntu-24.04 host + `ubuntu:25.10` container | GCC 15 + `gcc-debug` + `MCPP_ENABLE_SANITIZERS=ON`（ASan + UBSan） |
+| `linux-gcc-conan`  | ubuntu-24.04 host + `ubuntu:25.10` container | GCC 15 + Conan 2.x + `gcc-relwithdebinfo-conan` |
 | `windows-msvc`     | windows-2022 | MSVC (VS 2022) + `msvc-relwithdebinfo` |
 | `windows-clang-cl` | windows-2022 | LLVM clang-cl + `clang-cl-relwithdebinfo` |
 | `windows-msvc-asan`| windows-2022 | MSVC + `msvc-debug` + `MCPP_ENABLE_SANITIZERS=ON`（MSVC ASan） |
 | `windows-mingw-gcc`| windows-2022 | MSYS2 UCRT64 GCC + `mingw-gcc-relwithdebinfo`（验证非-MSVC ABI 路径 + `x64-mingw-dynamic` triplet） |
 | `macos-clang`      | macos-14     | Apple Clang + `clang-relwithdebinfo`（验证 `_clang` preset 的 Darwin 分支） |
-| `lint`             | ubuntu-24.04 | `clang-format-18 --dry-run --Werror` + `clang-tidy-18`（target `format-check` / `tidy-check`） |
+| `lint`             | ubuntu-24.04 host + `ubuntu:25.10` container | `clang-format-20 --dry-run --Werror` + `clang-tidy-20`（target `format-check` / `tidy-check`） |
 
 任一 job 失败即阻止 PR 合并。该矩阵不仅覆盖三种主流编译器，还把 sanitizer、Conan、MinGW、clang-cl、macOS 都纳入主线，避免某条路径"名义支持但长期未跑"。
 
