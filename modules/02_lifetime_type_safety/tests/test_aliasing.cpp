@@ -74,7 +74,7 @@ TEST(Aliasing, StartLifetimeAsArrayMakesObjectsLive) {
     };
     std::memcpy(raw.get(), seed, sizeof(seed));
 
-    Pixel* arr = std::start_lifetime_as_array<Pixel>(raw.get(), kCount);
+    auto* arr = std::start_lifetime_as_array<Pixel>(raw.get(), kCount);
     EXPECT_EQ(arr[0].r, 1);
     EXPECT_EQ(arr[1].g, 6);
     EXPECT_EQ(arr[2].b, 11);

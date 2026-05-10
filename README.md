@@ -112,7 +112,7 @@ ctest   --preset msvc-relwithdebinfo
 clang-cl 同上，preset 改成 `clang-cl-relwithdebinfo`（单配置 Ninja，每个 build type
 一个 preset）。
 
-### Windows (MinGW UCRT64)
+### Windows (MinGW UCRT64 / CLANG64)
 
 ```bash
 # 在 MSYS2 UCRT64 shell 里（或者把 ucrt64 bin 目录放进 PATH）：
@@ -122,9 +122,10 @@ cmake --build --preset mingw-gcc-relwithdebinfo --parallel
 ctest   --preset mingw-gcc-relwithdebinfo
 ```
 
-切 MinGW Clang：把 `mingw-gcc-` 换成 `mingw-clang-` 即可（同样要求 ucrt64 的
-`clang/clang++` 在 PATH 中）。这两组 preset 已经把 `VCPKG_TARGET_TRIPLET` 固化为
-`x64-mingw-dynamic`，所以不需要再写 `CMakeUserPresets.json` 叠层。
+切 MinGW Clang：换到 MSYS2 CLANG64 shell（或确保 `clang64/bin` 在 PATH 前面），
+再把 `mingw-gcc-` 换成 `mingw-clang-`。`mingw-gcc-*` 已固化为 `x64-mingw-dynamic`，
+`mingw-clang-*` 已固化为仓库 overlay triplet `x64-mingw-clang-dynamic`，所以不需要再写
+`CMakeUserPresets.json` 叠层。
 
 ---
 
@@ -145,7 +146,7 @@ vcpkg 默认猜 `x64-windows`，MinGW 用户需手动覆盖。
 | **GCC**          | Windows (MinGW)  | `x64-mingw-dynamic`   | `mingw-gcc-*`  | preset 内已固化 triplet；需在 MSYS2 UCRT64 shell 中跑或把 ucrt64 bin 放进 PATH |
 | **Clang**        | Linux x64 / ARM64 | `x64-linux` / `arm64-linux` | `clang-*` | vcpkg 自动检测；需要 libstdc++-13 提供 C++23 库 |
 | **Clang**        | macOS Intel / Apple Silicon | `x64-osx` / `arm64-osx` | `clang-*` | vcpkg 自动检测；preset 在 Linux / macOS 主机上可见 |
-| **Clang**        | Windows (MinGW)  | `x64-mingw-dynamic`   | `mingw-clang-*`| preset 内已固化 triplet；同样需要 MSYS2 UCRT64 环境 |
+| **Clang**        | Windows (MinGW)  | `x64-mingw-clang-dynamic` | `mingw-clang-*`| preset 内已固化 overlay triplet；需要 MSYS2 CLANG64 环境 |
 | **clang-cl**     | Windows (LLVM)   | `x64-windows`         | `clang-cl-*`| preset 内已固化；LLVM 官方分发，需在 VS Developer Prompt 中跑 |
 | **MSVC**         | Windows          | `x64-windows`         | `msvc-*`    | preset 内已固化；VS 2022 multi-config |
 
@@ -194,8 +195,8 @@ vcpkg 会读取仓库根的 `vcpkg.json` 自动拉取 `gtest`。Linux / macOS / 
 MSVC 到这里就好了，零额外配置。
 
 > **Windows + MinGW GCC/Clang**：仓库已内置 `mingw-gcc-*` 与 `mingw-clang-*` 两组
-> preset（仅在 `${hostSystemName} == Windows` 时可见），triplet 已固化为
-> `x64-mingw-dynamic`，开箱即用，无需 `CMakeUserPresets.json` 叠层。背景与设计动机
+> preset（仅在 `${hostSystemName} == Windows` 时可见），triplet 已分别固化为
+> `x64-mingw-dynamic` / `x64-mingw-clang-dynamic`，开箱即用，无需 `CMakeUserPresets.json` 叠层。背景与设计动机
 > 详见 [`docs/vcpkg-guide.md §6 MinGW 专题`](docs/vcpkg-guide.md#6-mingw-专题)。
 
 > **完整文档**：vcpkg 端到端使用、binary cache、CRT 对齐、排查 FAQ 详见

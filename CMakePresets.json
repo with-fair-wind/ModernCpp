@@ -151,12 +151,12 @@
         {
             "name": "_mingw-gcc",
             "hidden": true,
-            "description": "MinGW GCC (e.g. MSYS2 UCRT64). Run from the matching MSYS2 shell or with the ucrt64 bin dir on PATH.",
+            "description": "MinGW GCC (MSYS2 UCRT64). Requires ucrt64/bin on PATH.",
             "inherits": ["_vcpkg", "_base"],
             "generator": "Ninja",
             "cacheVariables": {
-                "CMAKE_C_COMPILER":   "gcc",
-                "CMAKE_CXX_COMPILER": "g++",
+                "CMAKE_C_COMPILER":   "x86_64-w64-mingw32-gcc",
+                "CMAKE_CXX_COMPILER": "x86_64-w64-mingw32-g++",
                 "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic"
             },
             "condition": {
@@ -185,13 +185,14 @@
         {
             "name": "_mingw-clang",
             "hidden": true,
-            "description": "MinGW Clang (e.g. MSYS2 UCRT64 clang++). Run from the matching MSYS2 shell or with the ucrt64 bin dir on PATH.",
+            "description": "MinGW Clang (MSYS2 CLANG64, libc++). Run from CLANG64 shell or with clang64/bin on PATH.",
             "inherits": ["_vcpkg", "_base"],
             "generator": "Ninja",
             "cacheVariables": {
-                "CMAKE_C_COMPILER":   "clang",
-                "CMAKE_CXX_COMPILER": "clang++",
-                "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic"
+                "CMAKE_C_COMPILER":   "x86_64-w64-mingw32-clang",
+                "CMAKE_CXX_COMPILER": "x86_64-w64-mingw32-clang++",
+                "VCPKG_TARGET_TRIPLET": "x64-mingw-clang-dynamic",
+                "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets"
             },
             "condition": {
                 "type": "equals",
@@ -399,12 +400,12 @@
         {
             "name": "_mingw-clang-conan",
             "hidden": true,
-            "description": "MinGW Clang (e.g. MSYS2 UCRT64 clang++) + Conan toolchain.",
+            "description": "MinGW Clang (MSYS2 CLANG64, libc++) + Conan toolchain. Run from CLANG64 shell or with clang64/bin on PATH.",
             "inherits": ["_conan", "_base"],
             "generator": "Ninja",
             "cacheVariables": {
-                "CMAKE_C_COMPILER":   "clang",
-                "CMAKE_CXX_COMPILER": "clang++"
+                "CMAKE_C_COMPILER":   "x86_64-w64-mingw32-clang",
+                "CMAKE_CXX_COMPILER": "x86_64-w64-mingw32-clang++"
             },
             "condition": {
                 "type": "equals",

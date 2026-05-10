@@ -78,7 +78,7 @@ int main() {
 
         // 直接 reinterpret_cast 后访问是 UB（无 Pixel 对象处于生命周期内）；
         // start_lifetime_as_array 让 kCount 个 Pixel 隐式开始生命周期。
-        Pixel* arr = std::start_lifetime_as_array<Pixel>(raw.get(), kCount);
+        auto* arr = std::start_lifetime_as_array<Pixel>(raw.get(), kCount);
         for (std::size_t i = 0; i < kCount; ++i) {
             std::cout << "  arr[" << i << "] = (" << +arr[i].r << "," << +arr[i].g << ","
                       << +arr[i].b << "," << +arr[i].a << ")\n";
