@@ -108,6 +108,32 @@ if(MCPP_HAVE_STD_GENERATOR AND MCPP_HAVE_CXX23_RANGES_BUNDLE)
     # generator demo 与 test 都用了 stdr::to，所以也依赖 ranges bundle。
     mcpp_add_demo(NAME generator_demo SOURCES demos/generator_demo.cpp)
     mcpp_add_test(NAME test_generator SOURCES tests/test_generator.cpp)
+
+    # GCC enables sized deallocation by default, and libstdc++ gates
+    # std::generator on the corresponding feature-test macro. clangd replays
+    # MinGW GCC compile commands with Clang's frontend, whose Windows target
+    # defaults to -fno-sized-deallocation, so make GCC's default explicit in
+    # compile_commands.json for these <generator> translation units.
+    #
+    # GCC 16 also emits optimizer false positives from libstdc++'s generator
+    # coroutine internals; keep those suppressions scoped to this small demo
+    # surface instead of weakening warnings project-wide.
+    add_library(06_containers_ranges_p2__generator_gcc_options INTERFACE)
+    target_compile_options(06_containers_ranges_p2__generator_gcc_options
+        INTERFACE
+            $<$<CXX_COMPILER_ID:GNU>:-fsized-deallocation>
+            $<$<CXX_COMPILER_ID:GNU>:-Wno-mismatched-new-delete>
+            $<$<CXX_COMPILER_ID:GNU>:-Wno-null-dereference>)
+
+    foreach(_mcpp_generator_target
+            06_containers_ranges_p2__generator_demo
+            06_containers_ranges_p2__test_generator)
+        if(TARGET ${_mcpp_generator_target})
+            target_link_libraries(${_mcpp_generator_target}
+                PRIVATE
+                    06_containers_ranges_p2__generator_gcc_options)
+        endif()
+    endforeach()
 else()
     message(STATUS
         "06_containers_ranges_p2: <generator> 或 ranges 全家桶不可用，跳过 generator demo/test "
