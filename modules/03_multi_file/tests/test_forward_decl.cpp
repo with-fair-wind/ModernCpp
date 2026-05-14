@@ -47,7 +47,7 @@ TEST(ForwardDecl, PartnerCanBeReset) {
     NodeB b{"Y"};
 
     a.setPartner(&b);
-    EXPECT_NE(a.describe().find("Y"), std::string::npos);
+    EXPECT_NE(a.describe().find('Y'), std::string::npos);
 
     // 重置为 nullptr
     a.setPartner(nullptr);
