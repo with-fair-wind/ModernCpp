@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MCPP_03_MULTI_FILE_TMPL_H
+#define MCPP_03_MULTI_FILE_TMPL_H
 
 // 模板显式实例化演示。
 // 模板声明放在头文件，定义放在源文件 tmpl_impl.cpp。
@@ -28,3 +29,5 @@ private:
     T data_[kMaxSize]{};
     std::size_t top_{0};
 };
+
+#endif  // MCPP_03_MULTI_FILE_TMPL_H

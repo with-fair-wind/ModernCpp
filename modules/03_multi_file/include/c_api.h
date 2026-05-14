@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MCPP_03_MULTI_FILE_C_API_H
+#define MCPP_03_MULTI_FILE_C_API_H
 
 // extern "C" 语言链接演示。
 // 本头文件可同时被 C 和 C++ 代码包含（通过 __cplusplus 保护宏）。
@@ -29,3 +30,5 @@ int c_api_accumulator_get(void);
 #ifdef __cplusplus
 }  // extern "C"
 #endif
+
+#endif  // MCPP_03_MULTI_FILE_C_API_H

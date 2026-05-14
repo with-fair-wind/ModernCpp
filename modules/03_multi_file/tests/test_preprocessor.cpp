@@ -103,8 +103,8 @@ TEST(Preprocessor, Undef) {
     EXPECT_EQ(UNDEF_TEST_VAL, 123);
 #undef UNDEF_TEST_VAL
     // UNDEF_TEST_VAL 此后不再可用，验证通过编译即可
-    constexpr int after_undef = 456;
-    EXPECT_EQ(after_undef, 456);
+    constexpr int kAfterUndef = 456;
+    EXPECT_EQ(kAfterUndef, 456);
 }
 // NOLINTEND(cppcoreguidelines-macro-usage)
 

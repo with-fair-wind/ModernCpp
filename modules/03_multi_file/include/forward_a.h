@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MCPP_03_MULTI_FILE_FORWARD_A_H
+#define MCPP_03_MULTI_FILE_FORWARD_A_H
 
 // 前置声明演示：A 持有 B 的指针，无需 #include "forward_b.h"。
 // 这样 B 的头文件改动不会导致包含本文件的 TU 重新编译。
@@ -22,3 +23,5 @@ private:
     std::string name_;
     NodeB* partner_{nullptr};  // 指针成员：不完整类型合法
 };
+
+#endif  // MCPP_03_MULTI_FILE_FORWARD_A_H

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MCPP_03_MULTI_FILE_ODR_HELPER_H
+#define MCPP_03_MULTI_FILE_ODR_HELPER_H
 
 // ODR 演示：头文件放声明（函数原型 + 类定义），源文件放函数体。
 // 多个 TU 可以 #include 本文件而不违反 ODR。
@@ -28,3 +29,5 @@ public:
 private:
     int count_{0};
 };
+
+#endif  // MCPP_03_MULTI_FILE_ODR_HELPER_H
