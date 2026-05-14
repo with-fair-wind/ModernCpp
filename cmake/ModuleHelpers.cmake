@@ -5,17 +5,24 @@
 # mcpp_add_demo(NAME <name>
 #               SOURCES <files...>
 #               [STANDARD <n>]
-#               [LINK_LIBS <targets...>])
+#               [LINK_LIBS <targets...>]
+#               [INCLUDE_DIRS <dirs...>]
+#               [PCH <headers...>])
 #   每个 demo 编译成一个可执行文件，链接到 mcpp::warnings。
 #   target 名为 "<module>__<name>"，确保全局唯一。
 #   STANDARD 用于覆盖单 target 的 CMAKE_CXX_STANDARD。
 #   LINK_LIBS 追加 PRIVATE 链接依赖（例如 Threads::Threads），
 #   这样模块就不需要知道内部 target 命名规则。
+#   INCLUDE_DIRS 追加 PRIVATE 头文件搜索路径（替代 directory-scoped 的
+#   include_directories()，粒度到单个 target）。
+#   PCH 指定预编译头（调用 target_precompile_headers PRIVATE）。
 #
 # mcpp_add_test(NAME <name>
 #               SOURCES <files...>
 #               [STANDARD <n>]
-#               [LINK_LIBS <targets...>])
+#               [LINK_LIBS <targets...>]
+#               [INCLUDE_DIRS <dirs...>]
+#               [PCH <headers...>])
 #   行为同 mcpp_add_demo，但额外链接 GTest::gtest_main，
 #   并通过 gtest_discover_tests 注册测试用例。
 
@@ -43,7 +50,7 @@ function(mcpp_add_demo)
 
     set(options)
     set(oneValueArgs NAME STANDARD)
-    set(multiValueArgs SOURCES LINK_LIBS)
+    set(multiValueArgs SOURCES LINK_LIBS INCLUDE_DIRS PCH)
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if(NOT ARG_NAME)
@@ -61,6 +68,12 @@ function(mcpp_add_demo)
     if(ARG_LINK_LIBS)
         target_link_libraries(${_target} PRIVATE ${ARG_LINK_LIBS})
     endif()
+    if(ARG_INCLUDE_DIRS)
+        target_include_directories(${_target} PRIVATE ${ARG_INCLUDE_DIRS})
+    endif()
+    if(ARG_PCH)
+        target_precompile_headers(${_target} PRIVATE ${ARG_PCH})
+    endif()
     set_target_properties(${_target} PROPERTIES
         OUTPUT_NAME "${ARG_NAME}"
         # 给每个模块一个独立的输出目录，避免不同模块下同名（NAME 冲突）的
@@ -77,7 +90,7 @@ function(mcpp_add_test)
 
     set(options)
     set(oneValueArgs NAME STANDARD)
-    set(multiValueArgs SOURCES LINK_LIBS)
+    set(multiValueArgs SOURCES LINK_LIBS INCLUDE_DIRS PCH)
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if(NOT ARG_NAME)
@@ -99,6 +112,12 @@ function(mcpp_add_test)
         GTest::gtest_main)
     if(ARG_LINK_LIBS)
         target_link_libraries(${_target} PRIVATE ${ARG_LINK_LIBS})
+    endif()
+    if(ARG_INCLUDE_DIRS)
+        target_include_directories(${_target} PRIVATE ${ARG_INCLUDE_DIRS})
+    endif()
+    if(ARG_PCH)
+        target_precompile_headers(${_target} PRIVATE ${ARG_PCH})
     endif()
     set_target_properties(${_target} PROPERTIES
         OUTPUT_NAME "${ARG_NAME}"
