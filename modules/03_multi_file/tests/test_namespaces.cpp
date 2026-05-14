@@ -8,27 +8,39 @@
 // ========== 测试用命名空间定义 ==========
 
 namespace outer::inner {
-int compute(int x) { return x * 2; }
+int compute(int x) {
+    return x * 2;
+}
 }  // namespace outer::inner
 
 // inline namespace 版本控制
 namespace library {
 
 inline namespace v2 {
-int process(int x) { return x + 100; }
-std::string version() { return "2.0"; }
+int process(int x) {
+    return x + 100;
+}
+std::string version() {
+    return "2.0";
+}
 }  // namespace v2
 
 namespace v1 {
-int process(int x) { return x + 10; }
-std::string version() { return "1.0"; }
+int process(int x) {
+    return x + 10;
+}
+std::string version() {
+    return "1.0";
+}
 }  // namespace v1
 
 }  // namespace library
 
 // 同名命名空间扩展
 namespace outer::inner {
-int negate(int x) { return -x; }
+int negate(int x) {
+    return -x;
+}
 }  // namespace outer::inner
 
 // 命名空间别名

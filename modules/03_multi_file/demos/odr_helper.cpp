@@ -9,17 +9,31 @@
 int Counter::instance_count = 0;
 
 // 函数定义
-int add(int a, int b) { return a + b; }
+int add(int a, int b) {
+    return a + b;
+}
 
-std::string greet(std::string const& name) { return "Hello, " + name + "!"; }
+std::string greet(std::string const& name) {
+    return "Hello, " + name + "!";
+}
 
 // 类成员函数的类外定义
-Counter::Counter(int init) : count_{init} { ++instance_count; }
+Counter::Counter(int init) : count_{init} {
+    ++instance_count;
+}
 
-void Counter::increment() { ++count_; }
+void Counter::increment() {
+    ++count_;
+}
 
-void Counter::decrement() { --count_; }
+void Counter::decrement() {
+    --count_;
+}
 
-void Counter::incrementBy(int step) { count_ += step; }
+void Counter::incrementBy(int step) {
+    count_ += step;
+}
 
-int Counter::value() const { return count_; }
+int Counter::value() const {
+    return count_;
+}

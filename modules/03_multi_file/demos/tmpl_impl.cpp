@@ -1,11 +1,11 @@
 // 模板显式实例化：模板定义放在源文件中，
 // 只为特定类型生成代码。用户只能使用已实例化的类型。
 
-#include "tmpl.h"
-
 #include <cstddef>
 #include <string>
 #include <type_traits>
+
+#include "tmpl.h"
 
 // ========== 函数模板定义 ==========
 
@@ -54,8 +54,7 @@ std::size_t Stack<T>::size() const {
 
 template int tmplAdd<int>(int const&, int const&);
 template double tmplAdd<double>(double const&, double const&);
-template std::string tmplAdd<std::string>(std::string const&,
-                                          std::string const&);
+template std::string tmplAdd<std::string>(std::string const&, std::string const&);
 
 template std::string tmplToString<int>(int const&);
 template std::string tmplToString<double>(double const&);

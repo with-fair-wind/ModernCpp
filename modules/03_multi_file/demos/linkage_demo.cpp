@@ -13,7 +13,9 @@
 #include "linkage_api.h"
 
 // 本 TU 自己的 static 函数 —— 与 linkage_internal.cpp 里同名但互不干扰
-static int internalHelper(int x) { return x - 1; }
+static int internalHelper(int x) {
+    return x - 1;
+}
 
 // 本 TU 自己的 const 变量 —— 默认内部链接，不影响其他 TU
 const int kLocalConst = 999;
@@ -30,20 +32,15 @@ int main() {
 
     // 2. extern const 跨 TU 共享
     std::cout << "-- extern const --\n";
-    std::cout << "kSharedConstant = " << kSharedConstant
-              << " (定义在 linkage_internal.cpp)\n";
-    std::cout << "kLocalConst = " << kLocalConst
-              << " (本 TU 内部链接，不冲突)\n";
+    std::cout << "kSharedConstant = " << kSharedConstant << " (定义在 linkage_internal.cpp)\n";
+    std::cout << "kLocalConst = " << kLocalConst << " (本 TU 内部链接，不冲突)\n";
     std::cout << '\n';
 
     // 3. 内部链接函数 —— 本 TU 的 internalHelper 与另一个 TU 的同名函数不同
     std::cout << "-- 内部链接 --\n";
-    std::cout << "本 TU internalHelper(5) = " << internalHelper(5)
-              << " (x-1 = 4)\n";
-    std::cout << "另 TU internalHelper(5) = " << callInternalHelper()
-              << " (x*x+1 = 26)\n";
-    std::cout << "另 TU anonHelper(7) = " << callAnonNsHelper()
-              << " (x*3-2 = 19)\n";
+    std::cout << "本 TU internalHelper(5) = " << internalHelper(5) << " (x-1 = 4)\n";
+    std::cout << "另 TU internalHelper(5) = " << callInternalHelper() << " (x*x+1 = 26)\n";
+    std::cout << "另 TU anonHelper(7) = " << callAnonNsHelper() << " (x*3-2 = 19)\n";
 
     return 0;
 }

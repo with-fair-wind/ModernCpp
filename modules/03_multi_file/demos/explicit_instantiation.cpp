@@ -47,8 +47,7 @@ int main() {
     Stack<std::string> str_stack;
     str_stack.push("alpha");
     str_stack.push("beta");
-    std::cout << R"(push "alpha", "beta"; size = )" << str_stack.size()
-              << '\n';
+    std::cout << R"(push "alpha", "beta"; size = )" << str_stack.size() << '\n';
     std::cout << R"(pop = ")" << str_stack.pop() << "\"\n";
 
     return 0;

@@ -32,15 +32,14 @@ int main() {
     // 默认参数演示 —— 默认参数写在声明（头文件）中，定义不重复
     std::cout << '\n';
     std::cout << "-- 默认参数 --\n";
-    c1.incrementBy();     // 使用默认参数 step=1
+    c1.incrementBy();  // 使用默认参数 step=1
     std::cout << "c1.incrementBy() 后: " << c1.value() << '\n';
-    c1.incrementBy(5);    // 显式传参
+    c1.incrementBy(5);  // 显式传参
     std::cout << "c1.incrementBy(5) 后: " << c1.value() << '\n';
 
     // 静态数据成员跨所有实例共享
     std::cout << '\n';
-    std::cout << "Counter::instance_count = " << Counter::instance_count
-              << " (应为 2)\n";
+    std::cout << "Counter::instance_count = " << Counter::instance_count << " (应为 2)\n";
 
     return 0;
 }

@@ -10,7 +10,9 @@ inline int g_app_version = 42;
 inline std::string g_app_name{"MultiFileDemo"};
 
 // inline 函数 —— 每个 TU 可见定义，链接器去重
-inline int doubleValue(int x) { return x * 2; }
+inline int doubleValue(int x) {
+    return x * 2;
+}
 
 // 包含 inline static 成员的类
 class AppConfig {
@@ -19,5 +21,7 @@ public:
     inline static int max_connections = 100;
     inline static std::string default_host{"localhost"};
 
-    static int getMaxConnections() { return max_connections; }
+    static int getMaxConnections() {
+        return max_connections;
+    }
 };

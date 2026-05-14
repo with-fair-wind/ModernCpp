@@ -32,20 +32,18 @@
 // ========== 3. __VA_ARGS__ 与 C++20 __VA_OPT__ ==========
 
 // 传统可变参数宏
-#define LOG_MSG(fmt, ...) \
-    std::cout << "[LOG] " << fmt << " " << __VA_ARGS__ << '\n'
+#define LOG_MSG(fmt, ...) std::cout << "[LOG] " << fmt << " " << __VA_ARGS__ << '\n'
 
 // C++20 __VA_OPT__：当可变参数为空时省略逗号/内容
-#define PRINT_LABELED(label, ...) \
-    std::cout << label __VA_OPT__(<< ": " << __VA_ARGS__) << '\n'
+#define PRINT_LABELED(label, ...) std::cout << label __VA_OPT__(<< ": " << __VA_ARGS__) << '\n'
 
 // ========== 4. do-while 安全多语句宏 ==========
 
-#define SAFE_SWAP(a, b)   \
-    do {                  \
-        auto tmp_ = (a);  \
-        (a) = (b);        \
-        (b) = tmp_;       \
+#define SAFE_SWAP(a, b)  \
+    do {                 \
+        auto tmp_ = (a); \
+        (a) = (b);       \
+        (b) = tmp_;      \
     } while (0)
 
 // ========== 5. 条件编译 ==========
@@ -79,26 +77,23 @@ int main() {
 
     // 1. 对象宏与函数宏
     std::cout << "-- 对象宏 & 函数宏 --\n";
-    std::cout << "PI = " << PI << '\n';                        // NOLINT(modernize-use-std-numbers)
+    std::cout << "PI = " << PI << '\n';  // NOLINT(modernize-use-std-numbers)
     std::cout << "MAX_BUFFER_SIZE = " << MAX_BUFFER_SIZE << '\n';
     std::cout << "SQUARE(5) = " << SQUARE(5) << '\n';
     std::cout << "SQUARE(2+3) = " << SQUARE(2 + 3) << " (正确: 25)\n";
     // NOLINTNEXTLINE(readability-math-missing-parentheses)
-    std::cout << "BAD_SQUARE(2+3) = " << BAD_SQUARE(2 + 3)
-              << " (错误: 2+3*2+3 = 11)\n\n";
+    std::cout << "BAD_SQUARE(2+3) = " << BAD_SQUARE(2 + 3) << " (错误: 2+3*2+3 = 11)\n\n";
 
     // 2. 字符串化与记号拼接
     std::cout << "-- 字符串化 & 拼接 --\n";
     std::cout << "STRINGIFY(hello) = " << STRINGIFY(hello) << '\n';
-    std::cout << "TO_STRING(MAX_BUFFER_SIZE) = " << TO_STRING(MAX_BUFFER_SIZE)
-              << '\n';
+    std::cout << "TO_STRING(MAX_BUFFER_SIZE) = " << TO_STRING(MAX_BUFFER_SIZE) << '\n';
 
     int CONCAT(my, Var) = 100;  // 展开为 int myVar = 100;
     std::cout << "CONCAT(my, Var) => myVar = " << myVar << '\n';
 
     int MAKE_VAR(count, total) = 999;  // 展开为 int count_total = 999;
-    std::cout << "MAKE_VAR(count, total) => count_total = " << count_total
-              << "\n\n";
+    std::cout << "MAKE_VAR(count, total) => count_total = " << count_total << "\n\n";
 
     // 3. __VA_ARGS__ 与 __VA_OPT__
     std::cout << "-- 可变参数宏 --\n";
@@ -166,7 +161,7 @@ int main() {
 #define TEMP_MACRO 42
     std::cout << "TEMP_MACRO = " << TEMP_MACRO << '\n';
 #undef TEMP_MACRO
-// NOLINTEND(cppcoreguidelines-macro-usage)
+    // NOLINTEND(cppcoreguidelines-macro-usage)
     // TEMP_MACRO 此后不再可用（若取消注释下行会编译失败）
     // std::cout << TEMP_MACRO;
     std::cout << "TEMP_MACRO 已被 #undef\n\n";

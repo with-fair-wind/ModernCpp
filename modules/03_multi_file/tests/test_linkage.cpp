@@ -5,7 +5,9 @@
 #include "linkage_api.h"
 
 // 本 TU 自己的 static 函数 —— 与 test_linkage_tu2.cpp 里同名函数不冲突
-static int secretComputation(int x) { return -x; }
+static int secretComputation(int x) {
+    return -x;
+}
 
 TEST(Linkage, ExternalFunctionAccessible) {
     // 外部链接函数可跨 TU 调用

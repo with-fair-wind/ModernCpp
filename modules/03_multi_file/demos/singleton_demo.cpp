@@ -15,11 +15,17 @@ Logger& Logger::instance() {
     return inst;
 }
 
-void Logger::setPrefix(std::string const& prefix) { prefix_ = prefix; }
+void Logger::setPrefix(std::string const& prefix) {
+    prefix_ = prefix;
+}
 
-std::string const& Logger::prefix() const { return prefix_; }
+std::string const& Logger::prefix() const {
+    return prefix_;
+}
 
-int Logger::logCount() const { return log_count_; }
+int Logger::logCount() const {
+    return log_count_;
+}
 
 void Logger::log(std::string const& message) {
     ++log_count_;
@@ -37,8 +43,7 @@ int main() {
     // 验证是同一实例
     std::cout << "logger1 地址: " << &logger1 << '\n';
     std::cout << "logger2 地址: " << &logger2 << '\n';
-    std::cout << "是同一实例: " << (&logger1 == &logger2 ? "是" : "否")
-              << "\n\n";
+    std::cout << "是同一实例: " << (&logger1 == &logger2 ? "是" : "否") << "\n\n";
 
     // 使用单例
     logger1.log("第一条日志");

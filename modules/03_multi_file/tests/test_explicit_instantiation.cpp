@@ -22,8 +22,7 @@ TEST(ExplicitInstantiation, TmplAddDouble) {
 }
 
 TEST(ExplicitInstantiation, TmplAddString) {
-    EXPECT_EQ(tmplAdd(std::string{"hello"}, std::string{" world"}),
-              "hello world");
+    EXPECT_EQ(tmplAdd(std::string{"hello"}, std::string{" world"}), "hello world");
     EXPECT_EQ(tmplAdd(std::string{}, std::string{"abc"}), "abc");
 }
 

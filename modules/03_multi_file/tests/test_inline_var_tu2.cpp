@@ -1,14 +1,22 @@
 // inline 变量测试的第二个 TU。
 // 包含同一头文件，提供函数让主测试 TU 查询 inline 变量/函数的地址与值。
 
-#include "inline_config.h"
-
 #include <string>
 
-int const* inlineVarAddrTu2() { return &g_app_version; }
+#include "inline_config.h"
 
-std::string const* inlineNameAddrTu2() { return &g_app_name; }
+int const* inlineVarAddrTu2() {
+    return &g_app_version;
+}
 
-int inlineDoubleTu2(int x) { return doubleValue(x); }
+std::string const* inlineNameAddrTu2() {
+    return &g_app_name;
+}
 
-int* inlineStaticMemberAddrTu2() { return &AppConfig::max_connections; }
+int inlineDoubleTu2(int x) {
+    return doubleValue(x);
+}
+
+int* inlineStaticMemberAddrTu2() {
+    return &AppConfig::max_connections;
+}

@@ -12,6 +12,9 @@ public:
     ~NodeB();
 
     void setPartner(NodeA* a);
+    [[nodiscard]] const std::string& name() const {
+        return name_;
+    }
     [[nodiscard]] std::string describe() const;
 
 private:

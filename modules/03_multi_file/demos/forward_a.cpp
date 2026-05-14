@@ -12,13 +12,15 @@ NodeA::NodeA(std::string name) : name_{std::move(name)} {}
 
 NodeA::~NodeA() = default;
 
-void NodeA::setPartner(NodeB* b) { partner_ = b; }
+void NodeA::setPartner(NodeB* b) {
+    partner_ = b;
+}
 
 std::string NodeA::describe() const {
     std::string result = "NodeA(\"" + name_ + "\")";
     if (partner_ != nullptr) {
-        // 此处需要 NodeB 的完整定义来调用 describe()
-        result += " -> partner: " + partner_->describe();
+        // 只取 partner 名称，避免 A->B->A 无限递归
+        result += " -> partner: NodeB(\"" + partner_->name() + "\")";
     }
     return result;
 }
