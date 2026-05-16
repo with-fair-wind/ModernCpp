@@ -1,0 +1,56 @@
+name: Auto-format (one-shot)
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to format'
+        required: true
+        default: 'feat/fill-incomplete-modules'
+
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    container: archlinux:base-devel
+    env:
+      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+    steps:
+      - name: Export GitHub Actions cache env
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      - name: Install git + toolchain
+        run: pacman -Sy --noconfirm --needed git ca-certificates clang lld llvm cmake ninja curl zip unzip tar pkgconf
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Git safe directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: '5ee5eee0d3e9c6098b24d263e9099edcdcef6631'
+
+      - name: Configure
+        env:
+          CC: clang
+          CXX: clang++
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+        run: cmake --preset clang-relwithdebinfo
+
+      - name: Format (in-place)
+        run: cmake --build --preset clang-relwithdebinfo --target format
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "style: auto-format with CI clang-format (Arch LLVM 22)"
+          git push
