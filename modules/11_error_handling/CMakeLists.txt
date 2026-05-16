@@ -26,11 +26,28 @@ check_cxx_source_compiles("
 " MCPP_HAS_STD_EXPECTED)
 set(CMAKE_REQUIRED_FLAGS "${_mcpp_prev_required_flags}")
 
+# 不依赖 std::expected 的 demo / test（始终注册）
+mcpp_add_demo(NAME optional_basics SOURCES demos/optional_basics.cpp)
+mcpp_add_demo(NAME exception_basics SOURCES demos/exception_basics.cpp)
+mcpp_add_demo(NAME exception_safety SOURCES demos/exception_safety.cpp)
+mcpp_add_demo(NAME noexcept_demo SOURCES demos/noexcept_demo.cpp)
+mcpp_add_demo(NAME assertion_demo SOURCES demos/assertion_demo.cpp)
+mcpp_add_demo(NAME source_location_demo SOURCES demos/source_location_demo.cpp)
+
+mcpp_add_test(NAME test_optional SOURCES tests/test_optional.cpp)
+mcpp_add_test(NAME test_exception SOURCES tests/test_exception.cpp)
+mcpp_add_test(NAME test_exception_safety SOURCES tests/test_exception_safety.cpp)
+mcpp_add_test(NAME test_noexcept SOURCES tests/test_noexcept.cpp)
+mcpp_add_test(NAME test_source_location SOURCES tests/test_source_location.cpp)
+
+mcpp_add_demo(NAME error_code_demo SOURCES demos/error_code_demo.cpp)
+mcpp_add_test(NAME test_error_code SOURCES tests/test_error_code.cpp)
+
 if(MCPP_HAS_STD_EXPECTED)
     mcpp_add_demo(NAME expected_basics SOURCES demos/expected_basics.cpp)
-    mcpp_add_test(NAME test_expected   SOURCES tests/test_expected.cpp)
+    mcpp_add_test(NAME test_expected SOURCES tests/test_expected.cpp)
 else()
     message(STATUS
-        "11_error_handling: <expected> not available on this toolchain "
-        "(stdlib lacks std::expected) — skipping demos/tests for this module.")
+        "11_error_handling: <expected> not available — skipping expected_basics "
+        "and test_expected only.")
 endif()
