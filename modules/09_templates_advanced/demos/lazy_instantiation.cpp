@@ -13,7 +13,9 @@ struct NoAdd {
 template <typename T>
 struct MaybeMath {
     // 总是可用：不要求 T 具备 operator+。
-    [[nodiscard]] static constexpr int sizeOf() noexcept { return static_cast<int>(sizeof(T)); }
+    [[nodiscard]] static constexpr int sizeOf() noexcept {
+        return static_cast<int>(sizeof(T));
+    }
 
     // 成员函数模板：未调用时不会对 `U` 做返回类型代入，因而可安全与
     // 无 operator+ 的 `T` 共存；一旦对 `NoAdd` 调用 `add` 即会编译失败。

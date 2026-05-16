@@ -23,8 +23,7 @@ int main() {  // NOLINT(bugprone-exception-escape)
     writeConstant("phi", std::numbers::phi);
 
     std::cout << "\n--- 模板 *_v<float> ---\n";
-    static_assert(
-        std::is_same_v<std::remove_cv_t<decltype(std::numbers::pi_v<float>)>, float>);
+    static_assert(std::is_same_v<std::remove_cv_t<decltype(std::numbers::pi_v<float>)>, float>);
     constexpr float kPiF = std::numbers::pi_v<float>;
     std::cout << "pi<float> =" << kPiF << " (字节数 " << sizeof(kPiF) << ")\n";
 

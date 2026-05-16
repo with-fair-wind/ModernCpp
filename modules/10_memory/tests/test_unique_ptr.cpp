@@ -30,7 +30,8 @@ TEST(UniquePtrBasic, OwnershipMovesAndResetsOriginal) {
 TEST(UniquePtrCustomDeleter, CustomDeleterRunsOnRelease) {
     unique_test_stats.deleter_invokes = 0;
     {
-        std::unique_ptr<int, CountDeleter> owner{new int{1337}, CountDeleter{}};       // NOLINT(cppcoreguidelines-owning-memory)
+        std::unique_ptr<int, CountDeleter> owner{
+            new int{1337}, CountDeleter{}};  // NOLINT(cppcoreguidelines-owning-memory)
         EXPECT_NE(owner.get(), nullptr);
     }
     EXPECT_EQ(unique_test_stats.deleter_invokes, 1);

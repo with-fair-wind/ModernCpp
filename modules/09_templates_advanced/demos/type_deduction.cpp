@@ -31,10 +31,8 @@ int main() {
     // 按值：无论传入左值是否具有 const，`T` 都是 `std::string`。
     auto by_val_mut = tagPassByValue(mutable_str);
     auto by_val_cst = tagPassByValue(const_str);
-    static_assert(
-        std::is_same_v<decltype(by_val_mut)::type, std::string>);
-    static_assert(
-        std::is_same_v<decltype(by_val_cst)::type, std::string>);
+    static_assert(std::is_same_v<decltype(by_val_mut)::type, std::string>);
+    static_assert(std::is_same_v<decltype(by_val_cst)::type, std::string>);
 
     // 左值引用：cv 会进入 `T`。
     auto lref_mut = tagLvalueReference(mutable_str);

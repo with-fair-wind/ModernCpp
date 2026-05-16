@@ -14,7 +14,9 @@ private:
     CounterBase() = default;
 
 public:
-    [[nodiscard]] int tick() { return static_cast<Derived*>(this)->increment(); }
+    [[nodiscard]] int tick() {
+        return static_cast<Derived*>(this)->increment();
+    }
 };
 
 class StepCounter : public CounterBase<StepCounter> {
@@ -44,7 +46,9 @@ private:
 public:
     explicit CallableModel(Functor functor) : functor_(std::move(functor)) {}
 
-    void invoke(int value) const override { functor_(value); }
+    void invoke(int value) const override {
+        functor_(value);
+    }
 };
 
 class Function {
@@ -53,7 +57,8 @@ private:
 
 public:
     template <typename Functor>
-    Function(Functor functor) : target_(std::make_unique<CallableModel<Functor>>(std::move(functor))) {}
+    Function(Functor functor)
+        : target_(std::make_unique<CallableModel<Functor>>(std::move(functor))) {}
 
     void operator()(int value) const {
         if (target_) {

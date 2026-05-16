@@ -14,7 +14,7 @@ void printLine(const char* text) {
     std::cout << text << '\n';
 }
 
-} // namespace
+}  // namespace
 
 int main() {
     std::mutex m;

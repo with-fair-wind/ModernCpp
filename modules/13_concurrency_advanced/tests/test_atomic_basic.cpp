@@ -1,6 +1,7 @@
 // 模块 13 测试：atomic 基本 load / store / exchange / fetch_add。
 
 #include <atomic>
+
 #include <gtest/gtest.h>
 
 namespace {
@@ -41,4 +42,4 @@ TEST(AtomicBasic, CompareExchangeStrongFailureUpdatesExpected) {
     EXPECT_EQ(a.load(), 5);
 }
 
-} // namespace
+}  // namespace

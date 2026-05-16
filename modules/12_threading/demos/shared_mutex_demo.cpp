@@ -25,7 +25,7 @@ void writer(int value) {
     std::cout << "writer 写入 shared_data=" << value << '\n';
 }
 
-} // namespace
+}  // namespace
 
 int main() {
     std::thread r1(reader, 1);

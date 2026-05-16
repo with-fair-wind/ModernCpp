@@ -13,7 +13,9 @@ struct Widget {
 
 template <Widget const& W>
 struct WidgetVault {
-    static constexpr int peek() noexcept { return W.value; }
+    static constexpr int peek() noexcept {
+        return W.value;
+    }
 };
 
 inline constexpr Widget kWidgetSeven{.value = 7};
@@ -40,7 +42,9 @@ inline constexpr auto kScaler = [](int x) noexcept { return x * 100; };
 
 template <decltype(kScaler) Functor>
 struct ScaleHouse {
-    static constexpr int run(int seed) noexcept { return Functor(seed); }
+    static constexpr int run(int seed) noexcept {
+        return Functor(seed);
+    }
 };
 #endif
 

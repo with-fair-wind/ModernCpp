@@ -1,9 +1,10 @@
 // 模块 13 测试：atomic_thread_fence 与 relaxed 原子配合形成同步。
 
 #include <atomic>
-#include <gtest/gtest.h>
 #include <latch>
 #include <thread>
+
+#include <gtest/gtest.h>
 
 namespace {
 
@@ -37,4 +38,4 @@ TEST(Fence, ReleaseAcquirePairEstablishesHappensBefore) {
     EXPECT_EQ(z.load(), 1);
 }
 
-} // namespace
+}  // namespace

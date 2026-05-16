@@ -14,8 +14,7 @@ struct Tracker {
     Head head{};
     Tail tail{};
 
-    Tracker(Head head_in, Tail tail_in)
-        : head(std::move(head_in)), tail(std::move(tail_in)) {}
+    Tracker(Head head_in, Tail tail_in) : head(std::move(head_in)), tail(std::move(tail_in)) {}
 };
 
 template <typename Unified>

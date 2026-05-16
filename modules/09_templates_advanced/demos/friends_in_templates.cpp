@@ -31,7 +31,9 @@ void reveal(SafeBox<U> const& box, std::ostream& out) {
 template <typename T>
 class Auditor {
 public:
-    static void peek(SafeBox<T> const& box) { std::cout << box.value_ << '\n'; }
+    static void peek(SafeBox<T> const& box) {
+        std::cout << box.value_ << '\n';
+    }
 };
 
 }  // namespace

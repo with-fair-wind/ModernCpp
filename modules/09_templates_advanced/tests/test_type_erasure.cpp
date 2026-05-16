@@ -21,7 +21,9 @@ private:
 public:
     explicit IntCallableModel(Functor functor) : functor_(std::move(functor)) {}
 
-    [[nodiscard]] int invoke(int value) const override { return functor_(value); }
+    [[nodiscard]] int invoke(int value) const override {
+        return functor_(value);
+    }
 };
 
 class TypeErasedFunctor {

@@ -25,7 +25,7 @@ void demoCompareExchange() {
     std::cout << "compare_exchange_strong: " << (ok ? "成功" : "失败")
               << " expected(后)=" << expected << " 现值=" << a.load() << '\n';
 
-    expected = 999; // 与当前值不符
+    expected = 999;  // 与当前值不符
     const bool fail = a.compare_exchange_weak(expected, 0);
     std::cout << "compare_exchange_weak(应失败): " << (fail ? "成功?" : "失败")
               << " expected(后)=" << expected << '\n';
@@ -37,7 +37,7 @@ void demoFetchAdd() {
     std::cout << "fetch_add(7)：返回旧值 " << prev << " 新值 " << a.load() << '\n';
 }
 
-} // namespace
+}  // namespace
 
 int main() {
     demoLoadStore();

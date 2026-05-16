@@ -86,7 +86,8 @@ struct SizedDeleteSample {
         std::free(ptr);  // NOLINT(cppcoreguidelines-no-malloc)
     }
 
-    static void operator delete(void* ptr, std::size_t /*sz*/) noexcept {  // NOLINT(misc-new-delete-overloads)
+    static void operator delete(void* ptr,
+                                std::size_t /*sz*/) noexcept {  // NOLINT(misc-new-delete-overloads)
         ++hook_counts.sized_delete_calls;
         ++hook_counts.delete_calls;
         std::free(ptr);  // NOLINT(cppcoreguidelines-no-malloc)
@@ -117,19 +118,24 @@ struct Tracked {
         std::free(ptr);  // NOLINT(cppcoreguidelines-no-malloc)
     }
 
-    // 此类承担过对齐分配；为避免误绑定 sized plain delete，这里不显式声明 operator delete(void*, size_t)。
+    // 此类承担过对齐分配；为避免误绑定 sized plain delete，这里不显式声明 operator delete(void*,
+    // size_t)。
 
-    static void* operator new(std::size_t count, std::align_val_t al) {  // NOLINT(misc-new-delete-overloads)
+    static void* operator new(std::size_t count,
+                              std::align_val_t al) {  // NOLINT(misc-new-delete-overloads)
         ++hook_counts.aligned_new_calls;
         return allocateAligned(static_cast<std::size_t>(al), count);
     }
 
-    static void operator delete(void* ptr, std::align_val_t /*al*/) noexcept {  // NOLINT(misc-new-delete-overloads)
+    static void operator delete(
+        void* ptr, std::align_val_t /*al*/) noexcept {  // NOLINT(misc-new-delete-overloads)
         ++hook_counts.aligned_delete_calls;
         releaseAligned(ptr);
     }
 
-    static void operator delete(void* ptr, std::size_t /*sz*/, std::align_val_t /*al*/) noexcept {  // NOLINT(misc-new-delete-overloads)
+    static void operator delete(
+        void* ptr, std::size_t /*sz*/,
+        std::align_val_t /*al*/) noexcept {  // NOLINT(misc-new-delete-overloads)
         ++hook_counts.aligned_delete_calls;
         releaseAligned(ptr);
     }
@@ -138,21 +144,23 @@ struct Tracked {
 
 void printCounters() {
     std::cout << "new: " << hook_counts.new_calls << " delete: " << hook_counts.delete_calls
-              << " sized_delete: " << hook_counts.sized_delete_calls << " aligned_new: " << hook_counts.aligned_new_calls
+              << " sized_delete: " << hook_counts.sized_delete_calls
+              << " aligned_new: " << hook_counts.aligned_new_calls
               << " aligned_delete: " << hook_counts.aligned_delete_calls << '\n';
 }
 
 }  // namespace
 
 int main() {
-    auto* sized_probe = new SizedDeleteSample{-1};                                   // NOLINT(cppcoreguidelines-owning-memory)
-    delete sized_probe;                                                               // NOLINT(cppcoreguidelines-owning-memory)
+    auto* sized_probe = new SizedDeleteSample{-1};  // NOLINT(cppcoreguidelines-owning-memory)
+    delete sized_probe;                             // NOLINT(cppcoreguidelines-owning-memory)
 
-    auto* plain = new Tracked{42};                                                    // NOLINT(cppcoreguidelines-owning-memory)
-    delete plain;                                                                     // NOLINT(cppcoreguidelines-owning-memory)
+    auto* plain = new Tracked{42};  // NOLINT(cppcoreguidelines-owning-memory)
+    delete plain;                   // NOLINT(cppcoreguidelines-owning-memory)
 
     constexpr std::size_t kOverAlign = 64U;
-    auto* big = new (std::align_val_t{kOverAlign}) Tracked{7};                        // NOLINT(cppcoreguidelines-owning-memory)
+    auto* big =
+        new (std::align_val_t{kOverAlign}) Tracked{7};  // NOLINT(cppcoreguidelines-owning-memory)
     // 表达式 delete 在少数 ABI 上会误配对 sized/plain delete；演示侧改为显式拆解以防堆不匹配。
     Tracked::teardownAligned(big, std::align_val_t{kOverAlign});
 

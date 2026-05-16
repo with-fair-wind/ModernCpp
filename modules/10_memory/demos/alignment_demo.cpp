@@ -21,7 +21,9 @@ void spinIncrement(std::atomic<int>& a, int iterations) {
 void demoAlignQuery() {
     alignas(32) double values[4]{};
     std::cout << "alignof(double[4]) with alignas(32): " << alignof(decltype(values)) << '\n';
-    std::cout << "地址 mod 32: " << (reinterpret_cast<std::uintptr_t>(values) % 32U)  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+    std::cout << "地址 mod 32: "
+              << (reinterpret_cast<std::uintptr_t>(values) %
+                  32U)  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
               << '\n';
 }
 

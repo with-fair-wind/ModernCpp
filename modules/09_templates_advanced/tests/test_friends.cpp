@@ -1,9 +1,10 @@
 // 验证类模板友元函数模板 / 友元类模板对 SafeBox 私有成员的访问。
 
-#include <gtest/gtest.h>
 #include <sstream>
 #include <string>
 #include <utility>
+
+#include <gtest/gtest.h>
 
 namespace {
 

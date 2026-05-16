@@ -1,10 +1,11 @@
 // 模块 13 测试：std::atomic_flag 的 test_and_set / clear。
 
 #include <atomic>
-#include <gtest/gtest.h>
 #include <latch>
 #include <thread>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 namespace {
 
@@ -46,4 +47,4 @@ TEST(AtomicFlag, SpinLockExcludesConcurrentCriticalSection) {
     }
 }
 
-} // namespace
+}  // namespace

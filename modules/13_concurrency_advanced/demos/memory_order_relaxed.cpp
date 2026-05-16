@@ -19,7 +19,7 @@ void worker(std::atomic<int>& counter) {
     }
 }
 
-} // namespace
+}  // namespace
 
 int main() {
     std::atomic<int> counter{0};
@@ -32,7 +32,7 @@ int main() {
         t.join();
     }
     const int expected = kThreads * kPerThread;
-    std::cout << "relaxed fetch_add 合计：" << counter.load(std::memory_order_relaxed)
-              << "（期望 " << expected << "）\n";
+    std::cout << "relaxed fetch_add 合计：" << counter.load(std::memory_order_relaxed) << "（期望 "
+              << expected << "）\n";
     return 0;
 }

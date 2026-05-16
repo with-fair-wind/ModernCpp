@@ -10,7 +10,7 @@ namespace {
 
 constexpr int kParties = 3;
 
-} // namespace
+}  // namespace
 
 int main() {
     std::cout << "--- std::latch：主线程等待 " << kParties << " 个子线程就绪 ---\n";

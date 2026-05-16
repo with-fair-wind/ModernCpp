@@ -18,8 +18,7 @@ int main() {  // NOLINT(bugprone-exception-escape)
     printDivider("构造与默认值");
     std::error_code ec_default;
     std::cout << "默认构造: bool(ec)=" << static_cast<bool>(ec_default)
-              << " value=" << ec_default.value()
-              << " message=\"" << ec_default.message() << "\"\n";
+              << " value=" << ec_default.value() << " message=\"" << ec_default.message() << "\"\n";
 
     auto ec_enoent = std::make_error_code(std::errc::no_such_file_or_directory);
     std::cout << "make_error_code(errc::no_such_file_or_directory): "
@@ -41,8 +40,7 @@ int main() {  // NOLINT(bugprone-exception-escape)
               << (ec_gen.category() == gen) << '\n';
 
     printDivider("error_condition（平台无关语义）");
-    std::error_condition cond =
-        std::make_error_condition(std::errc::no_such_file_or_directory);
+    std::error_condition cond = std::make_error_condition(std::errc::no_such_file_or_directory);
     std::cout << "cond.value=" << cond.value() << " cond.category=" << cond.category().name()
               << " cond.message=\"" << cond.message() << "\"\n";
     std::cout << "ec_gen == cond: " << (ec_gen == cond) << '\n';

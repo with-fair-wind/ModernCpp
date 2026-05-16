@@ -11,7 +11,9 @@ private:
     CounterBase() = default;
 
 public:
-    int bump() { return static_cast<Derived*>(this)->step(); }
+    int bump() {
+        return static_cast<Derived*>(this)->step();
+    }
 };
 
 class LinearCounter : public CounterBase<LinearCounter> {
@@ -24,7 +26,9 @@ public:
         return state_;
     }
 
-    [[nodiscard]] int read() const noexcept { return state_; }
+    [[nodiscard]] int read() const noexcept {
+        return state_;
+    }
 };
 
 }  // namespace

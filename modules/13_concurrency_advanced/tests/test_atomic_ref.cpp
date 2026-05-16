@@ -1,10 +1,11 @@
 // 模块 13 测试：std::atomic_ref 并发递增的确定性验证。
 
 #include <atomic>
-#include <gtest/gtest.h>
 #include <latch>
 #include <thread>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #if defined(__cpp_lib_atomic_ref) && __cpp_lib_atomic_ref >= 201806L
 
@@ -37,7 +38,7 @@ TEST(AtomicRef, ConcurrentIncrementsKeepTotalOrder) {
     EXPECT_EQ(shared, kThreads * kPerThread);
 }
 
-} // namespace
+}  // namespace
 
 #else
 

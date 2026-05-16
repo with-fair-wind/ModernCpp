@@ -16,8 +16,7 @@ namespace {
 fs::path makeUniqueRoot(std::string_view prefix) {
     static std::mt19937_64 rng{std::random_device{}()};
     auto const salt = static_cast<unsigned long long>(rng());
-    return fs::temp_directory_path() /
-           (std::string{prefix} + "_" + std::to_string(salt));
+    return fs::temp_directory_path() / (std::string{prefix} + "_" + std::to_string(salt));
 }
 
 void touchFile(fs::path const& file, std::string_view payload) {
@@ -30,8 +29,7 @@ void touchFile(fs::path const& file, std::string_view payload) {
 int countFlat(fs::path const& dir) {
     int n = 0;
     std::error_code ec;
-    for ([[maybe_unused]] fs::directory_entry const& ignored :
-         fs::directory_iterator(dir, ec)) {
+    for ([[maybe_unused]] fs::directory_entry const& ignored : fs::directory_iterator(dir, ec)) {
         ++n;
         (void)ignored;
     }

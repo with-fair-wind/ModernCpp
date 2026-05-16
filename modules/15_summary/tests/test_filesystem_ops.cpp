@@ -15,8 +15,7 @@ namespace {
 fs::path makeUniqueRoot(std::string_view prefix) {
     static std::mt19937_64 rng{std::random_device{}()};
     auto const salt = static_cast<unsigned long long>(rng());
-    return fs::temp_directory_path() /
-           (std::string{prefix} + "_" + std::to_string(salt));
+    return fs::temp_directory_path() / (std::string{prefix} + "_" + std::to_string(salt));
 }
 
 struct Cleaner {

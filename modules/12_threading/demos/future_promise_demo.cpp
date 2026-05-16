@@ -12,7 +12,7 @@ int computeSum(int a, int b) {
     return a + b;
 }
 
-} // namespace
+}  // namespace
 
 int main() {
     // promise / future：手动交付结果或异常。

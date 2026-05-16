@@ -9,12 +9,10 @@ namespace {
 
 void printScaled(auto duration_value) {
     using namespace std::chrono_literals;
-    auto const ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(duration_value);
-    auto const sec =
-        std::chrono::duration_cast<std::chrono::seconds>(duration_value);
-    std::cout << std::format("  原始表示 {}, 折算毫秒 {}, 折算整秒 {}\n",
-                             duration_value, ms.count(), sec.count());
+    auto const ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration_value);
+    auto const sec = std::chrono::duration_cast<std::chrono::seconds>(duration_value);
+    std::cout << std::format("  原始表示 {}, 折算毫秒 {}, 折算整秒 {}\n", duration_value,
+                             ms.count(), sec.count());
 }
 
 }  // namespace

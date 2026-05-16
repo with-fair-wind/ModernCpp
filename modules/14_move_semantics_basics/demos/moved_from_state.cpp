@@ -13,7 +13,8 @@ void demoString() {
     std::string sink = std::move(s);
 
     // 故意：读取 moved-from string 的常见观察值（合法但未指定状态）。
-    std::cout << "[string] 移动后源 size=" << s.size() << " capacity=" << s.capacity()  // NOLINT(bugprone-use-after-move)
+    std::cout << "[string] 移动后源 size=" << s.size()
+              << " capacity=" << s.capacity()  // NOLINT(bugprone-use-after-move)
               << '\n';
     s.clear();
     std::cout << "[string] clear 后 size=" << s.size() << '\n';

@@ -14,7 +14,9 @@ class WidgetImpl {
 public:
     explicit WidgetImpl(std::string name) : name_(std::move(name)) {}
 
-    [[nodiscard]] std::string greeting() const { return "Hello, " + name_; }
+    [[nodiscard]] std::string greeting() const {
+        return "Hello, " + name_;
+    }
 
 private:
     std::string name_;

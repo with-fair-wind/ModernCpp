@@ -8,8 +8,8 @@
 
 #include <atomic>
 #include <chrono>
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <thread>
 
@@ -77,8 +77,8 @@ int main() {
     double const split_sec = runTwoAccumulators(split);
 
     std::cout << "紧凑布局 " << sizeof(PackedCounters) << " 字节耗时: " << packed_sec << " s\n";
-    std::cout << "`alignas(缓存线)` 拆分后 " << sizeof(LineSplitCounters) << " 字节耗时: "
-              << split_sec << " s\n";
+    std::cout << "`alignas(缓存线)` 拆分后 " << sizeof(LineSplitCounters)
+              << " 字节耗时: " << split_sec << " s\n";
     std::cout << "两线程递增各 " << kIterations << " 次；结果 lhs/rhs == " << kIterations << "。"
               << " 具体快慢随 CPU/OS 而异，关键是对比「同行缓存线」vs「刻意隔离」。\n";
     std::cout << "packed lhs=" << packed.lhs.load() << " rhs=" << packed.rhs.load() << '\n';

@@ -33,9 +33,7 @@ TEST(Latch, AllPartiesReleaseWaiters) {
 TEST(Barrier, CompletionRunsOncePerPhase) {
     constexpr int kParties = 3;
     std::atomic<int> completions{0};
-    std::barrier sync(kParties, [&completions]() noexcept {
-        completions.fetch_add(1);
-    });
+    std::barrier sync(kParties, [&completions]() noexcept { completions.fetch_add(1); });
 
     auto two_phases = [&sync] {
         sync.arrive_and_wait();

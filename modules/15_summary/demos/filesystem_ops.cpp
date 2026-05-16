@@ -14,12 +14,10 @@ namespace {
 
 fs::path makeScratchRoot() {
     static std::mt19937_64 rng{std::random_device{}()};
-    auto const stamp =
-        std::chrono::steady_clock::now().time_since_epoch().count();
+    auto const stamp = std::chrono::steady_clock::now().time_since_epoch().count();
     auto const suffix = static_cast<unsigned long long>(rng());
     return fs::temp_directory_path() /
-           ("mcpp_summary_fs_demo_" + std::to_string(stamp) + "_" +
-            std::to_string(suffix));
+           ("mcpp_summary_fs_demo_" + std::to_string(stamp) + "_" + std::to_string(suffix));
 }
 
 }  // namespace
@@ -46,8 +44,7 @@ int main() {  // NOLINT(bugprone-exception-escape)
     std::cout << "rename -> " << renamed << '\n';
 
     auto perm = fs::status(renamed).permissions();
-    fs::permissions(renamed, perm | fs::perms::owner_write,
-                    fs::perm_options::add);
+    fs::permissions(renamed, perm | fs::perms::owner_write, fs::perm_options::add);
 
     std::cout << "file_size: " << fs::file_size(renamed) << " bytes\n";
 

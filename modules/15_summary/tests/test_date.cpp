@@ -16,8 +16,7 @@ TEST(CalendarTypes, ConstructValidateAndShift) {
 
     auto const shifted = ymd + months{1};
     ASSERT_TRUE(shifted.ok());
-    EXPECT_EQ(static_cast<unsigned>(shifted.month()),
-              static_cast<unsigned>(March));
+    EXPECT_EQ(static_cast<unsigned>(shifted.month()), static_cast<unsigned>(March));
     EXPECT_EQ(static_cast<unsigned>(shifted.day()), 28U);
 
     auto const last_day = 2024y / February / last;

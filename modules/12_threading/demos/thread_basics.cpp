@@ -7,8 +7,7 @@
 namespace {
 
 void threadFunc(int value) {
-    std::cout << "threadFunc: value=" << value << ", id=" << std::this_thread::get_id()
-              << '\n';
+    std::cout << "threadFunc: value=" << value << ", id=" << std::this_thread::get_id() << '\n';
 }
 
 struct Worker {
@@ -18,7 +17,7 @@ struct Worker {
     }
 };
 
-} // namespace
+}  // namespace
 
 int main() {
     std::cout << "main thread id: " << std::this_thread::get_id() << '\n';
@@ -30,9 +29,7 @@ int main() {
     std::cout << "t1 joinable after join: " << std::boolalpha << t1.joinable() << '\n';
 
     // 2) lambda
-    std::thread t2([] {
-        std::cout << "lambda thread id: " << std::this_thread::get_id() << '\n';
-    });
+    std::thread t2([] { std::cout << "lambda thread id: " << std::this_thread::get_id() << '\n'; });
     if (t2.joinable()) {
         t2.join();
     }

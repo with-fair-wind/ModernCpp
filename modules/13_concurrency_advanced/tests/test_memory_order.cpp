@@ -1,11 +1,12 @@
 // 模块 13 测试：内存序下的可见性（acquire-release 与 relaxed 计数）。
 
 #include <atomic>
-#include <gtest/gtest.h>
 #include <latch>
 #include <string>
 #include <thread>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 namespace {
 
@@ -58,4 +59,4 @@ TEST(MemoryOrder, RelaxedFetchAddSum) {
     EXPECT_EQ(counter.load(std::memory_order_relaxed), kThreads * kEach);
 }
 
-} // namespace
+}  // namespace

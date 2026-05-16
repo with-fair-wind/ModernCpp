@@ -34,7 +34,6 @@ TEST(PathBasics, ConcatOperators) {
 }
 
 TEST(PathBasics, LexicallyNormalCollapsesDots) {
-    fs::path const messy =
-        fs::path("alpha") / ".." / "." / "beta" / "gamma";
+    fs::path const messy = fs::path("alpha") / ".." / "." / "beta" / "gamma";
     EXPECT_EQ(messy.lexically_normal(), fs::path("beta") / "gamma");
 }

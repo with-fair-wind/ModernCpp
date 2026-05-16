@@ -21,7 +21,8 @@ void demonstrateAliasing() {
     auto owner = std::make_shared<Widget>(Widget{.id = 2, .label = "beta"});
     // 别名构造：控制块仍管理整个 Widget，但 get() 指向其某个成员子对象。
     std::shared_ptr<std::string> label_view(owner, &owner->label);
-    std::cout << "别名指针 -> " << *label_view << " | owner.use_count=" << owner.use_count() << '\n';
+    std::cout << "别名指针 -> " << *label_view << " | owner.use_count=" << owner.use_count()
+              << '\n';
 }
 
 }  // namespace

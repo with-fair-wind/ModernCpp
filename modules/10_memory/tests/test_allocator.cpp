@@ -39,7 +39,8 @@ public:
 };
 
 template <typename A, typename B>
-bool operator==(const InstrumentedAllocator<A>& /*left*/, const InstrumentedAllocator<B>& /*right*/) noexcept {
+bool operator==(const InstrumentedAllocator<A>& /*left*/,
+                const InstrumentedAllocator<B>& /*right*/) noexcept {
     return true;
 }
 

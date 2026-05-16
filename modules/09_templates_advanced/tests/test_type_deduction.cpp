@@ -1,9 +1,10 @@
 // 函数模板推导：按值 decay、左值引用保留顶层 const、转发引用推导规则。
 
-#include <gtest/gtest.h>
 #include <string>
 #include <type_traits>
 #include <utility>
+
+#include <gtest/gtest.h>
 
 namespace {
 

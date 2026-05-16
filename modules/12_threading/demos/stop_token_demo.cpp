@@ -11,7 +11,7 @@ namespace {
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 std::atomic<int> callback_invocation_count{0};
 
-} // namespace
+}  // namespace
 
 int main() {
     std::stop_source src{};

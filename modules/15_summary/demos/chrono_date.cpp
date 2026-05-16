@@ -11,16 +11,15 @@ int main() {  // NOLINT(bugprone-exception-escape)
 
     auto const ymd = 2024y / March / 15d;
     std::cout << "year_month_day: " << static_cast<int>(ymd.year()) << '-'
-              << static_cast<unsigned>(ymd.month()) << '-'
-              << static_cast<unsigned>(ymd.day()) << '\n';
+              << static_cast<unsigned>(ymd.month()) << '-' << static_cast<unsigned>(ymd.day())
+              << '\n';
     std::cout << "ok(): " << (ymd.ok() ? "true" : "false") << '\n';
 
     auto const last_feb = 2024y / February / last;
     std::cout << "2024 年 2 月末: " << last_feb.day() << '\n';
 
     weekday const wd{sys_days{2024y / February / 15d}};
-    std::cout << "2024-02-15 星期（ISO 编码 1=Mon..7=Sun）: " << wd.iso_encoding()
-              << '\n';
+    std::cout << "2024-02-15 星期（ISO 编码 1=Mon..7=Sun）: " << wd.iso_encoding() << '\n';
 
     auto const shifted = ymd + months{13};
     std::cout << "+13 months 后: " << static_cast<int>(shifted.year()) << '-'

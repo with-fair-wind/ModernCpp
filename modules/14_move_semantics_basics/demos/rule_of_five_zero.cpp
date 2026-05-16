@@ -102,14 +102,16 @@ int main() {
 
     std::cout << "五法则 ResourceOwner：\n"
               << "  b.size = " << b.size() << ", c.size = " << c.size()
-              << ", moved-from a.data null? " << (a.data() == nullptr ? "yes" : "no")  // NOLINT(bugprone-use-after-move)
-              << '\n';  // 故意：检视五法则手写类型移动后的供体为空
+              << ", moved-from a.data null? "
+              << (a.data() == nullptr ? "yes" : "no")  // NOLINT(bugprone-use-after-move)
+              << '\n';                                 // 故意：检视五法则手写类型移动后的供体为空
 
     SafeOwner s{32};
     SafeOwner t = std::move(s);  // unique_ptr 移动
 
     // 故意：读取 unique_ptr 被移走后 SafeOwner 的 data()。
-    std::cout << "零法则 SafeOwner：移动后 s.data null? " << (s.data() == nullptr ? "yes" : "no")  // NOLINT(bugprone-use-after-move)
+    std::cout << "零法则 SafeOwner：移动后 s.data null? "
+              << (s.data() == nullptr ? "yes" : "no")  // NOLINT(bugprone-use-after-move)
               << ", t.size = " << t.size() << '\n';
 
     return 0;

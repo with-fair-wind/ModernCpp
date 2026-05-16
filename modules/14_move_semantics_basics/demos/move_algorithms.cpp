@@ -48,7 +48,8 @@ void demoMoveBackward() {
 void demoRemoveUniqueMoves() {
     std::vector<std::string> words{"a", "b", "b", "c", "c", "c", "d"};
     // 故意使用 classic unique + 迭代器对，配合后续 erase；演示与 ranges 写法等价语义。
-    auto const logical_end = std::unique(words.begin(), words.end());  // NOLINT(modernize-use-ranges) 移动相邻重复元素
+    auto const logical_end =
+        std::unique(words.begin(), words.end());  // NOLINT(modernize-use-ranges) 移动相邻重复元素
 
     std::cout << "[unique 区间长度] " << static_cast<std::ptrdiff_t>(logical_end - words.begin())
               << '\n';

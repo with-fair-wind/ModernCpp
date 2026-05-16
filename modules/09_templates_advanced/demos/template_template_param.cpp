@@ -26,7 +26,9 @@ template <template <typename...> class Outer, typename T>
 template <typename Elem>
 struct Bag {
     std::vector<Elem> store_{};
-    void pushBack(Elem v) { store_.push_back(std::move(v)); }
+    void pushBack(Elem v) {
+        store_.push_back(std::move(v));
+    }
 };
 
 template <template <typename> class Container, typename T>

@@ -1,9 +1,9 @@
 // 模块 11：std::error_code / error_condition / std::system_error 基本行为。
 
 #include <string>
+#include <system_error>
 
 #include <gtest/gtest.h>
-#include <system_error>
 
 TEST(ErrorCode, DefaultConstructedIsSuccess) {
     std::error_code ec;
@@ -19,8 +19,7 @@ TEST(ErrorCode, MakeErrorCodeFromErrcIsNonZero) {
 
 TEST(ErrorCode, ComparesWithErrorCondition) {
     auto ec = std::make_error_code(std::errc::no_such_file_or_directory);
-    std::error_condition cond =
-        std::make_error_condition(std::errc::no_such_file_or_directory);
+    std::error_condition cond = std::make_error_condition(std::errc::no_such_file_or_directory);
     EXPECT_EQ(ec, cond);
 }
 

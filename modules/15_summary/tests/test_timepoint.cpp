@@ -12,17 +12,14 @@ TEST(TimePointBasics, SteadyClockAdvancesAfterSleep) {
     auto const finish = clock::now();
     EXPECT_GT(finish, start);
     auto const elapsed =
-        std::chrono::duration_cast<std::chrono::milliseconds>(finish - start)
-            .count();
+        std::chrono::duration_cast<std::chrono::milliseconds>(finish - start).count();
     EXPECT_GE(elapsed, 10);
 }
 
 TEST(TimePointBasics, SystemClockEpochMsNonNegative) {
     auto const now = std::chrono::system_clock::now();
     auto const ms_since_epoch =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            now.time_since_epoch())
-            .count();
+        std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
     EXPECT_GT(ms_since_epoch, 0);
 }
 

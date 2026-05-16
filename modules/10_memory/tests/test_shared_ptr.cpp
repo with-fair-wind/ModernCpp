@@ -30,8 +30,7 @@ TEST(SharedPtrCounting, CopySharesControlBlock) {
 }
 
 TEST(SharedPtrAliasingCtor, HoldsMemberViaAlias) {
-    auto owner =
-        std::make_shared<Gadget>(Gadget{.id = 11, .name = std::string{"alias"}});
+    auto owner = std::make_shared<Gadget>(Gadget{.id = 11, .name = std::string{"alias"}});
     std::shared_ptr<std::string> name_view(owner, &owner->name);
 
     EXPECT_EQ(owner.use_count(), 2U);  // name_view 别名仍抬升引用计数
@@ -50,8 +49,7 @@ TEST(SharedPtrAliasingCtor, HoldsMemberViaAlias) {
 }
 
 TEST(SharedPtrMakeShared, ObjectAndControlCreatedTogether) {
-    auto pooled =
-        std::make_shared<Gadget>(Gadget{.id = -3, .name = std::string{"stack-like"}});
+    auto pooled = std::make_shared<Gadget>(Gadget{.id = -3, .name = std::string{"stack-like"}});
     ASSERT_TRUE(static_cast<bool>(pooled));
     EXPECT_EQ(pooled->id, -3);
     EXPECT_FALSE(pooled->name.empty());

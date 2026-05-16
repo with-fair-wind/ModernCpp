@@ -46,7 +46,6 @@ TEST(ConditionVariable, ProducerConsumerDrainsExactlyN) {
     producer.join();
     consumer.join();
 
-    const std::int64_t expected =
-        static_cast<std::int64_t>(kTotal) * (kTotal + 1) / 2;
+    const std::int64_t expected = static_cast<std::int64_t>(kTotal) * (kTotal + 1) / 2;
     EXPECT_EQ(sum, expected);
 }

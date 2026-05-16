@@ -82,7 +82,8 @@ int main() {
     std::cout << "移动构造后 b 头部: ";
     printHead(b, 4);
     // 故意：展示移动后被移出对象的指针已置空（moved-from 合法状态）。
-    std::cout << "\na.data() == nullptr ? " << (a.data() == nullptr ? "yes" : "no")  // NOLINT(bugprone-use-after-move)
+    std::cout << "\na.data() == nullptr ? "
+              << (a.data() == nullptr ? "yes" : "no")  // NOLINT(bugprone-use-after-move)
               << '\n';
 
     Buffer c{4};
@@ -94,7 +95,8 @@ int main() {
     std::cout << "移动赋值后 c 头部: ";
     printHead(c, 4);
     // 故意：移动赋值后检视供体 b 已进入空状态。
-    std::cout << "\nb.data() == nullptr ? " << (b.data() == nullptr ? "yes" : "no")  // NOLINT(bugprone-use-after-move)
+    std::cout << "\nb.data() == nullptr ? "
+              << (b.data() == nullptr ? "yes" : "no")  // NOLINT(bugprone-use-after-move)
               << '\n';
 
     return 0;

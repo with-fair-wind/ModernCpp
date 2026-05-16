@@ -13,7 +13,7 @@ namespace {
 std::mutex queue_mutex;
 std::condition_variable cv;
 // std::queue 默认构造：部分检查器认为可能抛异常（静态初始化风险），此处为教学用共享状态。
-std::queue<int> task_queue; // NOLINT(bugprone-throwing-static-initialization)
+std::queue<int> task_queue;  // NOLINT(bugprone-throwing-static-initialization)
 bool done = false;
 // NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
@@ -48,7 +48,7 @@ void consumer() {
     }
 }
 
-} // namespace
+}  // namespace
 
 int main() {
     std::thread p(producer);

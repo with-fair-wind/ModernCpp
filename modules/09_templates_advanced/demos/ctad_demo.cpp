@@ -21,11 +21,11 @@ Tracker(T, T) -> Tracker<T, T>;
 }  // namespace
 
 int main() {
-    std::pair numbers{1, 2.0};  // std::pair<int, double>
-    std::tuple triple{1, 2, 3};   // std::tuple<int, int, int>
+    std::pair numbers{1, 2.0};   // std::pair<int, double>
+    std::tuple triple{1, 2, 3};  // std::tuple<int, int, int>
 
     Tracker mixed{std::string{"hi"}, 3.14};  // Tracker<std::string, double>
-    Tracker same{8, 9};                        // 指引参与 → Tracker<int, int>
+    Tracker same{8, 9};                      // 指引参与 → Tracker<int, int>
 
     std::cout << "pair: " << numbers.first << ", " << numbers.second << '\n';
     std::cout << "tracker mixed: " << mixed.head << ", " << mixed.tail << '\n';

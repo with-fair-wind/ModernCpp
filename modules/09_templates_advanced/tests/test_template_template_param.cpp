@@ -1,9 +1,10 @@
 // 验证变参模板模板形参与严格单参模板模板形参（duplicateValue / duplicateStrict + Bag）。
 
 #include <deque>
-#include <gtest/gtest.h>
 #include <type_traits>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 namespace {
 
@@ -18,7 +19,9 @@ template <template <typename...> class Outer, typename T>
 template <typename Elem>
 struct Bag {
     std::vector<Elem> store_{};
-    void pushBack(Elem v) { store_.push_back(std::move(v)); }
+    void pushBack(Elem v) {
+        store_.push_back(std::move(v));
+    }
 };
 
 template <template <typename> class Container, typename T>

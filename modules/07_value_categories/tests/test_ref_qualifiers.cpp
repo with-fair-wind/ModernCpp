@@ -7,17 +7,12 @@
 
 namespace {
 
-enum class Channel : std::uint8_t {
-    None,
-    LvalueMut,
-    RvalueMut,
-    LvalueConst,
-    RvalueConst
-};
+enum class Channel : std::uint8_t { None, LvalueMut, RvalueMut, LvalueConst, RvalueConst };
 
 class Dispatcher {
 public:
-    // NOLINTNEXTLINE(readability-convert-member-functions-to-static) — 引用限定符演示必须保留非 static
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static) — 引用限定符演示必须保留非
+    // static
     void mark() & {
         kind_ = Channel::LvalueMut;
     }
@@ -46,7 +41,8 @@ public:
     }
 
 private:
-    // NOLINTNEXTLINE(readability-identifier-naming) — clang-tidy 将 static inline 成员误判为不合规的简单命名成员
+    // NOLINTNEXTLINE(readability-identifier-naming) — clang-tidy 将 static inline
+    // 成员误判为不合规的简单命名成员
     static inline Channel kind_ = Channel::None;
 };
 

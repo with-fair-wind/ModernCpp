@@ -14,8 +14,7 @@ namespace {
 fs::path makeSandboxRoot() {
     static std::mt19937_64 rng{std::random_device{}()};
     auto const salt = static_cast<unsigned long long>(rng());
-    return fs::temp_directory_path() /
-           ("mcpp_summary_dir_demo_" + std::to_string(salt));
+    return fs::temp_directory_path() / ("mcpp_summary_dir_demo_" + std::to_string(salt));
 }
 
 void describeEntry(fs::directory_entry const& e) {
