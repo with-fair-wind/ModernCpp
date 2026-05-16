@@ -1,18 +1,18 @@
 name: Auto-format (one-shot)
 on:
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to format'
-        required: true
-        default: 'feat/fill-incomplete-modules'
+  push:
+    branches: [feat/fill-incomplete-modules]
 
 jobs:
   format:
     runs-on: ubuntu-24.04
     container: archlinux:base-devel
+    # Skip if the last commit was made by the bot (prevents infinite loop)
+    if: github.event.head_commit.author.name != 'github-actions[bot]'
     env:
       VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+    permissions:
+      contents: write
     steps:
       - name: Export GitHub Actions cache env
         uses: actions/github-script@v7
@@ -25,9 +25,6 @@ jobs:
         run: pacman -Sy --noconfirm --needed git ca-certificates clang lld llvm cmake ninja curl zip unzip tar pkgconf
 
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.branch }}
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Git safe directory
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -47,10 +44,14 @@ jobs:
       - name: Format (in-place)
         run: cmake --build --preset clang-relwithdebinfo --target format
 
-      - name: Commit and push
+      - name: Commit and push if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git diff --cached --quiet || git commit -m "style: auto-format with CI clang-format (Arch LLVM 22)"
-          git push
+          if git diff --cached --quiet; then
+            echo "No formatting changes needed."
+          else
+            git commit -m "style: auto-format with CI clang-format (Arch LLVM 22)"
+            git push
+          fi
