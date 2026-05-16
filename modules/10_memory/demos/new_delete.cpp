@@ -43,7 +43,8 @@ void releaseAligned(void* block) noexcept {
 
 void* allocateAligned(std::size_t alignment, std::size_t size_bytes) {
     std::size_t const bytes = paddedAllocationBytes(size_bytes, alignment);
-    void* block = ::aligned_alloc(alignment, bytes);  // NOLINT(cppcoreguidelines-no-malloc)
+    // NOLINTNEXTLINE(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory) — POSIX aligned_alloc 演示路径
+    void* block = ::aligned_alloc(alignment, bytes);
     if (block == nullptr) {
         throw std::bad_alloc{};
     }
@@ -51,7 +52,7 @@ void* allocateAligned(std::size_t alignment, std::size_t size_bytes) {
 }
 
 void releaseAligned(void* block) noexcept {
-    std::free(block);  // NOLINT(cppcoreguidelines-no-malloc)
+    std::free(block);  // NOLINT(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory)
 }
 
 #endif
@@ -158,11 +159,14 @@ int main() {
     auto* plain = new Tracked{42};  // NOLINT(cppcoreguidelines-owning-memory)
     delete plain;                   // NOLINT(cppcoreguidelines-owning-memory)
 
+    // MSVC 将 operator delete(void*, align_val_t) 同时视作 placement deallocation，
+    // 触发 C2956 拒绝此写法。仅在 GCC/Clang 上演示。
+#ifndef _MSC_VER
     constexpr std::size_t kOverAlign = 64U;
-    auto* big =
-        new (std::align_val_t{kOverAlign}) Tracked{7};  // NOLINT(cppcoreguidelines-owning-memory)
-    // 表达式 delete 在少数 ABI 上会误配对 sized/plain delete；演示侧改为显式拆解以防堆不匹配。
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) — 演示 placement new（对齐分配）
+    auto* big = new (std::align_val_t{kOverAlign}) Tracked{7};
     Tracked::teardownAligned(big, std::align_val_t{kOverAlign});
+#endif
 
     printCounters();
     return 0;

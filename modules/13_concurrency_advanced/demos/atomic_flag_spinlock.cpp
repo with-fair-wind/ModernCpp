@@ -22,7 +22,7 @@ public:
     }
 
 private:
-    std::atomic_flag flag_{ATOMIC_FLAG_INIT};
+    std::atomic_flag flag_ = ATOMIC_FLAG_INIT;
 };
 
 // 演示用：多线程共享自旋锁与计数器。

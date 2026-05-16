@@ -29,8 +29,8 @@ int main() {
 
     double const copy_secs = measureSeconds([&] {
         // 故意整块拷贝以便计时对照；拷贝体未再用，仅度量开销。
-        [[maybe_unused]] auto duplicate =
-            heavy;  // NOLINT(performance-unnecessary-copy-initialization)
+        // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
+        [[maybe_unused]] auto duplicate = heavy;
     });
 
     double const move_secs =

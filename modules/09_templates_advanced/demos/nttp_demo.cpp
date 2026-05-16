@@ -30,12 +30,14 @@ template <int Value>
 }
 
 #if __cplusplus >= 202002L
-// 浮点 NTTP 仅在 C++20 及以后成立。
+// 浮点 NTTP 仅在 C++20 及以后成立。Apple Clang 尚不支持浮点 NTTP。
+#if !defined(__APPLE__)
 template <auto Threshold>
     requires std::floating_point<decltype(Threshold)>
 struct FloatGate {
     static constexpr decltype(Threshold) kLimit = Threshold;
 };
+#endif
 
 // 无捕获 lambda 变量可作为模板实参：`decltype(kScaler)` 成为闭合类型常量。
 inline constexpr auto kScaler = [](int x) noexcept { return x * 100; };
@@ -63,8 +65,12 @@ int main() {
     std::cout << "Widget NTTP seven: " << decltype(vault_seven)::peek() << '\n';
     std::cout << "Widget NTTP nine  : " << decltype(vault_nine)::peek() << '\n';
 
+#if !defined(__APPLE__)
     using PiGate = FloatGate<3.14>;
     std::cout << "float NTTP limit : " << PiGate::kLimit << '\n';
+#else
+    std::cout << "[跳过] Apple Clang 尚不支持浮点 NTTP\n";
+#endif
 #else
     std::cout << "当前模式未启用 C++20——跳过浮点/类类型/lambda NTTP 演示。\n";
 #endif

@@ -25,15 +25,12 @@ int main() {
     int& rx = x;
 
     static_assert(std::is_same_v<decltype(x), int>);
-    // NOLINTNEXTLINE(readability-redundant-parentheses) — decltype((e))
-    // 需内层括号以得到「泛左值」类型
-    static_assert(std::is_same_v<decltype((x)), int&>);
+    // decltype((e)) 需内层括号以得到「泛左值」类型；内层括号会触发 readability-redundant-parentheses
+    static_assert(std::is_same_v<decltype((x)), int&>);  // NOLINT(readability-redundant-parentheses)
     static_assert(std::is_same_v<decltype(rx), int&>);
 
     cout << "decltype(x)        : " << (std::is_same_v<decltype(x), int> ? "int\n" : "其它\n");
-    // NOLINTNEXTLINE(readability-redundant-parentheses) — decltype((e))
-    // 需内层括号以得到「泛左值」类型
-    constexpr bool kDecltypeParenXMatchesIntRef = std::is_same_v<decltype((x)), int&>;
+    constexpr bool kDecltypeParenXMatchesIntRef = std::is_same_v<decltype((x)), int&>;  // NOLINT(readability-redundant-parentheses) — decltype((e)) 教学演示需要内层括号
     cout << "decltype((x))       : " << (kDecltypeParenXMatchesIntRef ? "int&\n" : "其它\n");
 
     auto v = alphaRef();            // std::string（发生拷贝）

@@ -11,9 +11,7 @@ enum class Channel : std::uint8_t { None, LvalueMut, RvalueMut, LvalueConst, Rva
 
 class Dispatcher {
 public:
-    // NOLINTNEXTLINE(readability-convert-member-functions-to-static) — 引用限定符演示必须保留非
-    // static
-    void mark() & {
+    void mark() & {  // NOLINT(readability-convert-member-functions-to-static) — 引用限定符演示必须保留非 static 成员
         kind_ = Channel::LvalueMut;
     }
 
@@ -41,8 +39,7 @@ public:
     }
 
 private:
-    // NOLINTNEXTLINE(readability-identifier-naming) — clang-tidy 将 static inline
-    // 成员误判为不合规的简单命名成员
+    // NOLINTNEXTLINE(readability-identifier-naming) — mutable static inline 计数通道；尾部下划线与私有成员约定一致，但与部分 Static 命名启发式冲突
     static inline Channel kind_ = Channel::None;
 };
 

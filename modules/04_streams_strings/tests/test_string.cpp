@@ -9,12 +9,12 @@
 namespace {
 
 [[nodiscard]] bool byteInObjectStorage(std::string const& string_value) noexcept {
-    const auto* const object_begin = reinterpret_cast<unsigned char const*>(
-        &string_value);  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    const auto* const object_begin = reinterpret_cast<unsigned char const*>(&string_value);
     const auto* const object_end =
         object_begin + sizeof(string_value);  // NOLINT(bugprone-sizeof-container)
-    const auto* const data_ptr = reinterpret_cast<unsigned char const*>(
-        string_value.data());  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    const auto* const data_ptr = reinterpret_cast<unsigned char const*>(string_value.data());
     return data_ptr >= object_begin && data_ptr < object_end;
 }
 

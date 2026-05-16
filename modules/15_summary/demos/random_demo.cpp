@@ -23,10 +23,10 @@ int main() {  // NOLINT(bugprone-exception-escape)
 
     std::cout << "\n--- 引擎固定种子时可复现序列 ---\n";
     constexpr unsigned kSeed42 = 42U;
-    std::mt19937 rng_a{
-        kSeed42};  // NOLINT(bugprone-random-generator-seed,cert-msc32-c,cert-msc51-cpp)
-    std::mt19937 rng_b{
-        kSeed42};  // NOLINT(bugprone-random-generator-seed,cert-msc32-c,cert-msc51-cpp)
+    // NOLINTNEXTLINE(bugprone-random-generator-seed,cert-msc32-c,cert-msc51-cpp)
+    std::mt19937 rng_a{kSeed42};
+    // NOLINTNEXTLINE(bugprone-random-generator-seed,cert-msc32-c,cert-msc51-cpp)
+    std::mt19937 rng_b{kSeed42};
     std::cout << "mt19937 同种子前 5 个值是否一致: ";
     bool same = true;
     for (int i = 0; i < 5; ++i) {
@@ -40,18 +40,18 @@ int main() {  // NOLINT(bugprone-exception-escape)
     std::cout << "seed_seq 后 mt19937 首个值: " << rng_mixed() << '\n';
 
     std::cout << "\n--- minstd_rand（轻量线性同余）---\n";
-    std::minstd_rand lcg{
-        kSeed42};  // NOLINT(bugprone-random-generator-seed,cert-msc32-c,cert-msc51-cpp)
+    // NOLINTNEXTLINE(bugprone-random-generator-seed,cert-msc32-c,cert-msc51-cpp)
+    std::minstd_rand lcg{kSeed42};
     std::cout << "minstd_rand 前 3 个值: " << lcg() << ' ' << lcg() << ' ' << lcg() << '\n';
 
     std::cout << "\n--- default_random_engine（实现定义）---\n";
-    std::default_random_engine def{
-        kSeed42};  // NOLINT(bugprone-random-generator-seed,cert-msc32-c,cert-msc51-cpp)
+    // NOLINTNEXTLINE(bugprone-random-generator-seed,cert-msc32-c,cert-msc51-cpp)
+    std::default_random_engine def{kSeed42};
     std::cout << "default_random_engine 首个值: " << def() << '\n';
 
     std::cout << "\n--- 分布：均匀整数 [a,b] ---\n";
-    std::mt19937 gen{
-        kSeed42};  // NOLINT(bugprone-random-generator-seed,cert-msc32-c,cert-msc51-cpp)
+    // NOLINTNEXTLINE(bugprone-random-generator-seed,cert-msc32-c,cert-msc51-cpp)
+    std::mt19937 gen{kSeed42};
     std::uniform_int_distribution<int> uni_i{1, 6};
     constexpr int kDiceRolls = 10;
     std::vector<int> dice;

@@ -45,7 +45,8 @@ void releaseAligned(void* block) noexcept {
 
 void* allocateAligned(std::size_t alignment, std::size_t size_bytes) {
     std::size_t const bytes = paddedAllocationBytes(size_bytes, alignment);
-    void* block = ::aligned_alloc(alignment, bytes);  // NOLINT(cppcoreguidelines-no-malloc)
+    // NOLINTNEXTLINE(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory) — POSIX aligned_alloc 测试桩返回原始拥有指针
+    void* block = ::aligned_alloc(alignment, bytes);
     if (block == nullptr) {
         throw std::bad_alloc{};
     }
@@ -53,7 +54,7 @@ void* allocateAligned(std::size_t alignment, std::size_t size_bytes) {
 }
 
 void releaseAligned(void* block) noexcept {
-    std::free(block);  // NOLINT(cppcoreguidelines-no-malloc)
+    std::free(block);  // NOLINT(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory)
 }
 
 #endif
@@ -217,21 +218,24 @@ TEST(ClassScopedOperators, OrdinaryNewDeletesHitCustomHooks) {
     EXPECT_GE(TrackedLifetime::plainDeletes(), 1);
 }
 
+// MSVC 将 operator delete(void*, align_val_t) 同时视作 placement deallocation（C2956），
+// 拒绝此写法。仅在 GCC/Clang 上运行。
+#ifndef _MSC_VER
 TEST(ClassScopedOperators, OverAlignedConstructionUsesAlignedPair) {
     TrackedLifetime::resetCounters();
 
     constexpr std::size_t kBoundaryBytes = 64U;
-    auto* heavy = new (std::align_val_t{kBoundaryBytes})
-        TrackedLifetime{};  // NOLINT(cppcoreguidelines-owning-memory)
+    auto* heavy = new (std::align_val_t{kBoundaryBytes}) TrackedLifetime{};  // NOLINT(cppcoreguidelines-owning-memory) — 验证对齐 placement new 路径
     ASSERT_NE(heavy, nullptr);
 
-    EXPECT_EQ(reinterpret_cast<std::uintptr_t>(heavy) % kBoundaryBytes,
-              0ULL);  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    EXPECT_EQ(reinterpret_cast<std::uintptr_t>(heavy) % kBoundaryBytes, 0ULL);
 
     TrackedLifetime::teardownAligned(heavy, std::align_val_t{kBoundaryBytes});
 
     EXPECT_GE(TrackedLifetime::alignedDeletes(), 1);
 }
+#endif
 
 TEST(ClassScopedOperators, SizedDeleteOverloadIsExclusiveWithPlainDelete) {
     SizedDeleteWitness::resetCounters();

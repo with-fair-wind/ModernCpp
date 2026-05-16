@@ -21,11 +21,11 @@ void printSep() {
 
 [[nodiscard]] bool byteInObjectStorage(std::string const& s) {
     // 粗略判断：data() 是否落在对象本体的字节区间 [obj, obj+sizeof(s)) 内。
-    const auto* const obj = reinterpret_cast<unsigned char const*>(
-        &s);                                  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    const auto* const obj = reinterpret_cast<unsigned char const*>(&s);
     const auto* const end = obj + sizeof(s);  // NOLINT(bugprone-sizeof-container)
-    const auto* const ptr = reinterpret_cast<unsigned char const*>(
-        s.data());  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    const auto* const ptr = reinterpret_cast<unsigned char const*>(s.data());
     return ptr >= obj && ptr < end;
 }
 

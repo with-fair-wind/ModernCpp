@@ -49,8 +49,8 @@ int main() {
     std::cout << "---\n";
     std::cout << "错误示范（仅解释，不要照搬到生产代码）：\n";
     // 故意演示：view 指向已析构的临时 std::string 缓冲 —— 仅教学，切勿模仿。
-    std::string_view dangling = std::string{"temporary"}.substr(
-        0, 3);  // NOLINT(bugprone-dangling-handle,clang-diagnostic-dangling-gsl)
+    // NOLINTNEXTLINE(bugprone-dangling-handle,clang-diagnostic-dangling-gsl) — 刻意展示悬垂 view
+    std::string_view dangling = std::string{"temporary"}.substr(0, 3);
     // dangling 现在指向已析构的临时 string 的内部缓冲 —— 未定义行为。
     // 以下输出仅用于教学说明，实际运行可能看起来“正常”或立刻崩溃。
     std::cout << "（未定义）dangling 可能输出乱数据: \"" << dangling << "\"\n";
