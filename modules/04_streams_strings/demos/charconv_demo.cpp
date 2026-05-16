@@ -52,6 +52,8 @@ void demoBases() {
 }
 
 void demoFloat() {
+    // Apple Clang 的 libc++ 尚未实现浮点 from_chars/to_chars
+#if defined(__cpp_lib_to_chars) && (__cpp_lib_to_chars >= 201611L)
     double x = 1.25e-3;
     std::array<char, 64> buf{};
     auto r = std::to_chars(buf.data(), buf.data() + buf.size(), x, std::chars_format::general);
@@ -71,6 +73,9 @@ void demoFloat() {
     } else {
         reportErrc("from_chars double", f.ec);
     }
+#else
+    std::cout << "浮点 from_chars/to_chars 不可用（跳过）。\n";
+#endif
 }
 
 void demoErrors() {
