@@ -9,14 +9,14 @@
 
 namespace fs = std::filesystem;
 
-TEST(stdStreams,StringStreamCompose) {
+TEST(stdStreams, StringStreamCompose) {
     std::ostringstream builder;
     builder << "sum=" << 4 + 5;
     EXPECT_EQ(builder.str(), "sum=9");
     EXPECT_TRUE(builder.good());
 }
 
-TEST(stdStreams,InvalidIntegerParseSetsFailBit) {
+TEST(stdStreams, InvalidIntegerParseSetsFailBit) {
     std::istringstream broken{"oops"};
     int candidate = -1;
     broken >> candidate;
@@ -24,7 +24,7 @@ TEST(stdStreams,InvalidIntegerParseSetsFailBit) {
     EXPECT_FALSE(broken.good());
 }
 
-TEST(stdStreams,ParsesIntegerThenAdjacentToken) {
+TEST(stdStreams, ParsesIntegerThenAdjacentToken) {
     std::istringstream digits{"42 answers"};
     int value = 0;
     ASSERT_TRUE(static_cast<bool>(digits >> value));
@@ -34,14 +34,14 @@ TEST(stdStreams,ParsesIntegerThenAdjacentToken) {
     EXPECT_EQ(word, "answers");
 }
 
-TEST(stdStreams,StringStreamSeekAndPatch) {
+TEST(stdStreams, StringStreamSeekAndPatch) {
     std::stringstream editor{"-----"};
     editor.seekp(2);
     editor << "##";
     EXPECT_EQ(editor.str(), "--##-");
 }
 
-TEST(stdStreams,TempFileRoundTrip) try {
+TEST(stdStreams, TempFileRoundTrip) try {
 #if defined(__cpp_lib_filesystem) && (__cpp_lib_filesystem >= 201703L)
     auto path = fs::temp_directory_path() / "mcpp_test_stream.tmp";
     {

@@ -7,7 +7,6 @@
 #include <format>
 #include <iostream>
 #include <map>
-#include <numbers>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -15,7 +14,9 @@
 
 namespace {
 
-void printSep() { std::cout << "---\n"; }
+void printSep() {
+    std::cout << "---\n";
+}
 
 #if defined(__cpp_lib_format_ranges) && (__cpp_lib_format_ranges >= 202207L)
 
@@ -25,7 +26,7 @@ void demoSequence() {
 }
 
 void demoNested() {
-    std::tuple<std::string, int, double> row{"gamma", 2, std::numbers::egamma};
+    std::tuple<std::string, int, char> row{"gamma", 2, '!'};
     std::cout << std::format("tuple: {}\n", row);
 }
 

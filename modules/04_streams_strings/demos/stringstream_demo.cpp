@@ -7,7 +7,9 @@
 
 namespace {
 
-void printSep() { std::cout << "---\n"; }
+void printSep() {
+    std::cout << "---\n";
+}
 
 void demoIostringstreamBasics() {
     std::ostringstream builder{};
@@ -41,7 +43,9 @@ void demoStringstreamViewAccessor() {
 
 #else
 
-void demoStringstreamViewAccessor() { std::cout << "视图 API 仅在 C++20 及以上展示。\n"; }
+void demoStringstreamViewAccessor() {
+    std::cout << "视图 API 仅在 C++20 及以上展示。\n";
+}
 
 #endif
 
@@ -50,13 +54,13 @@ void demoTellSeekReadWritePointers() {
     cursor.seekg(static_cast<std::streamoff>(2), std::ios::beg);
     char snippet = '?';
     cursor.get(snippet);
-    std::cout << "tellg（读指针）截取字符 '" << snippet << "', 偏移="
-              << static_cast<std::intmax_t>(cursor.tellg()) << '\n';
+    std::cout << "tellg（读指针）截取字符 '" << snippet
+              << "', 偏移=" << static_cast<std::intmax_t>(cursor.tellg()) << '\n';
 
     cursor.seekp(static_cast<std::streamoff>(1), std::ios::beg);
     cursor.put('!');
-    std::cout << "seekp+tellp 补丁后=\"" << cursor.str() << "\" tellp="
-              << static_cast<std::intmax_t>(cursor.tellp()) << '\n';
+    std::cout << "seekp+tellp 补丁后=\"" << cursor.str()
+              << "\" tellp=" << static_cast<std::intmax_t>(cursor.tellp()) << '\n';
 }
 
 void demoAteOpensAtEndOfInitialBuffer() {

@@ -6,13 +6,15 @@
 
 #include <bitset>
 #include <iomanip>
-#include <numbers>
 #include <ios>
 #include <iostream>
+#include <numbers>
 
 namespace {
 
-void printSep() { std::cout << "---\n"; }
+void printSep() {
+    std::cout << "---\n";
+}
 
 void demoRadixBool() {
     int v = 31;

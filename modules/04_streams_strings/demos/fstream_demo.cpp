@@ -14,7 +14,9 @@ namespace fs = std::filesystem;
 
 namespace {
 
-void printSep() { std::cout << "---\n"; }
+void printSep() {
+    std::cout << "---\n";
+}
 
 #if defined(__cpp_lib_ios_noreplace) || (__cplusplus >= 202302L)
 
@@ -88,13 +90,15 @@ void demoBinaryWriteRead(fs::path const& bin_file) {
     PodPayload outbound{.magic = kMagic, .coefficient = kCoefficient};
     {
         std::ofstream writer(bin_file, std::ios::binary | std::ios::trunc);
-        writer.write(reinterpret_cast<char const*>(&outbound),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+        writer.write(reinterpret_cast<char const*>(
+                         &outbound),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
                      static_cast<std::streamsize>(sizeof(outbound)));
     }
     PodPayload inbound{};
     {
         std::ifstream reader(bin_file, std::ios::binary);
-        reader.read(reinterpret_cast<char*>(&inbound),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+        reader.read(reinterpret_cast<char*>(
+                        &inbound),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
                     static_cast<std::streamsize>(sizeof(inbound)));
     }
     std::cout << "二进制 round-trip: magic=0x" << std::hex << inbound.magic << std::dec
@@ -160,8 +164,8 @@ void demoAteStartsAtEnd(fs::path const& tail_path) {
     }
     std::fstream extender(tail_path,
                           std::ios::binary | std::ios::in | std::ios::out | std::ios::ate);
-    std::cout << "ate 打开后 tellp=" << static_cast<std::intmax_t>(extender.tellp()) << "（应等于 abcd 长度 "
-              << static_cast<std::intmax_t>(kAbcdLength) << "）\n";
+    std::cout << "ate 打开后 tellp=" << static_cast<std::intmax_t>(extender.tellp())
+              << "（应等于 abcd 长度 " << static_cast<std::intmax_t>(kAbcdLength) << "）\n";
     extender.write(tail_piece.data(), static_cast<std::streamsize>(tail_piece.size()));
     extender.flush();
     std::ostringstream dump{};

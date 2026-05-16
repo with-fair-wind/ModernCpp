@@ -6,7 +6,8 @@
 #define MCPP_LIBSTDCPP_STREAM_PRINT_UNSUPPORTED 1
 #endif
 
-#if defined(__cpp_lib_print) && (__cpp_lib_print >= 202207L) && !defined(MCPP_LIBSTDCPP_STREAM_PRINT_UNSUPPORTED)
+#if defined(__cpp_lib_print) && (__cpp_lib_print >= 202207L) && \
+    !defined(MCPP_LIBSTDCPP_STREAM_PRINT_UNSUPPORTED)
 #define MCPP_HAVE_STREAM_PRINT 1
 #endif
 
@@ -21,7 +22,7 @@
 
 #ifdef MCPP_HAVE_STREAM_PRINT
 
-TEST(stdPrint,OstreamOverloadCapturesInterpolation) {
+TEST(stdPrint, OstreamOverloadCapturesInterpolation) {
     std::ostringstream capture;
     ASSERT_TRUE(capture.good());
     std::print(capture, "n={}", 8);
@@ -38,7 +39,7 @@ TEST(stdPrint,OstreamOverloadCapturesInterpolation) {
     EXPECT_NE(capture.str().find("empty{} brace"), std::string::npos);
 }
 
-TEST(stdPrint,PrintlnAddsNewlineCharacter) {
+TEST(stdPrint, PrintlnAddsNewlineCharacter) {
     std::ostringstream capture;
     std::println(capture, "{}", "done");
     auto const payload = capture.str();
@@ -48,7 +49,7 @@ TEST(stdPrint,PrintlnAddsNewlineCharacter) {
     EXPECT_GE(payload.size(), 5U);
 }
 
-TEST(stdPrint,SupportsFormatSpecifiers) {
+TEST(stdPrint, SupportsFormatSpecifiers) {
     std::ostringstream capture;
     std::print(capture, "{:+05}", 42);
     EXPECT_EQ(capture.str(), "+0042");
@@ -64,7 +65,7 @@ TEST(stdPrint,SupportsFormatSpecifiers) {
 
 #else
 
-TEST(stdPrint,UnavailableEnvironment) {
+TEST(stdPrint, UnavailableEnvironment) {
 #ifdef MCPP_LIBSTDCPP_STREAM_PRINT_UNSUPPORTED
     GTEST_SKIP() << "MinGW libstdc++ 尚未提供完整的 stream print 链接符号";
 #elifndef __cpp_lib_print

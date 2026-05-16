@@ -21,7 +21,9 @@ namespace {
     return static_cast<std::uint64_t>(x) * 1024ULL;
 }
 
-void printSep() { std::cout << "---\n"; }
+void printSep() {
+    std::cout << "---\n";
+}
 
 void demoStdStringLiterals() {
     using namespace std::string_literals;

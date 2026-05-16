@@ -67,7 +67,8 @@ TEST(FileStream, BinaryPodRoundTrip) try {
     {
         std::ofstream writer(path, std::ios::binary | std::ios::trunc);
         ASSERT_TRUE(writer.is_open());
-        writer.write(reinterpret_cast<char const*>(&outbound),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+        writer.write(reinterpret_cast<char const*>(
+                         &outbound),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
                      static_cast<std::streamsize>(sizeof(outbound)));
         ASSERT_TRUE(writer.good());
     }
@@ -75,7 +76,8 @@ TEST(FileStream, BinaryPodRoundTrip) try {
     {
         std::ifstream reader(path, std::ios::binary);
         ASSERT_TRUE(reader.is_open());
-        reader.read(reinterpret_cast<char*>(&inbound),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+        reader.read(reinterpret_cast<char*>(
+                        &inbound),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
                     static_cast<std::streamsize>(sizeof(inbound)));
         ASSERT_TRUE(reader.good());
     }

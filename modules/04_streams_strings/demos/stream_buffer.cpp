@@ -39,23 +39,24 @@ protected:
         }
         flushBuf();
         switch (way) {
-        case std::ios_base::beg:
-            if (off < 0 || static_cast<std::size_t>(off) > sink_.size()) {
+            case std::ios_base::beg:
+                if (off < 0 || static_cast<std::size_t>(off) > sink_.size()) {
+                    return static_cast<std::streamoff>(-1);
+                }
+                write_pos_ = static_cast<std::size_t>(off);
+                break;
+            case std::ios_base::cur:
+                // 近似：视作“写指针”永远在尾部时可简化为 SEEK_END-only；此处支持 cur/end
+                // 的最小语义。
+                if (off != 0) {
+                    return static_cast<std::streamoff>(-1);
+                }
+                break;
+            case std::ios_base::end:
+                write_pos_ = sink_.size();
+                break;
+            default:
                 return static_cast<std::streamoff>(-1);
-            }
-            write_pos_ = static_cast<std::size_t>(off);
-            break;
-        case std::ios_base::cur:
-            // 近似：视作“写指针”永远在尾部时可简化为 SEEK_END-only；此处支持 cur/end 的最小语义。
-            if (off != 0) {
-                return static_cast<std::streamoff>(-1);
-            }
-            break;
-        case std::ios_base::end:
-            write_pos_ = sink_.size();
-            break;
-        default:
-            return static_cast<std::streamoff>(-1);
         }
         (void)off;
         return static_cast<std::streampos>(static_cast<std::streamoff>(write_pos_));
@@ -83,7 +84,9 @@ private:
     std::size_t write_pos_{0};
 };
 
-void printSep() { std::cout << "---\n"; }
+void printSep() {
+    std::cout << "---\n";
+}
 
 void demoStringbufSeek() {
     std::stringstream ss{"0123456789"};

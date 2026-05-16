@@ -16,8 +16,7 @@ TEST(StdRegex, RegexSearchProducesSubmatchWithCmatch) {
     std::regex const digits{R"(\d+)", std::regex_constants::ECMAScript};
     std::string const haystack{"abc 910 def"};
     std::cmatch m{};
-    ASSERT_TRUE(
-        std::regex_search(haystack.data(), haystack.data() + haystack.size(), m, digits));
+    ASSERT_TRUE(std::regex_search(haystack.data(), haystack.data() + haystack.size(), m, digits));
     EXPECT_EQ(m.str(), "910");
 }
 

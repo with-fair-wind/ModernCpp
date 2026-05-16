@@ -10,7 +10,8 @@
 #define MCPP_LIBSTDCPP_STREAM_PRINT_UNSUPPORTED 1
 #endif
 
-#if defined(__cpp_lib_print) && (__cpp_lib_print >= 202207L) && !defined(MCPP_LIBSTDCPP_STREAM_PRINT_UNSUPPORTED)
+#if defined(__cpp_lib_print) && (__cpp_lib_print >= 202207L) && \
+    !defined(MCPP_LIBSTDCPP_STREAM_PRINT_UNSUPPORTED)
 #define MCPP_HAVE_STREAM_PRINT 1
 #endif
 
@@ -24,7 +25,9 @@
 
 namespace {
 
-void printSep() { std::cout << "---\n"; }
+void printSep() {
+    std::cout << "---\n";
+}
 
 #ifdef MCPP_HAVE_STREAM_PRINT
 
@@ -44,7 +47,8 @@ void demoPrintlnToOstream() {
 
 void reportPrintUnavailable() {
 #ifdef MCPP_LIBSTDCPP_STREAM_PRINT_UNSUPPORTED
-    std::cout << "检测到 MinGW libstdc++：虽有 __cpp_lib_print，但终端写入符号缺失导致链接失败，演示跳过。\n";
+    std::cout << "检测到 MinGW libstdc++：虽有 "
+                 "__cpp_lib_print，但终端写入符号缺失导致链接失败，演示跳过。\n";
 #elifndef __cpp_lib_print
     std::cout << "当前翻译单元未见 __cpp_lib_print，跳过 std::print/println API 演示。\n";
 #else

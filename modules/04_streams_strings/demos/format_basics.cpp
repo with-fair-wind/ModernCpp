@@ -11,7 +11,9 @@
 
 namespace {
 
-void printSep() { std::cout << "---\n"; }
+void printSep() {
+    std::cout << "---\n";
+}
 
 void demoIntSpec() {
     int n = -42;
@@ -29,6 +31,8 @@ void demoAlignFill() {
     std::cout << std::format("字符串 {:_^12}\n", "ab");
 }
 
+// Apple libc++ (Xcode ≤ 16) 尚未完整实现浮点类型的 std::formatter
+#ifndef __APPLE__
 void demoFloatSpec() {
     double x = 12.3456;
     std::cout << std::format("默认     {}\n", x);
@@ -36,6 +40,7 @@ void demoFloatSpec() {
     std::cout << std::format("scientific {:e}\n", x);
     std::cout << std::format("宽度精度 {:10.3f}\n", x);
 }
+#endif
 
 void demoBoolString() {
     std::cout << std::format("bool 默认 {}\n", true);
@@ -51,8 +56,10 @@ int main() {  // NOLINT(bugprone-exception-escape)
     printSep();
     demoAlignFill();
     printSep();
+#ifndef __APPLE__
     demoFloatSpec();
     printSep();
+#endif
     demoBoolString();
     return 0;
 }

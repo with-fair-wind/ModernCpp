@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-TEST(stdStringView,ConstructionAndLength) {
+TEST(stdStringView, ConstructionAndLength) {
     std::string const owned{"view me"};
     std::string_view from_string{owned};
     std::string_view literal{"peek"};
@@ -18,7 +18,7 @@ TEST(stdStringView,ConstructionAndLength) {
     EXPECT_EQ(from_array.back(), 'k');
 }
 
-TEST(stdStringView,SubstringsShareStorage) {
+TEST(stdStringView, SubstringsShareStorage) {
     std::string const base{"abcdefghi"};
     std::string_view full{base};
     auto prefix = full.substr(0, 4);
@@ -30,7 +30,7 @@ TEST(stdStringView,SubstringsShareStorage) {
     EXPECT_EQ(prefix, "bcd");
 }
 
-TEST(stdStringView,NposMeansNotFound) {
+TEST(stdStringView, NposMeansNotFound) {
     std::string_view text{"abc"};
     EXPECT_EQ(text.find('z'), std::string_view::npos);
     EXPECT_EQ(text.rfind("zzz"), std::string_view::npos);
@@ -39,7 +39,7 @@ TEST(stdStringView,NposMeansNotFound) {
     static_assert(kLiteral.contains('z'));
 }
 
-TEST(stdStringView,ComparePreservesLexicalOrder) {
+TEST(stdStringView, ComparePreservesLexicalOrder) {
     std::string_view a{"baa"};
     std::string_view b{"baa!"};
     EXPECT_LT(a.compare(b), 0);

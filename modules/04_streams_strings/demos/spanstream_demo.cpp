@@ -45,7 +45,9 @@ void demoISSpanStream() {
 
 #if !defined(__cpp_lib_spanstream) || (__cpp_lib_spanstream < 202106L)
 
-void reportNoSpanStream() { std::cout << "当前环境与标准库未提供 <spanstream>。\n"; }
+void reportNoSpanStream() {
+    std::cout << "当前环境与标准库未提供 <spanstream>。\n";
+}
 
 #endif
 

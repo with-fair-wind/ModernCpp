@@ -4,8 +4,8 @@
 //   格式化输入用 operator>>（默认按空白切段），二进制或行协议常配合 getline；
 //   rdstate、eof/fail/good/clear 需要显式检查，别把「读到 EOF」与「读到合法值」混为一谈。
 
-#include <fstream>
 #include <filesystem>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -15,7 +15,9 @@ namespace fs = std::filesystem;
 
 namespace {
 
-void printSep() { std::cout << "---\n"; }
+void printSep() {
+    std::cout << "---\n";
+}
 
 void demoStringStreams() {
     std::ostringstream out;

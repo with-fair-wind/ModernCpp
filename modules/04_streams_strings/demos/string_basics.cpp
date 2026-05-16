@@ -15,13 +15,17 @@
 
 namespace {
 
-void printSep() { std::cout << "---\n"; }
+void printSep() {
+    std::cout << "---\n";
+}
 
 [[nodiscard]] bool byteInObjectStorage(std::string const& s) {
     // 粗略判断：data() 是否落在对象本体的字节区间 [obj, obj+sizeof(s)) 内。
-    const auto *const obj = reinterpret_cast<unsigned char const*>(&s);  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
-    const auto *const end = obj + sizeof(s);  // NOLINT(bugprone-sizeof-container)
-    const auto *const ptr = reinterpret_cast<unsigned char const*>(s.data());  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+    const auto* const obj = reinterpret_cast<unsigned char const*>(
+        &s);                                  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+    const auto* const end = obj + sizeof(s);  // NOLINT(bugprone-sizeof-container)
+    const auto* const ptr = reinterpret_cast<unsigned char const*>(
+        s.data());  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
     return ptr >= obj && ptr < end;
 }
 
@@ -31,7 +35,7 @@ int main() {
     // 构造、赋值、移动。
     std::string a{"modern"};
     std::string b(4, '!');
-    std::string c{a};        // 拷贝构造
+    std::string c{a};             // 拷贝构造
     std::string d{std::move(c)};  // 移动构造，c 被置为空（合法但未指定状态）
     std::cout << "a=" << a << " b=" << b << " d=" << d << '\n';
     printSep();
@@ -69,10 +73,10 @@ int main() {
     // SSO 演示：短串 data 往往落在对象内部；长串通常走堆。
     std::string short_s{"hi"};
     std::string long_s(64, 'x');
-    std::cout << "short_s.length=" << short_s.length()
-              << " data-inside-object? " << byteInObjectStorage(short_s) << '\n';
-    std::cout << "long_s.length=" << long_s.length()
-              << " data-inside-object? " << byteInObjectStorage(long_s) << '\n';
+    std::cout << "short_s.length=" << short_s.length() << " data-inside-object? "
+              << byteInObjectStorage(short_s) << '\n';
+    std::cout << "long_s.length=" << long_s.length() << " data-inside-object? "
+              << byteInObjectStorage(long_s) << '\n';
     std::cout << "short_s.capacity=" << short_s.capacity()
               << " long_s.capacity=" << long_s.capacity() << '\n';
     printSep();

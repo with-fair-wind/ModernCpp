@@ -6,24 +6,28 @@
 
 namespace {
 
-void printSep() { std::cout << "---\n"; }
+void printSep() {
+    std::cout << "---\n";
+}
 
 void demoConstructionAndMatch() {
     std::regex const digits{R"(^\d{3}$)", std::regex_constants::ECMAScript};
     std::string const ok{"007"};
     std::string const bad{"40a"};
-    std::cout << "regex_match 整段吻合: \"" << ok << "\" -> " << std::regex_match(ok, digits) << '\n';
-    std::cout << "regex_match 整段吻合: \"" << bad << "\" -> " << std::regex_match(bad, digits) << '\n';
+    std::cout << "regex_match 整段吻合: \"" << ok << "\" -> " << std::regex_match(ok, digits)
+              << '\n';
+    std::cout << "regex_match 整段吻合: \"" << bad << "\" -> " << std::regex_match(bad, digits)
+              << '\n';
 }
 
 void demoSearchAndCmatch() {
     std::regex const word{R"(\w+)", std::regex_constants::ECMAScript};
     std::string const buf{" x y "};
     std::cmatch matched{};
-    [[maybe_unused]] bool const hit = std::regex_search(buf.data(), buf.data() + buf.size(),
-                                                         matched, word);
-    std::cout << "regex_search (cmatch) 第一段: \"" << matched.str() << "\" 位置="
-              << matched.position() << '\n';
+    [[maybe_unused]] bool const hit =
+        std::regex_search(buf.data(), buf.data() + buf.size(), matched, word);
+    std::cout << "regex_search (cmatch) 第一段: \"" << matched.str()
+              << "\" 位置=" << matched.position() << '\n';
 }
 
 void demoCaptureGroupsAndSmatch() {
@@ -68,8 +72,8 @@ void demoGreedyVsLazyStar() {
 }
 
 void demoIcaseRawString() {
-    std::regex const hello{R"(^Hello WORLD$)", std::regex_constants::ECMAScript
-                                                  | std::regex_constants::icase};
+    std::regex const hello{R"(^Hello WORLD$)",
+                           std::regex_constants::ECMAScript | std::regex_constants::icase};
     std::string variant{"HELLO woRLd"};
     std::cout << "icase + 原始字符串字面量: \"" << variant << "\" 整匹配 -> "
               << std::regex_match(variant, hello) << '\n';
