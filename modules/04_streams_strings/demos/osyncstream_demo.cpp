@@ -1,5 +1,7 @@
 // std::osyncstream：多线程并行写共享 std::cout 时由 syncbuf 串行移交；演示 emit/noemit flush 语义。
 
+#include <version>
+
 #if defined(__cpp_lib_syncbuf) && (__cpp_lib_syncbuf >= 201803L)
 #include <chrono>
 #include <iostream>

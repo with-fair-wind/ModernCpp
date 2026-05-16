@@ -3,10 +3,26 @@
 // 关键点：
 //   C++20 起用 parse/format 成员实现协议；format 应写入 ctx.out() 迭代器；
 //   parse 遍历 format-spec（冒号后到 `}` 的子串）。
+//
+// Apple libc++（Xcode ≤ 16）的 std::make_format_args 不识别用户特化的
+// std::formatter——直接触发 static_assert。整个 demo 需守护跳过。
+
+#include <iostream>
+#include <version>
+
+// Apple libc++ 的 make_format_args 尚不识别自定义 formatter 特化
+#ifdef __APPLE__
+
+int main() {
+    std::cout << "[跳过] Apple libc++ 尚不支持"
+                 " make_format_args + 自定义 formatter\n";
+    return 0;
+}
+
+#else
 
 #include <cstdint>
 #include <format>
-#include <iostream>
 #include <string>
 
 namespace mcpp_demo {
@@ -40,7 +56,7 @@ struct std::formatter<mcpp_demo::RgbColor> {
 
     constexpr auto parse(std::format_parse_context& ctx) {
         hex_mode_ = false;
-        const auto* it = ctx.begin();
+        auto it = ctx.begin();
         for (; it != ctx.end(); ++it) {
             if (*it == 'h' || *it == 'H') {
                 hex_mode_ = true;
@@ -70,9 +86,8 @@ void printSep() {
 
 void demoRgb() {
     mcpp_demo::RgbColor teal{32, 178, 170};
-    // GCC libstdc++ 会在编译期扫描自定义 formatter；改用运行时 vformat 避免误判花括号匹配。
     std::cout << "默认：" << std::vformat("{}\n", std::make_format_args(teal));
-    std::cout << std::vformat("{:h}\n", std::make_format_args(teal));  // h 令牌切换十六进制短格式
+    std::cout << std::vformat("{:h}\n", std::make_format_args(teal));
 }
 
 }  // namespace
@@ -83,3 +98,5 @@ int main() {  // NOLINT(bugprone-exception-escape)
     std::cout << "可把 parse 扩展到支持 alpha（{:ha}）等团队约定令牌。\n";
     return 0;
 }
+
+#endif
