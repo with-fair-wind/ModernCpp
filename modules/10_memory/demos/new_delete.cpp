@@ -43,7 +43,8 @@ void releaseAligned(void* block) noexcept {
 
 void* allocateAligned(std::size_t alignment, std::size_t size_bytes) {
     std::size_t const bytes = paddedAllocationBytes(size_bytes, alignment);
-    // NOLINTNEXTLINE(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory) — POSIX aligned_alloc 演示路径
+    // NOLINTNEXTLINE(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory) — POSIX
+    // aligned_alloc 演示路径
     void* block = ::aligned_alloc(alignment, bytes);
     if (block == nullptr) {
         throw std::bad_alloc{};

@@ -27,9 +27,9 @@ void printCategory(char const* expr_text, bool is_lv, bool is_xv, bool is_pv) {
 
 }  // namespace
 
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage) — decltype((e)) 需宏展开内层括号，无法用 constexpr 替代
-#define MCPP_CAT_LVALUE(expr) \
-    std::is_lvalue_reference_v<decltype((expr))>
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage) — decltype((e)) 需宏展开内层括号，无法用 constexpr
+// 替代
+#define MCPP_CAT_LVALUE(expr) std::is_lvalue_reference_v<decltype((expr))>
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define MCPP_CAT_XVALUE(expr) \
     (!MCPP_CAT_LVALUE(expr) && std::is_rvalue_reference_v<decltype((expr))>)

@@ -7,7 +7,8 @@ namespace {
 
 class RelayBox {
 public:
-    void ping() & {  // NOLINT(readability-convert-member-functions-to-static) — 引用限定符演示必须保留非 static 成员
+    void ping() & {  // NOLINT(readability-convert-member-functions-to-static) —
+                     // 引用限定符演示必须保留非 static 成员
         std::cout << "RelayBox::ping() & —— 实例为左值\n";
     }
 

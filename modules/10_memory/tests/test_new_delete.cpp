@@ -45,7 +45,8 @@ void releaseAligned(void* block) noexcept {
 
 void* allocateAligned(std::size_t alignment, std::size_t size_bytes) {
     std::size_t const bytes = paddedAllocationBytes(size_bytes, alignment);
-    // NOLINTNEXTLINE(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory) — POSIX aligned_alloc 测试桩返回原始拥有指针
+    // NOLINTNEXTLINE(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory) — POSIX
+    // aligned_alloc 测试桩返回原始拥有指针
     void* block = ::aligned_alloc(alignment, bytes);
     if (block == nullptr) {
         throw std::bad_alloc{};
@@ -225,7 +226,8 @@ TEST(ClassScopedOperators, OverAlignedConstructionUsesAlignedPair) {
     TrackedLifetime::resetCounters();
 
     constexpr std::size_t kBoundaryBytes = 64U;
-    auto* heavy = new (std::align_val_t{kBoundaryBytes}) TrackedLifetime{};  // NOLINT(cppcoreguidelines-owning-memory) — 验证对齐 placement new 路径
+    auto* heavy = new (std::align_val_t{kBoundaryBytes})
+        TrackedLifetime{};  // NOLINT(cppcoreguidelines-owning-memory) — 验证对齐 placement new 路径
     ASSERT_NE(heavy, nullptr);
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)

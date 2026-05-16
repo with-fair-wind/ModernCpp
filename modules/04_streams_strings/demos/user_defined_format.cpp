@@ -56,7 +56,8 @@ struct std::formatter<mcpp_demo::RgbColor> {
 
     constexpr auto parse(std::format_parse_context& ctx) {
         hex_mode_ = false;
-        auto it = ctx.begin();  // NOLINT(readability-qualified-auto) — parse 遍历格式串需就地迭代器类型
+        auto it =
+            ctx.begin();  // NOLINT(readability-qualified-auto) — parse 遍历格式串需就地迭代器类型
         for (; it != ctx.end(); ++it) {
             if (*it == 'h' || *it == 'H') {
                 hex_mode_ = true;
