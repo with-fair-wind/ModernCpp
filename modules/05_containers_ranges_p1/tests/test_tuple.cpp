@@ -1,6 +1,5 @@
 // std::tuple、std::pair 与结构化绑定。
 
-#include <array>
 #include <string>
 #include <tuple>
 #include <type_traits>

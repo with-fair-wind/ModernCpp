@@ -3,7 +3,6 @@
 // Apple libc++（Xcode ≤ 16）的 make_format_args 不识别自定义 formatter 特化，
 // 会触发 static_assert——在该平台上跳过全部测试。
 
-#include <version>
 
 // Apple libc++ 的 make_format_args 尚不识别自定义 formatter 特化
 #ifndef __APPLE__

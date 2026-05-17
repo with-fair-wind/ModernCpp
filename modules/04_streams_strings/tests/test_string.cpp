@@ -1,6 +1,5 @@
 // std::string 高频 API（查找、starts_with、contains、substr）与 SSO 现象的粗粒度观测。
 
-#include <cstddef>
 #include <string>
 #include <string_view>
 

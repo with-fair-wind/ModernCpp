@@ -5,7 +5,6 @@
 //   仅在 __cpp_lib_spanstream 定义时编译演示主体。
 
 #include <array>
-#include <cstring>
 #include <iostream>
 #include <span>
 #include <string>

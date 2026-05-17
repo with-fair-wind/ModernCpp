@@ -8,7 +8,6 @@
 // std::formatter——直接触发 static_assert。整个 demo 需守护跳过。
 
 #include <iostream>
-#include <version>
 
 // Apple libc++ 的 make_format_args 尚不识别自定义 formatter 特化
 #ifdef __APPLE__
@@ -23,7 +22,6 @@ int main() {
 
 #include <cstdint>
 #include <format>
-#include <string>
 
 namespace mcpp_demo {
 
