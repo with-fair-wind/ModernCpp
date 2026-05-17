@@ -43,10 +43,13 @@ File system
 
 - Essentially, path is a string that represents location of a file.
 - There are two different kinds of paths:
+
 1. Absolute path: always refer to the same location.
 2. Relative path: the location relative to current working directory (CWD) for the current process.
+
 - By changing CWD, the process can get different locations.
 - A path consists of these components:
+
 1. Root name (optional): like drive name in Windows (C:, D:); or UNC (//machine), etc.
 2. Root directory (optional): a directory separator (\ on Windows, / on Linux, : on classic MacOS).
 3. Relative path: a sequence of filenames separated by directory separator.
@@ -118,13 +121,13 @@ For brevity, we use namespace stdfs = std::filesystem.
 # Path
 
 - C++ uses stdfs::path to represent a path.
-- It is essentially a string of some native encoding, e.g. UTF-8 on Linux, * UTF-16 on Windows.
+- It is essentially a string of some native encoding, e.g. UTF-8 on Linux, \* UTF-16 on Windows.
 - The underlying character can be checked by stdfs::path::value_type, normally char on Linux and wchar_t on Windows.
 - And stdfs::path::string_type = std::basic_string<value_type>.
 - And the string stores path in native format.
 - You can just access the underlying string in const way:
 
-*: Strictly speaking, usually a filesystem doesn’t really respect encoding; it just treats the path as some byte sequence (even if it’s not a valid UTF-8 / 16). So “native encoding” essentially means “a string that you can pass into filesystem syscall directly”, e.g. 2-byte-per-unit sequence on Windows.
+\*: Strictly speaking, usually a filesystem doesn’t really respect encoding; it just treats the path as some byte sequence (even if it’s not a valid UTF-8 / 16). So “native encoding” essentially means “a string that you can pass into filesystem syscall directly”, e.g. 2-byte-per-unit sequence on Windows.
 
 # Path
 
@@ -150,7 +153,9 @@ For brevity, we use namespace stdfs = std::filesystem.
 - Given main.cpp as:
 
 Check whether some path exists, equiv. to std::ifstream{p}.is_open() if p is a file instead of directory.
+
 - Case 1: msvc doesn’t add any option, and encoding of main.cpp is GBK.
+
 1. D:\试验.txt is in GBK, and msvc reads it as GBK correctly.
 2. The execution charset is GBK, so D:\试验.txt is still GBK in binary exe.
 3. Current ACP is GBK, so stdfs::path converts it from GBK to native encoding (UTF-16) and stores it;
@@ -159,12 +164,17 @@ Check whether some path exists, equiv. to std::ifstream{p}.is_open() if p is a f
 # Windows ACP
 
 - Case 2: msvc adds /utf-8, and encoding of main.cpp is UTF-8.
+
 1. D:\试验.txt is in UTF-8, and msvc reads it as UTF-8 correctly.
 2. The execution charset is UTF-8, so D:\试验.txt is UTF-8 in binary exe.
 3. Current ACP is GBK, so stdfs::path converts it from GBK to native encoding (UTF-16) and stores it;
+
 - However, UTF-8 string is not really a GBK string, and the corresponding binary leads to GBK as “D:\璇曢獙.txt”.
+
 4. The path is not correct and file system says it doesn’t exist.
+
 - Case 3: msvc adds /source-charset:utf-8, and encoding of main.cpp is UTF-8.
+
 1. D:\试验.txt is in UTF-8, and msvc reads it as UTF-8 correctly.
 2. As default execution charset is ACP, D:\试验.txt is GBK in binary exe.
 3. So the path is still correct and file system says it exists.
@@ -172,10 +182,15 @@ Check whether some path exists, equiv. to std::ifstream{p}.is_open() if p is a f
 # Windows ACP
 
 - Case 4: msvc adds /utf-8, and encoding of main.cpp is GBK.
+
 1. D:\试验.txt in GBK is not valid UTF-8, so msvc warns C4828 (illegal character in UTF-8) and silently passes the original bytes as is.
+
 - So accidentally, it’s still GBK in binary exe.
+
 2. Thus accidentally, the path is correct and file system says it exists.
+
 - Case 5: assuming ACP is UTF-8 (65001), msvc doesn’t add any option (equiv. to add /utf-8), and encoding of main.cpp is GBK.
+
 1. Same as case 4, i.e. the string is of GBK in binary exe.
 2. However, GBK is not valid UTF-8, so ctor of path throws an exception (std::system_error in MS-STL).
 
@@ -184,6 +199,7 @@ Check whether some path exists, equiv. to std::ifstream{p}.is_open() if p is a f
 - So to make a valid path, we need first:
 - Make sure the compiler knows how to read the file (string literals), i.e. the file encoding should be correctly specified in source charset.
 - And then two ways:
+
 1. Make execution charset (for string literals) and string encoding (for other strings stored in e.g. std::string) same as ACP.
 2. Use char8_t[] / char16_t[] / char32_t[] instead. A. Any ACP is OK, since char8_t as a unique type will always be decoded as UTF-8 in ctor. B. Any execution charset is OK, since char8_t is always UTF-8 in binary exe.
 
@@ -210,6 +226,7 @@ Check whether some path exists, equiv. to std::ifstream{p}.is_open() if p is a f
 - E.g. UTF-32 -> UTF-8, which is equiv. to construct from wchar_t[] directly.
 
 Default is just an empty string.
+
 - And finally some omitted overloads & operator=, just list here.
 
 # Path
@@ -261,8 +278,8 @@ Note: parent of root directory is still root directory (i.e. "/" -> "/"); but pa
 
 D:\..\sub\.\path\..\file.txt D:\..\sub\path\..\file.txt
 
-D:\..\sub\file.txt D:\sub\file.txt
-7. is applied to e.g. ..\..\.
+D:\..\sub\file.txt D:\sub\file.txt 7. is applied to e.g. ..\..\.
+
 1. & 8. An empty path is still empty after normalization, but a non-empty but essentially empty is normalized to ..
 
 # Path normalization
@@ -281,7 +298,7 @@ The last / is not stripped, even after normalization. .. only removes trailing /
 # Path normalization
 
 - Notice that “physical” parent of lexical normalization may still be wrong when normalized result still contains ...
-- Only (weakly_)canonical ensures a correct physical parent.
+- Only (weakly\_)canonical ensures a correct physical parent.
 
 - Finally, you can get or set CWD by current_path():
 
@@ -323,6 +340,7 @@ a = D:\test\test.txt b = D:\test\test2\test.txt\..
 # Path relativization
 
 ② Determine the first mismatched component of two paths (just like std::mismatch).
+
 - Let remaining mismatched components of a be [𝑎1, 𝑎2) and b be [𝑏1, 𝑏2);
 - Example above is 𝑎, 𝑎= 𝑡𝑒𝑠𝑡. 𝑡𝑥𝑡 , 𝑏, 𝑏= [𝑡𝑒𝑠𝑡2, 𝑡𝑒𝑠𝑡. 𝑡𝑥𝑡, . . ]. 12 12
 - If no mismatched component (i.e. 𝑎1= 𝑎2, 𝑏1= 𝑏2), return path{ “.” };
@@ -357,7 +375,9 @@ a = D:\test\test.txt b = D:\test\test2\test.txt\..
 
 - For a given path ./sub/path/file.txt, it’s essentially a combination of hierarchical components.
 - C++ provides two utilities to combine components.
+
 1. Append: combine two components with a directory separator, if needed.
+
 - For example: (on Linux)
 
 - However, there exist lots of corner cases… ① Subpath is absolute path: C++ chooses to overwrite (replace) LHS.
@@ -432,21 +452,25 @@ Issue 2674: Bidirectional iterator requirement on path::iterator is very expensi
 
 # Path modificationReturn reference
 
-to *this.
+to \*this.
 
 - There also exist some simple non-const methods:
+
 1. .make_preferred(): for path whose native format is also generic format, convert current separators to preferred separators.
+
 - For example:
 
 2. .remove_filename(): Remove the last component (if it exists) so .has_filename() returns false.
+
 - So after removal, the path is either empty or ends with a separator.
 
 “foo” will also be converted to “”.
 
 # Path modification
 
-3. .replace_filename(const path& rep): equivalent to 1. this->remove_ filename(); 2. (*this) /= rep.
+3. .replace*filename(const path& rep): equivalent to 1. this->remove* filename(); 2. (\*this) /= rep.
 4. .replace_extension(const path& rep = {}): equivalent to code below:
+
 - For example:
 
 # PathBefore element-wise comparison, it
@@ -473,7 +497,7 @@ As a C++26 feature, it’s not yet implemented so “implementation-defined” i
 
 - Note 1: there also exists .u8path() to construct from a UTF-8 string in C++17, which is then deprecated in C++20.
 - Reason: C++20 introduces char8_t, which distinguishes UTF-8 sequence from char by template so there is no need to introduce a new method.
-- For the same reason, .(generic_)u8string returns std::string in C++17 and std::u8string in C++20.
+- For the same reason, .(generic\_)u8string returns std::string in C++17 and std::u8string in C++20.
 - Note 2: to use path as key in map, you usually need to normalize it first by canonical.
 - Reason: comparison and hashing of path are performed lexically for the underlying components.
 - Without normalization, two equivalent paths may be seen as two keys.
@@ -494,6 +518,7 @@ As a C++26 feature, it’s not yet implemented so “implementation-defined” i
 - In this section, most of the functions interact with the underlying filesystem, which are in the global scope stdfs::.
 - By contrast, functions we taught in the last section are purely lexical (and thus cheaper), which are member functions of stdfs::path.
 - Almost every function provides two versions:
+
 1. Error code version: add std::error_code& as the last parameter to return filesystem error (noexcept if only filesystem error is possible);
 2. Exception version: throw stdfs::filesystem_error to represent error.
 
@@ -516,9 +541,12 @@ As a C++26 feature, it’s not yet implemented so “implementation-defined” i
 - We’ll cover symbolic links later; but generally it means an object that refers to another directory.
 - Such skip can prevent users from accidentally removing files in other folders.
 - And all three standard libraries initially implement it as:
+
 1. Check whether the object is a symbolic link;
 2. If it is not, recursively remove its files.
+
 - Say hackers want to remove sensitive/ but they don’t have permission; but current system runs a privileged program with stdfs::remove_all, which periodically removes recyclebin/ that don’t add permission.
+
 1. Hackers create a directory called temp in recyclebin/ first;
 2. remove_all checks that it’s not a symbolic link;
 3. Hackers delete temp and create a symbolic link temp to sensitive/.
@@ -569,6 +597,7 @@ What are these types?
 # Hard Link
 
 1. Hard link: as if adding reference count to underlying data nodes.
+
 - Filesystem cannot distinguish a hard link with the original object (so there is no type called “hard link”!).
 - When you delete /home/dir2/file2.txt, the content isn’t really deleted; /home/dir1/hardlink.txt still keeps the node.
 - Hard link count of an object can be checked by stdfs::hard_link_count(p). /home/dir1/hardlink.txt
@@ -595,14 +624,18 @@ What are these types?
 - Windows: always return 1.
 - Return type: uintmax_t.
 - Note 2: hard link has some other restrictions:
+
 1. Some filesystems don’t support hard link (notably FAT file system; most of USB flash drives (U盘) use it).
 2. Hard link is not cross-filesystem since different filesystems may have different data structures. Hard link exists only in the same filesystem.
+
 - Particularly on Windows, they must be in the same volume (notably drive).
+
 3. Some filesystems may have limits for hard links per file.
 
 # Symbolic Link
 
 2. Symbolic link (soft link): as if pointing to filesystem entry.
+
 - Or, you can think it as a weak_ptr to the underlying node.
 - When the real entry /home/dir2/file2.txt is deleted, its content will also be deleted though symbolic link /home/dir1/softlink.txt exists.
 - Any redirection operation of the soft link later (e.g. file I/O) will fail.
@@ -630,6 +663,7 @@ Filesystem functionality can be checked in MS Doc. Notice that UDF is widely use
 # Junction
 
 3. For non-root privilege, Windows allows link to directory by a new type called “junction”.
+
 - mklink /J junc a.
 - Like symbolic link, when the real node is deleted, junction still exists but becomes invalid.
 - Though junction is cross-filesystem, it only allows to link directory in local computer.
@@ -689,10 +723,12 @@ After bind, process will create sockfile.sock in CWD, which has file type as soc
 # FIFO and Socket
 
 - Note 1: difference between fifo and socket:
+
 1. Socket file can use send or recv, as network socket does; fifo can only use write or read.
 2. Socket can use datagram instead of byte stream (by SOCK_DGRAM), while fifo only uses byte stream.
 3. Socket is bidirectional, i.e. server and client can send or recv the other freely; fifo is unidirectional, i.e. sender always send and receiver always recv.
 4. Typically, fifo is used for two users, while socket can be used for multiple clients.
+
 - Note 2: Windows also supports fifo (since Windows 2000 professional) and UDS (since Windows 10 17063 (2017/12)).
 - However, MS-STL always returns false for is_fifo and is_socket.
 
@@ -706,6 +742,7 @@ Reason: UDS doesn’t create a real file like in UNIX.
 - As each level can be expressed in three bits, you can use octal number to form the permission in C++.
 - E.g. literal 0764, since leading 0 means octal literal.
 - However, Windows permission system (Active Control List, ACL) is not compatible with POSIX. It thus uses naïve DOS permission:
+
 1. All users can read, write and execute the file (777);
 2. All users can read and execute the file (555).
 
@@ -815,6 +852,7 @@ Note: in libstdc++, you need to #include<chrono> to make time outputable (C++20,
 - And also some simple modifiers:
 
 i.e. path.replace_filename(…) and .refresh(). i.e. Re-query attributes by filesystem calls.
+
 - Applying these methods doesn’t e.g. rename the underlying file in the filesystem, but just re-query!
 - Actually, directory_entry is value type of directory_iterator, which can be used to iterate over a path.
 
@@ -854,29 +892,33 @@ pop
 
 depth == 0
 
-disable_ recursion _pendingdepth == 1 then ++.
+disable\_ recursion \_pendingdepth == 1 then ++.
 
 depth == 2
 
 # Directory iteration
 
-- Note 1: their operator* returns const&, so you cannot modify directory_entry without copying it.
+- Note 1: their operator\* returns const&, so you cannot modify directory_entry without copying it.
 - Note 2: they are input iterators.
 - Recap: input iterators are not forward iterators because they’re one-pass; copying it and iterating the copy may lead to different results.
 - Here similarly, directory contents may be altered by other processes, so it’s not multi-pass.
 - It’s actually more complicated and see our homework for detailed discussion.
 
-- Note 3: if new files and directories are added in directory A after creation of (recursive_)directory_iterator{ "A" }, it’s unspecified whether they will be iterated or not.
+- Note 3: if new files and directories are added in directory A after creation of (recursive\_)directory_iterator{ "A" }, it’s unspecified whether they will be iterated or not.
 
 # Final Notes
 
 - There exist some other minor read-only methods:
+
 1. Path operations:
+
 - current_path() -> p for CWD;
 - temp_directory_path() -> p (e.g. /tmp on Linux);
 - equivalent(p1, p2) -> bool for judging whether two paths are essentially same (following symlinks).
 - read_symlink(p1) -> p2 for converting a symlink path to its target path (error if p1 is not symlink).
+
 2. Filesystem operations:
+
 - is_empty(p) -> bool, return true if p is empty file or directory;
 - space(p) -> space_info, which determines space of mounted filesystem that p lies in.
 - On Linux, you can check filesystem of the path by df –h:
@@ -898,9 +940,11 @@ depth == 2
 # Creation
 
 - There are four kinds of modification operations:
+
 1. Create:
 
 ① directory:
+
 - create_directory(p[, existing_p[, ec]]) -> bool;
 - When given existing_p, created p will copy OS-dependent attributes from another directory existing_p (Windows does nothing). Parent of p must exist (i.e. create only a single directory).
 - create_directories(p[, ec]) -> bool;
@@ -913,6 +957,7 @@ ATTENTION: what the path symlink refers to is from the view of symlink itself. (
 # Creation
 
 ② links:
+
 - create_hard_link(original_path, link_path[, ec]);
 - create_symlink(original_path, link_path[, ec]);
 - create_directory_symlink(original_path, link_path[, ec]);
@@ -940,16 +985,19 @@ The specific behavior (including error conditions) for copy is too long and thus
 # Copy
 
 - copy_symlink(from, to[, ec]): copy symbolic link to another position, instead of following link and copy content like copy.
-- Equiv. to create_(directory_)symlink(read_symlink(from), to).
+- Equiv. to create*(directory*)symlink(read_symlink(from), to).
 - Note: copy_symlink doesn’t copy junction on Windows; you can only use copy(from, to, copy_options::copy_symlinks) to copy it.
 - Example of copy:
 
 # Remove and Rename
 
 3. Remove:
+
 - remove(p[, ec]) -> bool: requires p to be regular file or empty directory, symlink is not followed; return true if p is removed.
 - remove_all(p[, ec]) -> uintmax_t: remove all contents in p (including p), symlink is not followed; return number of removed entries (-1 on error).
+
 4. Rename:
+
 - rename(old_p, new_p[, ec]):
 - If new_p is hard link to old_p, nothing happens;
 - If old_p is regular file: remove new_p if it exists and is a regular file, and rename to new_p.
@@ -986,8 +1034,10 @@ num: numerator, 分子 den: denominator, 分母
 - Their computation is exact, i.e. doesn’t incur rounding error.
 - So is it enough to just use struct R { int num; int den; }?
 - Not really…
+
 1. 3 / 2, 6 / 4, … are essentially same, i.e. it needs to do reduction.
 2. class NTTP is introduced in C++20, while <ratio> is in C++11.
+
 - Instead, it introduces a new type std::ratio<Num, Den>.
 - which defines quantities after reduction:
 
@@ -1017,6 +1067,7 @@ To use these literals, using namespace std::literals or
 - In C++, such interval is represented by stdc::duration:
 
 Rep: how to represent the number, e.g. long long or double. Period: number unit (w.r.t. second), e.g. std::milli (std::ratio<1, 1000>) for milliseconds. Default means second.
+
 - It essentially only stores a number of type Rep.
 - You can get it (in value type instead of reference) by .count().
 - It also provides some user-defined literals whose Period are adjusted accordingly:
@@ -1032,19 +1083,20 @@ auto is stdc::milliseconds, i.e. stdc::duration<intXX, std::milli>. Guess what a
 - To keep numeric accuracy, it will find “largest” type for both types first.
 - Representation of ToDuration is converted finally, i.e. after all computations are done.
 
-*: after decay, if no specialization.
+\*: after decay, if no specialization.
 
 # Common type
 
-*
-- Basically, std::common_type<A, B> is just type of conditional operator (i.e. cond ? std::declval<A>() : std::declval<B>()).
-- The detailed procedures are quite complex; generally speaking, it chooses either A or B that can be implicitly converted from another.
-- If none of or both of conversions can happen, then compilation error.
-- But for arithmetic types, since all types can do implicit conversion, it checks usual arithmetic conversions.
-- i.e. Floating-point > integers; more bits > less bits.
-- std::common_type<T0, T1, …> just finds common type iteratively.
-- i.e. std::common_type<std::common_type<T0, T1>, …>.
-- So for duration_cast between two integers, intmax_t will be used during computation.
+-
+
+* Basically, std::common_type<A, B> is just type of conditional operator (i.e. cond ? std::declval<A>() : std::declval<B>()).
+* The detailed procedures are quite complex; generally speaking, it chooses either A or B that can be implicitly converted from another.
+* If none of or both of conversions can happen, then compilation error.
+* But for arithmetic types, since all types can do implicit conversion, it checks usual arithmetic conversions.
+* i.e. Floating-point > integers; more bits > less bits.
+* std::common_type<T0, T1, …> just finds common type iteratively.
+* i.e. std::common_type<std::common_type<T0, T1>, …>.
+* So for duration_cast between two integers, intmax_t will be used during computation.
 
 # Duration
 
@@ -1064,7 +1116,7 @@ i.e. either the duration uses floating-point, or Period2 is exactly divisible by
 - Output:
 - Reason: these types are integers!
 - So 1.5f is implicitly converted to integer 1.
-- A similar one: auto m = 10ms; m *= 1.5f;
+- A similar one: auto m = 10ms; m \*= 1.5f;
 - Solution: make representation a floating-point number.
 - E.g. auto m = 10.0ms instead, or specify representation explicitly.
 
@@ -1084,7 +1136,9 @@ i.e. either the duration uses floating-point, or Period2 is exactly divisible by
 # Duration
 
 - C++20 adds more utilities:
+
 1. Days, weeks, months and years: since every month and year have different length, it uses the average number.
+
 - Accurate: 1 days = 86400s, 1 weeks = 7 days;
 - Average: 1 years = 365.2425 days, 1 months = years.
 - And also their integer aliases (after rounding):
@@ -1097,6 +1151,7 @@ BTW: since months isn’t multiple of days, days + months doesn’t result in a 
 # Duration
 
 2. I/O and formatter: ① operator<<: output .count() with additional unit, depending on Period type.
+
 - For non-special types:
 
 ② formatter: default format is equiv. to operator<<.
@@ -1152,6 +1207,7 @@ Windows locales generally don’t handle %O and %E.
 - Result of out-of-bound time for makeXX is unspecified. ℎ ∈ [0, 11] ℎ ∈ [12, 23] 𝑟𝑒𝑠𝑢𝑙𝑡 ∈ [1, 12] (0 is 12 a.m.)
 
 ③ from_stream: scan a string with a format to get a time.
+
 - i.e. inversion of formatting, quite like std::scan (scan is not yet accepted).
 
 The last two parameters are for time zone and will be covered later.
@@ -1324,11 +1380,13 @@ time_point is not printable and formattable by default except for specialization
 # Clock
 
 - More utilities added in C++20 include:
+
 1. Type aliases:
 
 # Clock
 
 2. I/O for time point: except for stdc::steady_clock / high_resolution_clock / local_t. Example: Japanese
+
 - Formatter: you can use all formats except for %Q/q in duration for (since it still keeps era) time in a day; Besides, it provides more formats for date:2011/9/25 Windows Linux
 
 Windows Linux
@@ -1356,9 +1414,11 @@ Yes, Greek has Full table on Windows,Difference only liesFull table on Linux, tw
 
 # Clock
 
-- from_stream accepts similar formats (just sometimes be case-insensitive, and add some %N_ for “at most N characters”), so we don’t cover it again.
+- from*stream accepts similar formats (just sometimes be case-insensitive, and add some %N* for “at most N characters”), so we don’t cover it again.
 - And you can still use parse as manipulator.
+
 3. Uniform clock conversion: since C++20 introduces many different clocks, it’s necessary to introduce a converter.
+
 - And we say that you can just use e.g. stdc::from_sys, stdc::to_utc, etc.
 - However, it doesn’t directly define arbitrary conversion between two clocks.
 - Instead, you can use stdc::clock_cast!
@@ -1382,12 +1442,16 @@ Yes, Greek has Full table on Windows,Difference only liesFull table on Linux, tw
 # Clock
 
 - And some final notes:
+
 1. Do NOT use non-steady clock for waiting events.
+
 - Reason: Non-monotonicity can make waiting much longer than expected.
 - For example: std::condition_variable::wait_for/until();
 - Initially, libstdc++ implements it by system_clock, so wait_for(10s) can wait for 10 minutes if external users adjust system clock.
 - This is fixed in gcc10 by introducing pthread_cond_clockwait in glibc and using steady_clock.
+
 2. Given a UTC time point, you can check whether it’s a leap second by stdc::get_leap_second_info(utc).
+
 - Which returns
 
 elapsed: sum of all leap seconds since epoch.
@@ -1414,6 +1478,7 @@ elapsed: sum of all leap seconds since epoch.
 - Remember our note?
 
 - So the whole process is:
+
 1. 2021y constructs a class year (instead of a duration like 2021ms).
 2. Use operator/ of year and get class year_month.
 3. Use operator/ of year_month and get class year_month_day.
@@ -1428,8 +1493,8 @@ elapsed: sum of all leap seconds since epoch.
 - You can also use alias names of months:
 - Besides normal day, there also exist three ways to denote a date:
 - Last day: year_month_day_last, count backward instead of forward; e.g. 3/31 is the last day of March. th
-- Weekday: weekday, i.e. Monday ~ Sunday. The iweekday is denoted by weekday_indexed, and forms (year_)month_weekday.
-- Last weekday: weekday_last, count backward instead of forward; e.g. 2026/2/23 is the last Monday of 2026/2. Form (year_)month_weekday_last.
+- Weekday: weekday, i.e. Monday ~ Sunday. The iweekday is denoted by weekday*indexed, and forms (year*)month_weekday.
+- Last weekday: weekday*last, count backward instead of forward; e.g. 2026/2/23 is the last Monday of 2026/2. Form (year*)month_weekday_last.
 
 1. year_month / last -> year_month_day_last
 2. weekday[index] -> weekday_indexed year_month / weekday_indexed -> year_month_weekday
@@ -1452,7 +1517,9 @@ Tag type for stdc::last.
 # Date
 
 - So now you can understand all the classes with different combinations:
+
 1. Fundamental types share similar methods:
+
 - Ctor: constructed from an unsigned int.
 - explicit operator unsigned int (except for weekday).
 - year is int for the above two, for existence of BC.
@@ -1470,17 +1537,24 @@ Tag type for stdc::last.
 - Order of weekday is not really uniformly defined…
 - Some cultures use Sunday as the last day, while others use it as the first day.
 - So you cannot really define a uniform operator<=>. [0, 6], Sunday is 0.
+
 1. C++ provides two getters: [1, 7], Sunday is 7.
+
 - 0 and 7 are also same in ctor.
+
 2. Its arithmetic operations are defined on (mod 7).
+
 - For example, Friday += 2 is Sunday; ++Sunday is Monday; Sunday – Friday == 2; Monday – Friday == 3.
 - These integers are actually duration days.
+
 3. Finally, you can construct weekday by time point sys_days or local_days.
+
 - So you can know weekday of that calendar day.
 
 # Date
 
 2. Index weekday by operator[] gives weekday_indexed/last: weekday_indexed weekday_last
+
 - The methods are pretty easy:
 
 - operator<< and default format of weekday are equiv. to %a (i.e. locale-dependent abbr.), and weekday_indexed/last is equiv. to %a[index].
@@ -1500,14 +1574,15 @@ Tag type for stdc::last.
 # Date
 
 3. Composite types also share similar methods:
+
 - Getters: get properties from stored fields.
 - E.g. for year_month_weekday_last:
 - The types are just fundamental types.
 - .ok(): judge whether the date can exist.
 - E.g. 2021/2/29 (as year_month_day) can’t exist; but 2/29 can (as month_day); 2/31 can’t exist, but 31 can (as day).
 - operator==/!= (with the same class).
-- (year_)month_day(_last) also support operator<=>.
-- formatter/operator<<; from_stream only for (year_)month(_day).
+- (year\_)month_day(\_last) also support operator<=>.
+- formatter/operator<<; from*stream only for (year*)month(\_day).
 - Similarly, you cannot use absent fields for formatters (e.g. illegal to use %D for year_month).
 - operator+/-/+=/-=(years/months), only for year_xxx.
 - With different interpretations in different classes, as we mentioned before.
@@ -1534,16 +1609,21 @@ Tag type for stdc::last.
 We’ve said that weekday can be constructed from sys_days.
 
 th
+
 - Effects: print Friday that is 13day in a month between 2020 and 2024.
 
 # Date
 
 - Note 4: year_month_day is a special type.
+
 1. It can be constructed from year_month_day_last.
 2. It can be constructed from sys_days and local_days.
+
 - By contrast, other types can only be converted to sys_days and local_days.
 - So a uniform way to convert other types to year_month_day is by (1) converting to sys_days (2) constructing year_month_day.
+
 3. operator<< and empty format print %F (i.e. %Y-%m-%d) instead of components connected by /.
+
 - When it’s invalid, the printed content doesn’t come done to invalid messages of components either; it just prints “ is not a valid date” additionally.
 
 # Date
@@ -1572,6 +1652,7 @@ th
 - So 13:00 Asia/Shanghai is same as 5:00 UTC, or 23:00 Ameria/Chicago (in the last day).
 - Some cultures also have summer/winter time (夏令时/冬令时), also called daylight-saving/standard time (日光节约时/标准时).
 - But time zones have special characteristics…
+
 1. The offset isn’t necessarily multiple of hours; 15/30/45 minutes are often used too.
 2. Abbr. can be ambiguous, e.g. CST can refer to Central Standard Time (for Chicago), China Standard Time or Cuba Standard Time, etc.
 3. Time zone can change when countries decide to do so (e.g. when they introduce summer/winter time).
@@ -1592,13 +1673,21 @@ th
 # Time zone
 
 - There are four different kinds of time zone names, which are regulated by IANA (Internet Assigned Numbers Authority):
+
 1. City or country.
+
 - e.g. America/Chicago, Asia/Hong_Kong, Europe/Berlin, Pacific/Honolulu, etc.
+
 2. Offset: starts with Etc/, plus GMT+/-N.
+
 - e.g. Etc/GMT-8 is Beijing time (Yes, Etc/GMT-8 is UTC+8, it needs negation for Unix convention on Etc/GMT).
+
 3. Abbreviations.
+
 - e.g. UTC, GMT, CST, PST.
+
 4. Deprecated entries (no deterministic forms).
+
 - e.g. PST8PDT, US/Hawaii, Canada/Central, Japan.
 
 - The unique names can be used to locate a time zone.
@@ -1606,12 +1695,15 @@ th
 # Time zone
 
 - In C++, stdc::time_zone represents a time zone and stdc::zoned_time represents time attached to a time zone.
-- C++ provides a database for you to query a const time_zone*;
+- C++ provides a database for you to query a const time_zone\*;
+
 1. current_zone(): get current time zone;
 2. locate_zone(name): query time zone from name;
+
 - When no entry is located, std::runtime_error will be thrown.
 
 - And there are two ways to construct a zoned_time:
+
 1. Attach a local time to its zone;
 2. Convert a zoned time or system time to a zone.
 
@@ -1637,10 +1729,12 @@ Convert system time to zoned time
 # Time zone
 
 - Specifically, for ctor of zoned_time:
-- Each variant provides two overloads, by name (effectively call locate_zone) or const time_zone*.
+- Each variant provides two overloads, by name (effectively call locate_zone) or const time_zone\*.
+
 1. Attach local time to a time zone:
 
 What’s this?
+
 - We’ve said that a local time can be ambiguous or absent in DST.
 - enum class choose has earliest and latest options, which selects the earliest one or the latest one for an ambiguous time.
 - Ambiguous time without choose param, or absent time will throw exception.
@@ -1656,7 +1750,7 @@ What’s this?
 # Time zone
 
 - And finally some naïve ctors:
-- Equiv. to default constructed time_ point, i.e. .time_since_epoch() is zero. Again, absent time zone is UTC.
+- Equiv. to default constructed time\_ point, i.e. .time_since_epoch() is zero. Again, absent time zone is UTC.
 
 - For assignment:
 
@@ -1666,13 +1760,15 @@ What’s this?
 # Time zone
 
 - And some other methods for zoned_time:
-- .get_time_zone() -> const time_zone*;
+- .get_time_zone() -> const time_zone\*;
 - .get_info() -> stdc::sys_info: get information of time zone for current time.
 - It contains:
+
 1. In what range this offset is effective.
 2. Offset with system time.
 3. Possible DST offset.
 4. Abbr. of time zone.
+
 - It can be printed by operator<</format directly.
 - For example:Reason: China used DST from 1986 to 1991. Los Angeles, in DST. LA, out of DST. Beijing, no DST. Beijing, with DST. (should be GMT+9, but Windows seems wrong). While Linux is correct:
 
@@ -1681,12 +1777,18 @@ What’s this?
 - Equal comparable: compare both time point and time zone pointer;
 - Hashable since C++26;
 - operator<< and format: same as outputting the local time, except that:
+
 1. %Z will output abbr. of time zone, which is system-dependent;
 2. %z will output offset of time zone in [+/-]HH[MM];
+
 - E.g. Beijing is +0800 (or equivalently 08, +08); in previous sections it’s just +0000 (or 00, +00, -00) for UTC clock, TAI clock, etc.
+
 3. %Oz, %Ez will use [+/-]H[H][:MM], plus other locale-dependent transformation.
+
 - E.g. Beijing is +08:00 (or +8, +08, 8, 08); in previous sections it’s +00:00.
+
 4. The default format is %F %T %Z.
+
 - E.g. 2026-03-21 15:15:06 GMT+8.
 - And finally a member type: And a type alias:
 
@@ -1695,7 +1797,7 @@ What’s this?
 - Generally, zoned_time isn’t directly input; but you can input a local time by from_stream and construct zoned_time.
 
 - When %Z is provided, abbrev will be filled; when %z/Oz/Ez is provided, offset will be filled.
-- %Z takes the longest sequence of characters in regex [\w|-|+|/] (i.e. A-Z, a-z, 0-9, _, -, +, /).
+- %Z takes the longest sequence of characters in regex [\w|-|+|/] (i.e. A-Z, a-z, 0-9, \_, -, +, /).
 - For example:
 
 Note: stdc::parse accepts reference instead of pointer.
@@ -1705,9 +1807,13 @@ Note: stdc::parse accepts reference instead of pointer.
 - Note 1: %Z and %z are separately processed so it’s possible that the offset is not aligned with the time zone name.
 - Note 2: unlike other specifiers, %Z is not essentially inversible.
 - That is, usually name output by %Z cannot locate a time zone. Two cases:
+
 1. It’s a pseudo name that’s not a time zone.
+
 - E.g. GPS, TAI.
+
 2. locate_zone() uses name to locate, but %Z outputs abbreviation.
+
 - E.g. our previous example:
 - GMT+8 is not a valid time zone name.
 - Only occasionally, abbr. is also a unique name (like UTC).
@@ -1727,7 +1833,7 @@ Note: stdc::parse accepts reference instead of pointer.
 
 - Note 2: to be rigorous, time zone pointers are part of template:
 
-- And all previous claims that return const stdc::time_zone* essentially return TimeZonePtr.
+- And all previous claims that return const stdc::time_zone\* essentially return TimeZonePtr.
 - Details are covered in homework for not being very important.
 - Note 3: currently accessing time zone information in MS-STL is slightly slow, which may be fixed in the future.
 
@@ -1738,8 +1844,10 @@ Note: stdc::parse accepts reference instead of pointer.
 - It can even be absent in your OS; for example, an embedded system may not care about zone at all so the tailored OS removes it.
 - Particularly, Windows before Win10 just has no such database.
 - This leads to facts that:
+
 1. When the database doesn’t exist, std::runtime_error will be thrown in locate_zone, etc.
 2. For a long-running program, the database can be obsolete and gives wrong time.
+
 - For example, new leap second and new time zone may be absent.
 
 # Time zone database
@@ -1755,7 +1863,7 @@ Note: stdc::parse accepts reference instead of pointer.
 
 # Time zone database
 
-- Reason: there may exist time_zone* that refers to entries in the old database in the program.
+- Reason: there may exist time_zone\* that refers to entries in the old database in the program.
 - Removing it directly can cause illegal access.
 - But you can do it manually by tzdb_list methods:
 
@@ -1776,3 +1884,571 @@ name() is the alternative name, and target() is the original name.
 For abbrev = “CST”:
 
 The specific list is system-dependent.
+
+# Supplementary and Summary
+
+Math functions
+
+# Supplementary
+
+- Math functions
+- Miscellaneous topics
+- Random number
+
+# Math functions
+
+- Just list a table (in <cmath>) with special notes:
+
+Class Functions Notes Trigonometricsin, cos, tan, asin, acos,atan2(y,x)distinguishes𝑦/𝑥and–𝑦/−𝑥. 三角函数atan, atan2 Hyperbolicsinh, cosh, tanh, asinh,N/A 双曲函数acosh, atanh
+
+𝑥 Exponential &exp, exp2, expm1, log,expm1means𝑒−1(exp minus 1), log1p means ln(𝑥 + 1) (ln 1 plus), Logarithmlog2, log1p, log10, logb logb means floor(log2(x)). 指数/对数函数 Powerpow, sqrt, cbrt, hypot cbrtmeans𝑥,hypot(x,y[,z])means 2 22 幂函数hypotenuse (斜边) 𝑥+ 𝑦(+𝑧) Roundingceil, floor, trunc, round,trunc(2.1) == 2,trunc(-2.1) ==-2; round doesn’t consider current rounding mode 舍入nearbyint, rint but nearbyint does; rint == nearbyint except for raising error when integer is not exactly representable in current float.
+
+Not frequently used now since compilers can combine division and modulo automatically to save instructions.
+
+# Math functions
+
+Class Functions Notes Divisionfmod, remainder, remquo,Letquo = x / y,remainderisx- 除法divround(quo)*y,fmodisx-trunc(quo)*y. remquo(x, y, *quo) can be used for periodic functions. div(x, y) -> div_t is for integer to get both remainder and quotient. 𝑒 (De)compositionfrexp, ldexp, scalbn,frexp(x, *e)-> m:𝑥=𝑚∗2,𝑚∈[0.5,1); 𝑒 分解与组合modfldexp(m, e):𝑥=𝑚∗2(scalbnis same, except for n-bit system that 𝑛 ≠ 2); modf(x, \*intptr) -> frac: 𝑥 = int + frac. Classificationfpclassify, isfinite,normal:规格化数。 分类isinf, isnan, isnormalfpclassify: returnintegerfor class. Bit operationssignbit, copysign,signbit(x)-> bool; 比特操作nextafter, nexttowardcopysign(x, y):xcopies sign fromy; nextafter(from, to): return next representable number towards to. Minor difference with nexttoward.
+
+𝐿 2𝑏 1𝑥−𝜇 Given 𝑁(𝜇, 𝜎), Pr 𝐿𝑎≤ 𝑋 ≤ 𝐿𝑏= ׬exp − d𝑥 = 𝐿𝑎2𝜋𝜎 2𝜎 1𝐿𝑏− 𝜇𝐿𝑎− 𝜇1𝐿− 𝜇 erf − erf , Pr 𝑋 ≤ 𝐿 = erf + 1 2 2𝜎 2𝜎 2 2𝜎
+
+# Math functions
+
+Class Functions Notes Comparisonis(greater/less)(equal),N/A islessgreater, isunordered 比较
+
+2𝑥 2 −𝑡 Other-1erf, erfc, tgamma,erf 𝑥 = ׬𝑒d𝑡, which is integral of 𝜋 0 其他-1lgamma Gaussian Distribution 𝑁(0, 0.5) in [−𝑥, 𝑥] (i.e. probability of happening in [−𝑥, 𝑥]).
+
+erfc 𝑥 = 1 − erf(𝑥).
+
+tgamma is gamma function Γ 𝑥 = ∞ 𝑥−1−𝑡 ׬𝑡𝑒d𝑡, lgamma is ln Γ 𝑥 . Other-2fmin, fmax, abs, fdim,fdim(x, y) = max(0, x-y); 其他-2fma, nanfma(x, y, z) = x _ y + z; nan(const char_ arg) converts a string to NaN; the string is used to determine the specific binary (e.g. nan("1") is 0x7ff0000000000001).
+
+# Math functions
+
+- Note 1: these functions often correspond to special instructions, which will be applied by either the standard library or the compiler optimization.
+- For example, 1.0f / sqrtf(x) will be optimized to RSQRTSS in Intel;
+- Sometimes performance loss may even occur…
+
+1. GNU extension provides sincos, which is historically faster for fsincos instruction in x87 architecture; but it’s slower than separate computation now. 𝑒
+2. ldexp(m, e) (i.e. 𝑥 = 𝑚 ∗ 2) can be slower than m \* (1 << e), when SIMD instructions are used.
+
+- Note 2.1: almost all functions have variations with suffix f or l, meaning for float or long double.
+- E.g. sinf for float, sinl for long double.
+- scalbn is slightly special (though it’s rarely used):
+
+# Math functions
+
+- These functions exist for compatibility with <math.h> in C.
+- C doesn’t have function overloading, so it has to provide different names (no suffix means for double).
+- C++ actually adds overloads:
+
+For extended floating-point numbers in C++23 <stdfloat>.
+
+- But suffix ones can still be used when you need explicit type control.
+- Note 2.2: some functions have variations for with prefix i, l or ll, meaning for returning int, long or long long.
+- For example, logb returns floor(log2(x)), ilogb returns int(log2(x)).
+- Since it differs on return type, overloading cannot help here.
+
+# Math functions
+
+- A thorough example:
+- But most of functions don’t have all these permutations of prefix and suffix…
+
+# Math functions
+
+- Note 2.3: it’s recommended to fully qualify function names (i.e. std::xxx) to prevent ambiguity with C functions. C++
+- For example: what does abs(-3.1416) return? only
+- Oops, it depends on calling C++ function or C function.
+- C doesn’t have abs(float) and introduces fabs!
+- So abs(-3.1416) can be 3 or 3.1416.
+- Just use std::abs!
+- Note 3: there also exist some constants, but std::numeric_limits in <limits> should be used in C++ instead.
+
+# Math functions
+
+- Note 4: error handling of math functions is by either floating- point exception or errno (specific way determined by macro).
+
+floating-point exception can be tested by fetestexcept (details not covered here).
+
+# Math functions
+
+- Note 5: most of these functions become constexpr since C++23.
+
+- Note 6: most of these functions add explicit SIMD overloads since C++26.
+- Since C++26 introduces <simd>; but we don’t cover it here.
+
+- Note 7: some special notes on numeric precision…
+- Before that, we first introduce unit in the last place (ULP).
+
+# ULP
+
+- ULP means spacing around current floating points.
+- i.e. ULP(x) = nextafter(x, +inf) – x for x > 0; ULP(x) = x - nextafter(x, -inf) for x < 0;
+- Under IEEE 754, that means:
+- Assuming floating-point has p bits for mantissa, and exponent of x is e; 𝑒−𝑝
+- For normal numbers, ULP is 2; 𝑒−𝑝+1
+- For denormal numbers, ULP is 2.
+- Say we want to compute ULP for float x = 1.0f.
+- 32-bit float has 23 bits for mantissa; exponent of x is 0 (since 1.0 is 1.0 × 2). −23
+- So ULP(1.0f) is 2.
+- Using ULP, we can describe computation error for finite precision of floating points.
+
+Catch2 provides WithinULP(x, d) for checking error to be within 𝑑 ⋅ ULP(𝑥).
+
+# ULP
+
+- IEEE-754 guarantees some errors to be within 0.5 ULP:
+- Rounding: given any value 𝑥, converting it to floating-point x will choose the closest representable value, i.e. error in 0.5 \* ULP(x).
+- Plus: (𝑎 ⊕ 𝑏) − 𝑎 + 𝑏 ∈ 0.5 ULP(𝑎 + 𝑏).
+- That is, given computation result of float a + float b (denoted as 𝑎 ⊕ 𝑏), and the real value 𝑎 + 𝑏 (also called infinite-precision value), their space is no more than 0.5 ULP(𝑎 + 𝑏).
+- Of course, it assumes 𝑎, 𝑏 are already exactly representable.
+- Similarly, minus, multiplication and division are in 0.5 ULP(𝑎 + 𝑏) too.
+- Most importantly, IEEE-754 requires sqrt and fma to be in 0.5 ULP too.
+- So when you have precision requirement, use fma instead of 𝑎 ⊗ 𝑏 ⊕ 𝑐.
+
+FYI, you can check some extreme error care in graphics.
+
+# Math functions
+
+- Note 8: some functions add computation for complex number in <complex>.
+- std::complex<T> is generally like a wrapper for T real, imag; details not covered here.
+
+You can also use user-defined literals.
+
+Methods for std::complex, quite easy.
+
+# Math functions
+
+- Finally, C++17 adds many special math functions.
+- Details not covered here; just use it when your task needs.
+
+For example, graphics usually uses Spherical Harmonics, which can be calculated by sph_legendre.
+
+# Numbers
+
+- C++20 adds many math constants in <numbers>.
+- namespace is std::numbers.
+- When \_v is removed, it means double constant (e.g. std::numbers::e).
+- If you want float constant, you need to use e.g. std::numbers::e_v<float>.
+
+# Side note
+
+- Also a side note: C++26 adds some integer arithmetic utilities.
+- Saturation: in <numeric>; saturating_xxx<T>(x, y) -> T will saturate computation of x and y, so when the result is out-of-bound, it will be clamped to representable value.
+- xxx can be add, sub, mul, div.
+- And saturating_cast<T>(x) -> T; by comparison, (T)x will modulo it. E.g. (int8_t)-696 is 72, while saturating_cast<int8_t>(-696) is -128.
+- Example:
+- Checked: in <stdckdint.h> (which is first accepted in C23); when the computation result of x and y is out-of-bound, ckd_xxx(*result, x, y) -> bool will not set *result, and will return false.
+- xxx can be add, sub, mul.
+
+# Supplementary
+
+- Math functions
+- Miscellaneous topics
+- Random number
+
+# Random number
+
+- C just provides a very simple function rand to get a pseudo- random integer.
+- And you can only manipulate it by setting seed using srand.
+- But it has many drawbacks…
+
+1. Not thread-safe, so have to add lock to protect;
+2. Many math formula use special distributions; providing mere random integers isn’t enough.
+3. The implemented algorithm, for backward compatibility, is very naïve and likely to generate low-quality random numbers.
+
+- That is, random number may encounter loop quickly.
+- To overcome these problems, C++11 introduces <random>.
+
+Implementations usually just use /dev/urandom or OS random library. But you can use other strings in ctor,
+
+# Random numbere.g. /dev/random, to specify explicitly.
+
+- In physics, there are many “true” random process.
+- For example, whether a radioactive particle (放射性粒子) decays is completely random; we can only depict its overall behavior statistically by half-life (半衰期).
+- In computers, we may use noise of reverse-biased diodes (反向偏置二极管).
+- C++ provides such a “true” random number generator std::random_device.
+- Typically, it gets random number from hardware device.
+- However, when such true number generator is absent, it can also be implemented as software-based pseudo-random number generator (PRNG).
+- You can check it by .entropy() -> double;
+- PRNG implementation “will” return 0 while others return positive value.
+
+# Random number
+
+- But typically, performance of std::random_device will degrade sharply when called frequently (when it has to “flush the noise”).
+- Thus, it’s usually used to generate a seed for PRNG.
+- C++ provides a bunch of PRNGs with different algorithms:
+
+- We’ll briefly introduce these engines later…
+
+# Random number
+
+- These PRNGs generate random integers in uniform distribution;
+- But in scientific problems, we usually need random numbers that obey some distribution.
+- C++ also provides a lot of distributions that accept PRNGs, and transform the generated number to obey distribution.
+- We won’t cover them in detail and check manual when you need.
+
+# Random number
+
+- So a commonly used pattern to generate random number is:
+
+1. Generate a device;
+2. Get a seed to initialize PRNG;
+3. Create a distribution;
+4. Sample the distribution using PRNG.
+
+- Now let’s cover a little bit of details about these utilities…
+- But we won’t cover detailed algorithms; if you have special requirements on quality of random number, check them yourself.
+- It’s really, really an expert-level work.
+
+# Random number
+
+- For PRNG, they have common interface below:
+
+Ctor: should be copyable; PRNG copies share the same internal state.
+
+op(): generate a random integer in [min, max], and advance to the next state. .discard(unsigned long long n): discard the next n random integers. Though naïvely it can be implemented by looping op() by n times, some engines may have better algorithm.
+
+PRNG can be equality- compared and input/output (I/O format is impl-defined).
+
+# Random number
+
+- Ctor and .seed() accept a seed to (re)set its state.
+- There are several variants:
+
+1. Accept a single integer, as we show before.
+2. Accept nothing, as if accept a default integer for 1..
+
+- But is it enough?
+- NO. 𝑀
+- Reason: an integer of 𝑀 bits has only 2states; but some engines have much more state bits (e.g. for std::mt19937, it has 624 32-bit integers).
+- Therefore, a variant for accepting a seed range is needed. So:
+
+3. Accept a SeedSequence, which is capable of generating many integers.
+
+- This overload is a template, and the standard library already provides a class std::seed_seq that fulfills SeedSequence.
+
+# Random number
+
+- For example:
+
+- We give it 8 random 32-bit integers for seeding; though it’s still far less than 624, it should be better than only a single integer.
+
+- Therefore, SeedSequence is a mapping that:
+- Accepts 𝑀 random bits;
+- Output 𝑁 random bits that eliminate bias (as much as possible), which will be used to initialize PRNG status.
+
+# Random number
+
+- std::seed_seq has:
+
+1. Ctor: initialized from a range of 32-bit integers;
+2. .generate(begin, end): fill [begin, end) with random integers that eliminate bias.
+3. Get status of v.
+
+- Note: it doesn’t guarantee a bijection when 𝑀 = 𝑁 (i.e. the input status space is same as the output space). For instance, given two 32-bit integers, you cannot get every value of 64-bit integers.
+
+# Random number
+
+congruential: 同余
+
+- The basic properties of PRNGs are:
+
+1. std::linear_congruential_engine: a.k.a. LCG, widely used in C rand() implementation; 𝑥𝑖+1= 𝑎 ⋅ 𝑥𝑖+ 𝑐 mod 𝑚, 𝑥0is seed.
+
+- Occupies least space (only one integer 𝑥), moderately fast, worst random 𝑖 quality.
+
+2. std::mersenne_twister_engine: Mersenne Twister algorithm.
+
+- Occupies most space (624 integers for mt19937), very fast, high random quality 𝑀 (cycle is 2− 1 where 𝑀 is Mersenne prime; in mt19937 𝑀 = 19937). Space is n integers of type UIntType.
+
+3. std::subtract_with_carry_engine: subtract with carry algorithm.
+
+- Occupies moderate space, moderately fast, moderate random quality.
+
+Space is r integers of type UIntType, plus a flag (either 0 or 1).
+
+# Random number
+
+- And some PRNG algorithms may need transformation on previous PRNGs, so there are three adaptors:
+
+1. std::discard_block_engine: for every P random numbers, keep only the first R random numbers.
+2. std::independent_bits_engine: generate a random number whose last W numeric bits are independent.
+
+- So it can create a larger range of random number, e.g. using a 32-bit engine to generate a 64-bit number.
+- The result is stored in UIntType, whose bits should be no less than W.
+
+3. std::shuffle_order_engine: shuffle the random number generated from the engine.
+
+- It keeps a table of size K, fill it will K random numbers from engine; then select from the table randomly as the next random number, and replace that item in the table with a new random number.
+
+It’s an expert-level task to select good parameters for them, so C++ provides lots of predefined aliases:
+
+If you don’t have special requirements, just use std::default_random_engine (usually std::mt19937 in implementations).
+
+# Random number
+
+- Previous PRNGs are all iterative, i.e. 𝑥𝑖+1= 𝑓(𝑥𝑖) to get next random number.
+- However, it significantly restricts usage of random number in parallel.
+- To overcome that, one way is to use e.g. thread_local PRNGs…
+- But, such approach still has many drawbacks:
+
+1. Initializing PRNG is often costly, but every thread has to do so;
+2. Weak reproducibility when you add more threads.
+
+- A new thread will introduce a completely different sequence and leads to different numeric results.
+
+3. Multiple good seeds need to be provided.
+
+- Instead, what if we can provide a PRNG with 𝑥𝑖= 𝑓(𝑖)?
+- Providing a task id for every thread is a very common pattern in multi- threading tasks, so such PRNG makes the random number easy to get.
+
+# Random number
+
+- C++26 adds a counter-based PRNG std::philox_engine.
+- This engine is also widely used in Pytorch on different devices. 𝑛∗sizeof(UIntType)
+- Its cycle is 𝑛 ∗ 2.
+- philox_engine has state as:
+
+1. An integer counter; to represent a long integer, an array of size std::array<UIntType, n> is used.
+2. An integer seed with half bit length, i.e. an array of size n / 2.
+3. Buffer b for generated result with same bit length, i.e. an array of size n.
+4. An index i to split the buffer and get next random number properly.
+
+- Its operator() -> UIntType returns b[i] and increases i.
+- When i reaches n, the philox algorithm runs to generate next b, and the counter is increased by 1.
+
+# Random number
+
+- For example:
+
+1. Ctor: Need 4 / 2 = 2 integers of 32 bits as seed; we provide one and the other will be set as 0.
+2. Counter: initialized as all 0.
+3. operator(): first generate four 32-bit integers, and consume two here. th
+
+- If we consume 5 integers, then generating the 5integer needs to (1) increase the counter (2) generate the next four 32-bit integers. 4×32
+- Now it can provide 4 ⋅ 2random numbers.
+- So how does it facilitate parallel tasks?
+- C++ provides .set_counter() to offset the counter, so you can divide the numbers into any chunk!
+
+For algorithm details, check this blog or the original paper.
+
+# Random number
+
+- For example, assuming our loop below is parallelized:
+
+Every sub-task occupies the sequence headed by {atom_id, time_step}, so it can freely consume 𝟐×32 4 ⋅ 2random numbers.
+
+- Though other PRNGs can .discard to achieve similar effects, they consume 𝑂(log 𝑛) or 𝑂(𝑛) where 𝑛 is jumping distance; philox_engine does so in 𝑂(1).
+
+# Final Notes
+
+1. About reproducibility:
+
+- PRNG algorithms are strictly regulated, so as long as the seed is the same, PRNG generates the same sequence in all platforms.
+- However, distribution algorithms are not regulated, so even if the PRNG is the same, distributions can generate different sequences in different platforms.
+- If you want to ensure the same random values everywhere, <random> is not enough.
+
+2. Cryptographical security (密码安全) is not concerned in <random>.
+
+- Cryptographical security means that, even if you know the PRNG algorithm, and you know some part of the sequence, you’re still unable to know the rest of the sequence, or guess PRNG seed in polynomial complexity.
+- You should use e.g. OpenSSL for such random sequence.
+
+# Final Notes
+
+3. Some uncovered utilities:
+
+- generate_canonical(): given a PRNG, generate a random floating-point number in [0, 1) with at most Bits (but no more than sizeof(RealType)) randomness.
+- Implementations use PRNG to generate random bits.
+- For example, program below generates double with 10-bit randomness (i.e. at most 2possible values).
+
+- And some random-related algorithms in <algorithm>:
+
+1. shuffle: shuffle the random-access range with a PRNG.
+
+- URBG means uniform random bits generator, which is equiv. to PRNG in C++ since they generate integers uniformly.
+
+Details of random algorithms are also not strictly regulated, so not reproducible in different platforms.
+
+# Random number
+
+2. sample: since C++17, select n elements from [first, last) randomly to out, each element has equal probability of appearance.
+
+- Every element will appear at most once in the output range.
+
+- The above two also have std::ranges version since C++20.
+
+3. generate_random(range, PRNG[, distribution]): since C++26, std::ranges version only.
+
+- range can also be two params begin, end;
+- Effects: fill the range with PRNG or distribution.
+
+Question: why not just std::generate?
+
+The standard encourages standard library implementations to add their .generate_random for PRNGs and distributions if optimizations are possible.
+
+# Random number
+
+- Reason: stdr::generate_random allows for customization.
+- For example, some PRNGs or distributions can be vectorized, but the plain fallback loop will suppress it.
+- These PRNGs or distributions can provide its member function .generate_random(), and stdr::generate_random will call them.
+
+# Supplementary and Summary
+
+Summary and future prospect
+
+# Course Outline
+
+- Back to our outline in the first lecture…
+
+1. Introduction
+2. Basic review & extension
+3. Containers
+4. Ranges and algorithms
+
+- We’ve talked about how algorithms and containers are implemented; and a bit of C++20 ranges.
+
+5. Lifetime (& Type Safety)
+
+- Lifetime and storage duration, strict aliasing rules, slicing problems, C++- style type conversion, variant and any.
+
+# Course Outline
+
+6. Programming in multiple files
+
+- Basic principles like preprocessor, Translation Unit, ODR, namespace and linkage (and inline), so we can explain why header and source files work.
+- A bit of xmake, how to make a library.
+- And a bit of C++20 modules.
+
+7. Error Handling
+
+- Starting from C error code, we gradually introduced optional & expected, exceptions, assertions and debug helpers (e.g. stacktrace).
+- Note that C++ also wraps error code, and it’s discussed in homework of this lecture (i.e. Lecture 16).
+- We emphasized exception safety and talked about copy-and-swap idiom.
+- And a bit of Catch2 to do unit test.
+
+# Course Outline
+
+8. String and Stream
+
+- String literals and raw strings, string and string_view, and <charconv>.
+- How Unicode works, and how it’s supported in C++.
+- Format and print functions, extension to range, how to specialize your own formatter.
+- A bit of how stream works.
+- And finally regex, but <regex> is not discussed.
+
+9. ~ 11. Move Semantics for 2.5 lectures.
+
+- In Lecture 9, we introduced why we need move semantics, how to write move ctor and assignment, Rule of Five / Zero, moved-from states and some simple algorithms for move semantics.
+
+# Course Outline
+
+- In Lecture 10, we discussed value category (plus decltype), reference qualifier and deducing this, copy elision (RVO, NRVO, implicit move) and some analysis on performance of different types.
+- In Lecture 11, we talked about universal reference and perfect forwarding.
+
+11. ~ 12. Templates for 1.5 lectures.
+
+- In Lecture 11, we taught basics of templates, including constexpr (consteval, constinit), specializations and overload resolutions, some tricky details (this->, typename, template, nested specialization) and finally C++20 concept.
+- In Lecture 12, we dived into harder parts such as:
+- NTTP and template template parameter, type deduction (and CTAD), friend template and lazy instantiation, SFINAE.
+- Variadic templates and folder expression.
+- Important techniques: CRTP and type erasure.
+
+# Course Outline
+
+13. ~ 14. Multithreading for 1.5 lectures.
+
+- In Lecture 13, we unveiled utilities from low level to high level, from thread (& jthread with stop token handling), synchronizations (semaphores, mutex & locks, condition variable, latch & barrier) to future- promise model, packaged_task and async.
+- In Lecture 14, we discussed memory order and atomic variables in detail.
+
+14. Coroutines for 0.5 lectures.
+
+- We gave a brief introduction to coroutines, including how to write them in C++, symmetric transfer and std::generator.
+
+15. Memory management
+
+- We covered object layout, operator new & delete, smart pointers and allocators.
+
+# Course Outline
+
+16. Final
+
+- Finally, we provided some supplementary on filesystem, chrono and math functions, and gave a summary to the whole course.
+- Wow, that’s a long journey…
+- When I mentioned every part, you can definitely recall lots of knowledge you learnt!
+- We’ve covered most of important topics, with some deliberately neglected like ADL.
+- The final video length is 46h + 5.5h (this supplementary chapter), which is actually too long (I expect 40h) because I want to cover every detail.
+- That’s my fault… If I renew this course, many things will be discarded.
+- And as we said, our course only covers until C++23…
+
+# Future C++
+
+- Though C++ provides powerful utilities, it’s still evolving and lots of proposals are submitted every month.
+- Particularly, C++26 will bring you these important features:
+- We’ve mentioned many, like \_ for placeholder name, rcu & hazard pointer, variadic friends, copyable_function & function_ref, constexpr placement new, indirect & polymorphic, inplace_vector (mentioned in homework), etc. Besides:
+- Pack indexing:
+
+# Reflection
+
+- Example: universal formatter to print members. template foris called expansion statement, which is also introduced in C++26..
+
+# Contract
+
+- The finally decided semantics include:
+
+# Execution
+
+- A general and uniform framework for concurrency.
+- In <execution>, namespace std::execution.
+
+# And many others…
+
+- Standard library hardening: given special compiler arguments (e.g. -fharden), the standard library implementation should always check conditions!
+- For example, vector::operator[]:
+
+- It’s UB when index is out-of-bound; but hardening requires the implementation to check the precondition.
+- Really nice feature for safety!
+- And note: language UB and library UB are different; plenty of language UBs are not detectable but most of library UBs are detectable.
+
+# And many others…
+
+- Task type for coroutine:
+
+- We’ve implemented a tiny Task in Coroutine, and the standard library just evolves it further and migrates it into std::execution.
+
+1. stdexec::just(0) is a sender that can be co_awaited.
+2. Its .await_resume returns its parameter 0.
+3. co_return 0 is processed by stdexec::task::promise_type::return_value.
+
+- Parallel Range algorithm;
+- We’ve said that parallel algorithms don’t have std::ranges version;
+- Since C++26, they are added for random-access range.
+
+# And many others…
+
+- SIMD
+- submdspan
+- User-generated static_assert messages.
+- Erroneous behavior for uninitialized variables.
+- Erroneous behavior is new behavior that is well-defined (so compilers cannot do wrong assumptions and make aggressive optimizations like UB), but is essentially incorrect.
+- This restricts surprise in “undefined” results.
+- If you really want it uninitialized, use attributes:
+
+现代C++基础 Modern C++ Basics
+
+# That’s ALL!
+
+Jiaming Liang, undergraduate from Peking University
+
+Postgraduate from PKU since 2024.9 :-)
+
+# Next lecture?
+
+- Well, our lectures on “Modern C++ Basics” have ended…
+- I really appreciate audiences who persist in learning my course and reach here!
+- Though this series “goes beyond its lifetime”, all knowledge has been passed to your data member and will continue their adventure with you.
+
+- You’ll definitely learn more and more in C++…
+- Just believe in yourself and forge ahead!
+- And it’s my honor to become part of this lifelong journey.
+
+- This channel will also continue to produce more contents on interesting and brand-new topics about C++, when I have enough spare time.
+- Really thank you, and see you in the next video ☺.
