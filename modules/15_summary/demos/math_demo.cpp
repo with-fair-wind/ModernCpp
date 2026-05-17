@@ -19,6 +19,7 @@ void showTrigonometric() {
 
 void showExponentialLog() {
     std::cout << "\n--- 指数 / 对数 ---\n";
+    // NOLINTNEXTLINE(modernize-use-std-numbers)
     std::cout << std::format("  exp(1)    = {:.6f}  (期望 e ≈ {:.6f})\n", std::exp(1.0),
                              std::numbers::e);
     std::cout << std::format("  expm1(0)  = {:.6e}  (精确 0)\n", std::expm1(0.0));
@@ -63,8 +64,10 @@ void showUlp() {
 
 void showClassification() {
     std::cout << "\n--- 浮点分类 ---\n";
-    std::cout << std::format("  isinf(1.0/0.0)   = {}\n", std::isinf(1.0 / 0.0));  // NOLINT
-    std::cout << std::format("  isnan(0.0/0.0)   = {}\n", std::isnan(0.0 / 0.0));  // NOLINT
+    auto const inf = std::numeric_limits<double>::infinity();
+    auto const nan = std::numeric_limits<double>::quiet_NaN();
+    std::cout << std::format("  isinf(inf)       = {}\n", std::isinf(inf));
+    std::cout << std::format("  isnan(NaN)       = {}\n", std::isnan(nan));
     std::cout << std::format("  isnormal(1.0)    = {}\n", std::isnormal(1.0));
     std::cout << std::format("  isnormal(1e-310) = {}\n", std::isnormal(1e-310));
 }
