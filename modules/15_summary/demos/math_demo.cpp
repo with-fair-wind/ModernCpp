@@ -54,8 +54,7 @@ void showUlp() {
     constexpr float kOne = 1.0F;
     float const ulp_one = std::nextafter(kOne, std::numeric_limits<float>::max()) - kOne;
     std::cout << std::format("  ULP(1.0f) = {:.10e}  (期望 2^-23 ≈ {:.10e})\n",
-                             static_cast<double>(ulp_one),
-                             std::pow(2.0, -23.0));
+                             static_cast<double>(ulp_one), std::pow(2.0, -23.0));
 
     constexpr double kLarge = 1024.0;
     double const ulp_large = std::nextafter(kLarge, std::numeric_limits<double>::max()) - kLarge;
@@ -64,8 +63,8 @@ void showUlp() {
 
 void showClassification() {
     std::cout << "\n--- 浮点分类 ---\n";
-    std::cout << std::format("  isinf(1.0/0.0)   = {}\n", std::isinf(1.0 / 0.0));      // NOLINT
-    std::cout << std::format("  isnan(0.0/0.0)   = {}\n", std::isnan(0.0 / 0.0));      // NOLINT
+    std::cout << std::format("  isinf(1.0/0.0)   = {}\n", std::isinf(1.0 / 0.0));  // NOLINT
+    std::cout << std::format("  isnan(0.0/0.0)   = {}\n", std::isnan(0.0 / 0.0));  // NOLINT
     std::cout << std::format("  isnormal(1.0)    = {}\n", std::isnormal(1.0));
     std::cout << std::format("  isnormal(1e-310) = {}\n", std::isnormal(1e-310));
 }
