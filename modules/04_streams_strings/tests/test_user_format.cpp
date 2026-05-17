@@ -25,19 +25,19 @@ struct CpuSpec {
 
 template <>
 struct std::formatter<CpuSpec> {
-    // NOLINTNEXTLINE(readability-convert-member-functions-to-static) — std::formatter 协议要求非
-    // static 成员
+    // std::formatter 协议要求非 static 成员
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     constexpr auto parse(std::format_parse_context& ctx) noexcept -> decltype(ctx.begin()) {
-        auto it =
-            ctx.begin();  // NOLINT(readability-qualified-auto) — parse 遍历格式串需要就地迭代器类型
+        // NOLINTNEXTLINE(readability-qualified-auto) — 迭代器类型由实现决定
+        auto it = ctx.begin();
         while (it != ctx.end()) {
             ++it;
         }
         return it;
     }
 
-    // NOLINTNEXTLINE(readability-convert-member-functions-to-static) — std::formatter 协议要求非
-    // static 成员
+    // std::formatter 协议要求非 static 成员
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     auto format(CpuSpec const& cpu, std::format_context& ctx) const -> decltype(ctx.out()) {
         return std::format_to(ctx.out(), "{}:{}c@{}MHz", cpu.codename, cpu.cores, cpu.mhz);
     }

@@ -51,7 +51,7 @@ TEST(LayoutSizes, NonOptimizedEmptyMemberAddsByte) {
 
 TEST(LayoutSizes, NoUniqueAddressCompressesEmptyMember) {
     EXPECT_GE(sizeof(WithCompressedEmpty), sizeof(int));
-#if !defined(_MSC_VER)
+#ifndef _MSC_VER
     // MSVC ABI（包括 clang-cl）的 [[no_unique_address]] 不压缩空成员；
     // 需要 [[msvc::no_unique_address]] 才行。非 MSVC ABI 下可直接验证压缩。
     EXPECT_EQ(sizeof(WithCompressedEmpty), sizeof(int));

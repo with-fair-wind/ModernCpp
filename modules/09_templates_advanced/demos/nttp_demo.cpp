@@ -31,7 +31,7 @@ template <int Value>
 
 #if __cplusplus >= 202002L
 // 浮点 NTTP 仅在 C++20 及以后成立。Apple Clang 尚不支持浮点 NTTP。
-#if !defined(__APPLE__)
+#ifndef __APPLE__
 template <auto Threshold>
     requires std::floating_point<decltype(Threshold)>
 struct FloatGate {
@@ -65,7 +65,7 @@ int main() {
     std::cout << "Widget NTTP seven: " << decltype(vault_seven)::peek() << '\n';
     std::cout << "Widget NTTP nine  : " << decltype(vault_nine)::peek() << '\n';
 
-#if !defined(__APPLE__)
+#ifndef __APPLE__
     using PiGate = FloatGate<3.14>;
     std::cout << "float NTTP limit : " << PiGate::kLimit << '\n';
 #else

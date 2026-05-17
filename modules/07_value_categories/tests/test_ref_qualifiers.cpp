@@ -40,8 +40,8 @@ public:
     }
 
 private:
-    // NOLINTNEXTLINE(readability-identifier-naming) — mutable static inline
-    // 计数通道；尾部下划线与私有成员约定一致，但与部分 Static 命名启发式冲突
+    // mutable static inline 计数通道；尾部下划线与私有成员约定一致
+    // NOLINTNEXTLINE(readability-identifier-naming)
     static inline Channel kind_ = Channel::None;
 };
 
