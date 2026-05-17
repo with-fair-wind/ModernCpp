@@ -1,5 +1,6 @@
 // std::vector：容量管理、迭代器/引用失效边界、erase 返回值、vector<bool> 代理。
 
+#include <iterator>
 #include <vector>
 
 #include <gtest/gtest.h>

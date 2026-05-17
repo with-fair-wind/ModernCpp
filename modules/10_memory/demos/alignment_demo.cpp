@@ -1,6 +1,7 @@
 // alignas 控制对象对齐；演示“假共享”（false sharing）场景下用缓存行对齐隔离热点。
 
 #include <atomic>
+#include <cstddef>
 #include <iostream>
 #include <thread>
 

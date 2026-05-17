@@ -3,6 +3,7 @@
 
 #include <array>
 #include <iostream>
+#include <type_traits>
 
 #if __cplusplus >= 202002L
 struct Widget {

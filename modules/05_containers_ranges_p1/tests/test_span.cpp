@@ -1,6 +1,7 @@
 // std::span：连续视图的不变量。
 
 #include <array>
+#include <cstddef>
 #include <numeric>
 #include <span>
 #include <vector>

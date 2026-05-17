@@ -10,6 +10,7 @@
 //   - C++26 之前 span 不做边界检查，越界访问 UB。
 
 #include <array>
+#include <cstdint>
 #include <iostream>
 #include <numeric>
 #include <span>

@@ -1,6 +1,7 @@
 // 模板显式实例化测试：验证源文件中显式实例化的函数模板和类模板。
 // 对照文档「模板显式实例化」章节。
 
+#include <cstddef>
 #include <string>
 
 #include <gtest/gtest.h>

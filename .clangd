@@ -1,11 +1,114 @@
-CompileFlags:
-  CompilationDatabase: .
-  # clang-cl 命令中的 /Fo、/Fd、/FS 在 clangd 改写后会报错
-  Remove: [/Fo*, /Fd*, /FS]
+# =============================================================================
+# .clangd —— clangd 语言服务器的项目级配置（YAML 格式）
+#
+# 作用范围：本文件所在目录及其所有子目录下的源文件
+# 加载方式：clangd 启动时自动读取（需 --enable-config，clangd 11+ 默认开启）
+# 优先级 ：编辑器 CLI 参数（如 VS Code 的 clangd.arguments）> .clangd 文件
+# 详细文档：https://clangd.llvm.org/config
+# =============================================================================
 
+# -----------------------------------------------------------------------------
+# CompileFlags —— 控制 clangd 看到的编译命令
+# -----------------------------------------------------------------------------
+CompileFlags:
+  # 指定 compile_commands.json 所在目录（相对 .clangd 文件位置）
+  # 顶层 CMakeLists.txt 通过 mcpp_link_compile_commands 自定义 target 把
+  # build/<active-preset>/compile_commands.json 镜像到源码根目录，所以这里
+  # 直接用 "." 即可，无论你跑的是 gcc-debug、msvc-relwithdebinfo 还是
+  # mingw-clang-* 都能正确生效，不需要每次切 preset 都改这一行。
+  # 多配置生成器（VS）不产 compile_commands.json，相应用户需走 IDE 自带的
+  # IntelliSense 或装 LLVM 插件。
+  CompilationDatabase: .
+
+  # 追加到所有编译命令的 flag。它的合法用途是给「不在 DB 中的文件」
+  # （如刚 git pull 但还没 reconfigure 的 .cpp，或编辑器临时新建的草稿）兜底
+  # 一个正确的语言标准，而不是承担项目的警告策略。
+  #
+  # 历史上这里也写了 -Wall / -Wextra / -Wpedantic，但项目的警告策略已经由
+  # cmake/CompilerWarnings.cmake 按平台分流写进 compile_commands.json：
+  #   - Linux/macOS/MinGW（MSVC=FALSE）：_mcpp_gnu_like_flags，含 -Wall/-Wextra
+  #     /-Wpedantic/-Wshadow/-Wconversion 等
+  #   - Windows MSVC + clang-cl（MSVC=TRUE）：_mcpp_msvc_flags，走 /W4 /permissive-
+  #     /utf-8 /Zc:__cplusplus 这套
+  # 在 .clangd 里再 Add 一份 -Wall 等于双份覆盖，且因为 .clangd 平台无关，
+  # clang-cl driver 一旦看到 -Wall（dash）就会激进展开成 -Wc++98-compat /
+  # -Wpre-c++14-compat / -Wc++98-c++11-compat-binary-literal 等整族兼容性警告
+  # （项目目标 C++23，这一族纯噪声，且每出新标准还会冒新一批 -Wpre-c++NN-compat，
+  # 用 -Wno-* 抑制是打地鼠永无止境）。所以这里只兜底标准，警告交回 JSON。
+  Add:
+    - -std=c++23 # 只为不在 DB 中的文件兜底；DB 内文件由 cmake 写好的命令决定
+
+  # 从 compile_commands.json 中剥离的 flag（支持 * 通配）
+  # 主因：clang-cl + Ninja 生成的命令带 /Fo<obj> /Fd<dir>，clangd 改写命令后
+  # 会让 clang-cl 报 "Cannot specify '/Fo...' when compiling multiple source files"。
+  # 顺手剥 /FS（MSVC 的 PDB 串行化锁，clangd 不写 PDB 用不到）。
+  Remove:
+    - /Fo*
+    - /Fd*
+    - /FS
+
+# -----------------------------------------------------------------------------
+# Completion —— 控制代码补全行为
+# -----------------------------------------------------------------------------
+Completion:
+  # 全作用域补全：写 cout 即使没引入 std:: 也建议 std::cout
+  # 配合 HeaderInsertion 还能自动补 #include <iostream>
+  # 副作用：补全列表更长，偶尔推荐到非预期同名符号
+  AllScopes: Yes
+
+  # 头文件插入策略：IWYU（Include What You Use）
+  # 用了某个符号就直接 include 它的来源头，不依赖其他头的间接传递
+  # 可选值：IWYU | NeverInsert
+  HeaderInsertion: IWYU
+
+# -----------------------------------------------------------------------------
+# Diagnostics —— 控制诊断（红线/黄线/quickfix）
+# -----------------------------------------------------------------------------
 Diagnostics:
+  # 缺失 include 警告：用了某符号但没直接 include 它的来源头时报警
+  # 配合 HeaderInsertion: IWYU 提供一键修复
+  # 大型项目或重度使用第三方库时可能产生噪音，按需关闭
+  MissingIncludes: Strict
+
+  # 多余 include 警告：include 了但没用到的头会被标记
+  # 提供 quickfix 一键删除
   UnusedIncludes: Strict
-  # MinGW/MSVC STL 下 include-cleaner 会把内部头
-  # （yvals_core.h、__msvc_chrono.hpp 等）当成符号的直接提供者，
-  # 产生大量不可移植的 missing-include 建议——关闭此诊断。
-  MissingIncludes: None
+
+  # ---- clang-tidy 静态检查 ----
+  # 启用整组 + 关闭过严的具体规则，是社区主流做法
+  ClangTidy:
+    # 启用的规则组（* 通配匹配组下所有规则）
+    Add:
+      - modernize-* # 推荐 modern C++ 写法（nullptr / 范围 for / using 别名等）
+      - performance-* # 性能优化建议（不必要拷贝、低效字符串操作等）
+      - bugprone-* # 易出错代码模式（隐式转换、悬挂引用、未初始化等）
+      - readability-* # 可读性改进（命名、控制流复杂度、隐式 bool 转换等）
+      - cppcoreguidelines-* # C++ Core Guidelines 强制规则
+
+    # 从启用组中关闭的具体规则（过严或与项目风格冲突）
+    Remove:
+      - modernize-use-trailing-return-type # 强制 auto func() -> int 写法，多数项目不爱用
+      - readability-identifier-length # 禁止单字母名（i/j/n），数学/循环里不实用
+      - readability-magic-numbers # 把所有字面量当魔法数（包括 0/1/2）
+      - cppcoreguidelines-avoid-magic-numbers # 同上
+      - cppcoreguidelines-pro-bounds-pointer-arithmetic # 禁止指针算术，写底层代码不可避免
+      - cppcoreguidelines-pro-bounds-array-to-pointer-decay # 禁止数组退化，C 风格 API 必须用
+
+# -----------------------------------------------------------------------------
+# Index —— 后台索引设置（用于跳转定义、查找引用、全局补全）
+# -----------------------------------------------------------------------------
+Index:
+  # 后台索引模式：Build（构建索引）| Skip（跳过）
+  # 通常配合 If.PathMatch 对 third_party 目录设 Skip 以节省资源
+  Background: Build
+
+# -----------------------------------------------------------------------------
+# InlayHints —— 编辑器内联提示（VS Code 默认开，Neovim 需 vim.lsp.inlay_hint.enable(true)）
+# -----------------------------------------------------------------------------
+InlayHints:
+  Enabled: Yes # 总开关
+  ParameterNames: Yes # 函数调用处显示形参名：foo(/*x:*/ 1, /*y:*/ 2)
+  DeducedTypes: Yes # auto 推导类型显示：auto x = ... ← /* int */
+  Designators: Yes # 聚合初始化显示成员名：Point{/*.x=*/ 1, /*.y=*/ 2}
+  BlockEnd: Yes # 长函数 } 后显示这是哪个块的收尾
+  DefaultArguments: Yes # 调用时显示用到的默认参数值：foo(1) ← /*, y=10*/
