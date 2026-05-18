@@ -13,11 +13,17 @@ module (demos + optional unit tests), buildable on gcc, clang, and MSVC.
 
 ```
 ModernCpp/
-├── CMakeLists.txt            # 顶层 / top-level
-├── CMakePresets.json         # gcc/clang/msvc presets
-├── .clangd, .clang-format    # clangd 统一代码风格
-├── vcpkg.json, conanfile.txt # 依赖清单（二选一）
-├── cmake/                    # CompilerWarnings / ModuleHelpers / Dependencies
+├── CMakeLists.txt              # 顶层 / top-level
+├── CMakePresets.json           # gcc/clang/msvc/mingw presets
+├── .clangd                     # clangd 配置
+├── .clang-format               # 代码格式化规则
+├── .clang-tidy                 # 静态检查规则
+├── vcpkg.json                  # vcpkg 依赖清单
+├── conanfile.txt               # Conan 依赖清单（与 vcpkg 二选一）
+├── conan/profiles/             # Conan host profile（per 平台/工具链）
+├── cmake/                      # CompilerWarnings / CompilerSanitizers /
+│                               # ModuleHelpers / Dependencies /
+│                               # RunClangFormat / RunClangTidy
 └── modules/
     └── NN_shortname/
         ├── CMakeLists.txt
@@ -46,8 +52,9 @@ ModernCpp/
 
 部分模块用到的 C++23 ranges/generator API 需要 GCC 15 / libstdc++-15，所以推荐
 Ubuntu 25.10 或更新（apt 默认仓库就带 g++-15、clang-20）。Ubuntu 24.04 LTS 上的 g++-13
-跑模块 0–5 没问题，但 06 起的 ranges/generator demo 会缺 API。CI 在 `ubuntu:25.10`
-容器里跑，本地想完全对齐就用同款 docker 镜像，或者给 24.04 加 `ubuntu-toolchain-r` ppa。
+跑模块 0–5 没问题，但 06 起的 ranges/generator demo 会缺 API。CI 在 `archlinux:base-devel`
+容器里跑（滚动发行版，当前 GCC 15.x / Clang 22.x），本地想完全对齐可用同款 Arch 容器，
+或者给 Ubuntu 24.04 加 `ubuntu-toolchain-r` ppa。
 
 ```bash
 # 1) 工具链（Ubuntu 25.10+）
@@ -354,7 +361,7 @@ ctest --preset msvc-release
 
 ### 格式化 / Formatting
 
-仓库根的 `.clang-format` 控制 C/C++ 风格，CI 用 `clang-format-20 --dry-run --Werror` 校验。
+仓库根的 `.clang-format` 控制 C/C++ 风格，CI 用 `clang-format --dry-run --Werror`（Arch rolling，当前 LLVM 22.x）校验。
 本地一键修复 / 校验：
 
 ```bash
@@ -362,7 +369,7 @@ cmake --build --preset gcc-debug --target format        # 原地修复全部 .cp
 cmake --build --preset gcc-debug --target format-check  # 仅 dry-run，与 CI 行为一致
 ```
 
-需要 `clang-format`（推荐 18+）在 PATH 中；CMake 配置时 `find_program` 检测不到就跳过这两个 target。
+需要 `clang-format`（推荐 22+，与 CI 的 Arch rolling LLVM 对齐）在 PATH 中；CMake 配置时 `find_program` 检测不到就跳过这两个 target。
 非 C/C++ 文件（CMake、JSON、YAML、Markdown）的缩进由根目录 `.editorconfig` 兜底，VS Code / JetBrains
 等主流 IDE 会自动识别。
 
@@ -410,16 +417,16 @@ GitHub Actions（`.github/workflows/ci.yml`）在每次 push 与 PR 上跑一个
 
 | Job | 平台 | 内容 |
 | --- | --- | --- |
-| `linux-gcc`        | ubuntu-24.04 host + `ubuntu:25.10` container | GCC 15 + vcpkg + `gcc-relwithdebinfo` |
-| `linux-clang`      | ubuntu-24.04 host + `ubuntu:25.10` container | Clang 20 + libstdc++-15 + `clang-relwithdebinfo` |
-| `linux-gcc-asan`   | ubuntu-24.04 host + `ubuntu:25.10` container | GCC 15 + `gcc-debug` + `MCPP_ENABLE_SANITIZERS=ON`（ASan + UBSan） |
-| `linux-gcc-conan`  | ubuntu-24.04 host + `ubuntu:25.10` container | GCC 15 + Conan 2.x + `gcc-relwithdebinfo-conan` |
+| `linux-gcc`        | ubuntu-24.04 host + `archlinux:base-devel` container | GCC（rolling，当前 15.x）+ vcpkg + `gcc-relwithdebinfo` |
+| `linux-clang`      | ubuntu-24.04 host + `archlinux:base-devel` container | Clang（rolling，当前 22.x）+ libstdc++ + `clang-relwithdebinfo` |
+| `linux-gcc-asan`   | ubuntu-24.04 host + `archlinux:base-devel` container | GCC + `gcc-debug` + `MCPP_ENABLE_SANITIZERS=ON`（ASan + UBSan） |
+| `linux-gcc-conan`  | ubuntu-24.04 host + `archlinux:base-devel` container | GCC + Conan 2.x + `gcc-relwithdebinfo-conan` |
 | `windows-msvc`     | windows-2022 | MSVC (VS 2022) + `msvc-relwithdebinfo` |
 | `windows-clang-cl` | windows-2022 | LLVM clang-cl + `clang-cl-relwithdebinfo` |
 | `windows-msvc-asan`| windows-2022 | MSVC + `msvc-debug` + `MCPP_ENABLE_SANITIZERS=ON`（MSVC ASan） |
 | `windows-mingw-gcc`| windows-2022 | MSYS2 UCRT64 GCC + `mingw-gcc-relwithdebinfo`（验证非-MSVC ABI 路径 + `x64-mingw-dynamic` triplet） |
 | `macos-clang`      | macos-14     | Apple Clang + `clang-relwithdebinfo`（验证 `_clang` preset 的 Darwin 分支） |
-| `lint`             | ubuntu-24.04 host + `ubuntu:25.10` container | `clang-format-20 --dry-run --Werror` + `clang-tidy-20`（target `format-check` / `tidy-check`） |
+| `lint`             | ubuntu-24.04 host + `archlinux:base-devel` container | `clang-format --dry-run --Werror` + `clang-tidy`（target `format-check` / `tidy-check`，LLVM rolling，当前 22.x） |
 
 任一 job 失败即阻止 PR 合并。该矩阵不仅覆盖三种主流编译器，还把 sanitizer、Conan、MinGW、clang-cl、macOS 都纳入主线，避免某条路径"名义支持但长期未跑"。
 
@@ -429,22 +436,22 @@ GitHub Actions（`.github/workflows/ci.yml`）在每次 push 与 PR 上跑一个
 
 ## Module Index / 模块索引
 
-图例：✅ 已落地 demos/tests · ⚠️ WIP（仅文档，无 demos/tests）。
+所有模块均已落地 demos + tests。
 
 | # | 模块 | 主题 | 状态 |
 | - | --- | --- | --- |
 | 01 | [`modules/01_basics`](modules/01_basics/) | 基础复习与扩展 / Basics Review & Extensions | ✅ |
 | 02 | [`modules/02_lifetime_type_safety`](modules/02_lifetime_type_safety/) | 生命周期与类型安全 / Lifetime & Type Safety | ✅ |
-| 03 | [`modules/03_multi_file`](modules/03_multi_file/) | 多文件编程 / Multi-file Programming | ⚠️ WIP |
-| 04 | [`modules/04_streams_strings`](modules/04_streams_strings/) | 流与字符串 / Streams & Strings | ⚠️ WIP |
-| 05 | [`modules/05_containers_ranges_p1`](modules/05_containers_ranges_p1/) | 容器、ranges 与算法 Part 1 | ⚠️ WIP |
-| 06 | [`modules/06_containers_ranges_p2`](modules/06_containers_ranges_p2/) | 容器、ranges 与算法 Part 2 | ⚠️ WIP |
-| 07 | [`modules/07_value_categories`](modules/07_value_categories/) | 值分类与移动语义 / Value Categories & Move Semantics | ⚠️ WIP |
-| 08 | [`modules/08_templates_basics`](modules/08_templates_basics/) | 模板基础与移动语义 / Templates Basics & Move Semantics | ⚠️ WIP |
-| 09 | [`modules/09_templates_advanced`](modules/09_templates_advanced/) | 模板进阶 / Advanced Templates | ⚠️ WIP |
-| 10 | [`modules/10_memory`](modules/10_memory/) | 内存管理 / Memory Management | ⚠️ WIP |
+| 03 | [`modules/03_multi_file`](modules/03_multi_file/) | 多文件编程 / Multi-file Programming | ✅ |
+| 04 | [`modules/04_streams_strings`](modules/04_streams_strings/) | 流与字符串 / Streams & Strings | ✅ |
+| 05 | [`modules/05_containers_ranges_p1`](modules/05_containers_ranges_p1/) | 容器、ranges 与算法 Part 1 | ✅ |
+| 06 | [`modules/06_containers_ranges_p2`](modules/06_containers_ranges_p2/) | 容器、ranges 与算法 Part 2 | ✅ |
+| 07 | [`modules/07_value_categories`](modules/07_value_categories/) | 值分类与移动语义 / Value Categories & Move Semantics | ✅ |
+| 08 | [`modules/08_templates_basics`](modules/08_templates_basics/) | 模板基础与移动语义 / Templates Basics & Move Semantics | ✅ |
+| 09 | [`modules/09_templates_advanced`](modules/09_templates_advanced/) | 模板进阶 / Advanced Templates | ✅ |
+| 10 | [`modules/10_memory`](modules/10_memory/) | 内存管理 / Memory Management | ✅ |
 | 11 | [`modules/11_error_handling`](modules/11_error_handling/) | 错误处理 / Error Handling | ✅ |
 | 12 | [`modules/12_threading`](modules/12_threading/) | 多线程（新）/ Threading (Modern) | ✅ |
-| 13 | [`modules/13_concurrency_advanced`](modules/13_concurrency_advanced/) | 并发进阶 / Advanced Concurrency | ⚠️ WIP |
-| 14 | [`modules/14_move_semantics_basics`](modules/14_move_semantics_basics/) | Move Semantics Basics | ⚠️ WIP |
-| 15 | [`modules/15_summary`](modules/15_summary/) | 补充与总结 / Supplements & Summary | ⚠️ WIP |
+| 13 | [`modules/13_concurrency_advanced`](modules/13_concurrency_advanced/) | 并发进阶 / Advanced Concurrency | ✅ |
+| 14 | [`modules/14_move_semantics_basics`](modules/14_move_semantics_basics/) | Move Semantics Basics | ✅ |
+| 15 | [`modules/15_summary`](modules/15_summary/) | 补充与总结 / Supplements & Summary | ✅ |

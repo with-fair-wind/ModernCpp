@@ -685,10 +685,10 @@ CI（[.github/workflows/ci.yml](../.github/workflows/ci.yml)）的 9 路矩阵�
 # matrix include
 - name: linux-gcc-conan
   os: ubuntu-24.04
-  container: ubuntu:25.10
+  container: archlinux:base-devel
   preset: gcc-relwithdebinfo-conan
-  cc: gcc-15
-  cxx: g++-15
+  cc: gcc
+  cxx: g++
   uses-conan: true
   conan-profile: linux-gcc       # <- 仓库 conan/profiles/linux-gcc
   build-type: RelWithDebInfo     # <- 与 preset 后缀对齐

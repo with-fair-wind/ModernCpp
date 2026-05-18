@@ -3,7 +3,7 @@
 # 演示：异常、std::error_code、std::expected（C++23）、断言。
 #
 # std::expected 需要 libstdc++ 12+ / libc++ 16+ / MSVC 17.4+。
-# CI 已经把 Linux 升到 ubuntu:25.10 容器（GCC 15 / Clang 20 + libstdc++-15），
+# CI 已经把 Linux 切到 archlinux:base-devel 容器（滚动发行版，当前 GCC 15.x / Clang 22.x），
 # 标准 stdlib 都能看到 <expected>；保留 try_compile 是为了照顾本地 toolchain
 # 偏旧（如 Ubuntu 24.04 LTS 默认 g++-13）的开发者，工具链不满足时只打印
 # STATUS 并跳过 —— 其余矩阵继续保持绿。
