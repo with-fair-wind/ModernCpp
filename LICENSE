@@ -19,3 +19,16 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Documentation License (modules/*/docs/*.md):
+
+The lecture notes under modules/*/docs/ are derivative works based on the
+"Modern C++ Basics" course by Extra-Creativity
+(https://github.com/Extra-Creativity/Modern-Cpp-Basics),
+licensed under CC-BY-NC-SA 4.0.
+
+These documentation files are therefore also licensed under
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+(CC-BY-NC-SA 4.0): https://creativecommons.org/licenses/by-nc-sa/4.0/

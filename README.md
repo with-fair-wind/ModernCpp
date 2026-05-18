@@ -455,3 +455,24 @@ GitHub Actions（`.github/workflows/ci.yml`）在每次 push 与 PR 上跑一个
 | 13 | [`modules/13_concurrency_advanced`](modules/13_concurrency_advanced/) | 并发进阶 / Advanced Concurrency | ✅ |
 | 14 | [`modules/14_move_semantics_basics`](modules/14_move_semantics_basics/) | Move Semantics Basics | ✅ |
 | 15 | [`modules/15_summary`](modules/15_summary/) | 补充与总结 / Supplements & Summary | ✅ |
+
+---
+
+## 致谢 / Acknowledgements
+
+本仓库的模块讲义文档（`modules/*/docs/*.md`）基于
+[Extra-Creativity/Modern-Cpp-Basics](https://github.com/Extra-Creativity/Modern-Cpp-Basics)
+课程（作者：Extra-Creativity）的 PDF 课件改写。原课程使用
+[CC-BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) 协议。
+
+---
+
+## 许可证 / License
+
+本仓库采用双协议：
+
+- **代码**（`modules/*/demos/`、`modules/*/tests/`、`cmake/`、`CMakeLists.txt` 等）：
+  [MIT License](LICENSE)
+- **讲义文档**（`modules/*/docs/*.md`）：
+  [CC-BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+  （基于 Extra-Creativity 的 Modern C++ Basics 课程衍生）
