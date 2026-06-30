@@ -110,6 +110,51 @@
 
 ---
 
+### 3.1 MinGW driver、target 与标准库路径
+
+clangd 并不会直接复用 GCC 的前端，它会把 `compile_commands.json` 中的编译命令翻译成 clang 自己的内部参数。因此「compiler driver 名字」和「是否允许 query-driver」会影响 target 与标准库路径。
+
+当编译数据库里是 target-prefixed driver：
+
+```text
+D:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe
+```
+
+clangd 可以从 `x86_64-w64-mingw32-` 前缀推断目标平台，内部解析会落到：
+
+```text
+-triple x86_64-w64-windows-gnu
+```
+
+于是 STL 跳转通常会走 MSYS2 libstdc++：
+
+```text
+D:/msys64/ucrt64/include/c++/16.1.0
+```
+
+当编译数据库里只是普通 driver：
+
+```text
+D:/msys64/ucrt64/bin/g++.exe
+```
+
+文件名本身没有 target 信息。在 Windows 上，如果 clangd 来自 LLVM/Scoop/MSVC 环境，默认 target 可能是：
+
+```text
+x86_64-pc-windows-msvc
+```
+
+这时即使实际构建用的是 MSYS2 `g++`，clangd 也可能按 MSVC 世界解析，导致 `std::vector` 跳到 Visual Studio 的 STL 头。解决办法是在编辑器启动参数里配置 `--query-driver`，允许 clangd 执行对应 GCC driver 并提取真实 target 与系统 include：
+
+```jsonc
+"clangd.arguments": [
+  "--query-driver=?:/msys64/*/bin/*g++.exe,?:/msys64/*/bin/*gcc.exe"
+]
+```
+
+推荐优先让 CMake 使用 `x86_64-w64-mingw32-g++` / `x86_64-w64-mingw32-gcc`，这样 `compile_commands.json` 本身就携带 target 信息；如果为了兼容环境使用普通 `g++.exe`，则需要用 `--query-driver` 补齐 clangd 的系统头发现能力。
+
+---
 ## 4. 典型 LSP 请求的内部链路
 
 ### 4.1 打开文件 / 实时编辑

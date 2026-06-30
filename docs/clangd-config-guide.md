@@ -488,9 +488,67 @@ Index:
 
 **关于 `--query-driver`**：
 
-- 路径**必须用绝对路径**，相对 glob（`**/g++*`）在新版 clangd 可能不生效
-- MinGW 项目示例：`--query-driver=F:/scoop/apps/msys2/current/ucrt64/bin/*`
-- 没配会导致 `<bit>` `<cstdint>` 等 STL 头找不到，或加载错版本（误用 MSVC STL）
+`--query-driver` 不是手动指定标准库路径，而是给 clangd 一份「允许执行哪些编译器 driver」的白名单。clangd 看到 `compile_commands.json` 中的 compiler 后，只有匹配该白名单时，才会实际执行 driver，提取：
+
+- target triple，例如 `x86_64-w64-mingw32`
+- 系统 include 搜索路径，例如 `D:/msys64/ucrt64/include/c++/16.1.0`
+- driver 内置宏与标准库搜索顺序
+
+如果 `compile_commands.json` 里使用的是 target-prefixed compiler：
+
+```text
+D:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe
+```
+
+clangd 可以从文件名中的 `x86_64-w64-mingw32-` 前缀自动推断 `--target=x86_64-w64-mingw32`，内部会切到 GNU/MinGW 模式：
+
+```text
+-triple x86_64-w64-windows-gnu
+```
+
+如果使用普通的 `g++.exe`：
+
+```text
+D:/msys64/ucrt64/bin/g++.exe
+```
+
+这个名字只说明「GNU 风格 C++ driver」，不说明目标平台。Windows 上如果 clangd 本体来自 LLVM/Scoop/MSVC 环境，默认 target 常常是 `x86_64-pc-windows-msvc`，于是标准库可能误跳到 MSVC STL：
+
+```text
+C:/Program Files/Microsoft Visual Studio/.../VC/Tools/MSVC/.../include
+```
+
+此时就需要 `--query-driver` 让 clangd 亲自询问 MSYS2 的 `g++.exe`：
+
+```jsonc
+"clangd.arguments": [
+  "--query-driver=D:/msys64/ucrt64/bin/g++.exe,D:/msys64/ucrt64/bin/gcc.exe"
+]
+```
+
+多个路径写在同一个参数里，用逗号分隔。该参数支持 glob 通配，Windows 跨盘符可用 `?` 匹配盘符：
+
+```jsonc
+"clangd.arguments": [
+  "--query-driver=?:/msys64/*/bin/*g++.exe,?:/msys64/*/bin/*gcc.exe"
+]
+```
+
+如果团队有人把 MSYS2 装在 `D:/tools/msys64`、`C:/dev/msys64` 这类更深路径，优先把常见安装根显式列出来：
+
+```jsonc
+"clangd.arguments": [
+  "--query-driver=?:/msys64/*/bin/*g++.exe,?:/msys64/*/bin/*gcc.exe,?:/tools/msys64/*/bin/*g++.exe,?:/tools/msys64/*/bin/*gcc.exe,?:/dev/msys64/*/bin/*g++.exe,?:/dev/msys64/*/bin/*gcc.exe"
+]
+```
+
+不建议写成过宽的白名单：
+
+```jsonc
+"--query-driver=**/*g++.exe,**/*gcc.exe"
+```
+
+因为它允许 clangd 执行任意目录下名字像 `gcc` / `g++` 的程序，范围太大，既不安全，也容易误匹配到别的工具链。比较稳的团队策略是：CMake 优先使用 `x86_64-w64-mingw32-g++` 这种 target-prefixed compiler；如果必须用普通 `g++.exe`，再配一个限定在 MSYS2 安装根内的 `--query-driver`。
 
 **关于 `--fallback-style`**：
 
@@ -535,6 +593,8 @@ Index:
   "clangd.fallbackFlags": ["-std=c++23"]
 }
 ```
+
+> 注意：VS Code 的 `clangd.arguments` 是数组型设置。工作区 `.vscode/settings.json` 中的同名数组会替换用户全局 settings 中的数组，不会自动合并。因此在项目级 settings 中补 `--query-driver` 时，要把全局里仍想保留的 clangd 参数一起写进去。
 
 **禁用 Microsoft C/C++ 扩展的 IntelliSense**（避免冲突）：
 
