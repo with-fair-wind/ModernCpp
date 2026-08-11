@@ -3,7 +3,8 @@
 - **日期**：2026-08-11
 - **参考来源**：`ModernCpp` 学习仓库（`D:\code\cpp\ModernCpp\`）的 15 个模块及其 `.clang-format` / `.clang-tidy` / `cmake/` 工具链
 - **交付物**：一个用户级 Claude Code skill，编码 C++23（基线）项目的"判断层"编码规范
-- **状态**：待用户评审
+- **状态**：已评审通过并实现（2026-08-11）
+- **实现备注**：实现时发现 `cpp-coding-standards` 名字已被现有 skill 占用，实际命名为 **`cpp23-coding-standards`**；按用户决定与现有 4 个 C++ skill **共存、不覆盖**
 
 ---
 
