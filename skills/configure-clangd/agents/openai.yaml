@@ -1,0 +1,4 @@
+interface:
+  display_name: "配置 clangd 工具链"
+  short_description: "诊断并配置编译命令数据库、clangd、clang-format 与 clang-tidy"
+  default_prompt: "使用 $configure-clangd 检查此 C++ 项目并生成可验证的 clangd 工具链配置。"
