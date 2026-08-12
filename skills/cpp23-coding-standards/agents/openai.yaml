@@ -1,0 +1,4 @@
+interface:
+  display_name: "C++23 工程编码规范"
+  short_description: "面向工程设计、代码审查与重构的现代 C++23 规范"
+  default_prompt: "使用 $cpp23-coding-standards 编写、审查或重构这段 C++23 代码，并区分必须修复的问题与可选改进。"
