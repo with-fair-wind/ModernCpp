@@ -20,6 +20,7 @@
 | 头文件使用错误命令 | 日志是否显示 `inferred from` 其他源文件 | 添加或打开最相关的翻译单元；必要时用工具补全头文件条目 |
 | 新文件解析错误 | 它是否尚未进入构建图 | 重新配置；临时文件仅用最小后备参数，随后加入构建目标 |
 | 生成头文件缺失 | 配置或构建步骤是否先生成该文件，路径是否存在 | 运行项目生成步骤并刷新编译命令数据库 |
+| 本机正常、容器/WSL/远程环境报路径错误 | clangd 与构建是否运行在同一文件系统命名空间；`directory`、驱动程序、sysroot 和生成头是否在 clangd 所在环境可见 | 在实际构建环境中运行 clangd 并重新生成数据库；不要只改写 JSON 路径 |
 | MinGW/交叉编译目标解析错误 | 驱动程序名称是否带目标前缀，query-driver 是否允许执行 | 改用带目标前缀的驱动程序或范围严格受限的白名单 |
 | clang-cl 报输出文件参数冲突 | 最终命令是否含 `/Fo`、`/Fd`、`/FS` | 仅移除已确认无关的输出/PDB 参数 |
 | clang-tidy 没有诊断 | `.clang-tidy`、`Add`/`Remove`、`FastCheckFilter`、有效检查列表 | 先查 `--help`；使用受支持的 `--verify-config`、`-list-checks`、`--explain-config` |
@@ -38,7 +39,11 @@
 - 依赖管理器生成的头文件搜索路径是否属于当前构建配置；
 - 同一文件是否存在互相冲突的多条命令。
 
-CMake 的 `CMAKE_EXPORT_COMPILE_COMMANDS` 主要由 Makefile 和 Ninja 生成器实现；不要假设 Visual Studio/Xcode 生成器一定产生编译命令数据库。若使用 Ninja Multi-Config，仍应检查当前配置对应的命令是否满足预期。
+CMake 的 `CMAKE_EXPORT_COMPILE_COMMANDS` 主要由 Makefile 和 Ninja 生成器实现，Visual Studio/Xcode 生成器会忽略它。正式构建使用这些生成器时，通过项目既有的 Preset 或包装入口建立工具专用的 Ninja/Makefiles 配置，并保持编译器、工具链、依赖、构建类型、功能开关和 ABI 选项一致。CMake 的编译命令数据库也不能良好表达 `UNITY_BUILD`；工具专用配置应关闭 Unity Build，再抽查独立源文件的命令是否仍与正式构建语义一致。若使用 Ninja Multi-Config，仍应检查当前配置对应的命令是否满足预期。
+
+## 远程、容器与 WSL
+
+编译命令中的 `directory`、编译器驱动程序、sysroot、响应文件和生成头路径，都必须在 clangd 进程所在环境中有效。远程开发时优先让编辑器客户端连接运行于构建环境内的 clangd，并在该环境重新生成编译命令数据库。仅把宿主机路径替换为容器或 WSL 路径，可能破坏相对路径的工作目录语义，也不能修复不可见的编译器、目标工具链或生成文件。
 
 ## 驱动查询安全
 

@@ -2,7 +2,7 @@
 name: cpp23-coding-standards
 description: >-
   以 C++23 为基线，为 C++ 代码的编写、评审和重构提供工程决策规范。用于 C++ API 与类型设计、所有权和生命周期、
-  错误处理、并发、模板与 Ranges、可移植性与 ABI、安全及性能取舍；当用户要求现代 C++ 惯用法、C++23
+  错误处理、并发与协程、模板与 Ranges、可移植性与 ABI、安全及性能取舍；当用户要求现代 C++ 惯用法、C++23
   编码规范或 C++ 代码审查时使用。不要用于纯格式、命名、构建系统、CI 或包管理任务；这些任务遵循项目本地配置和文档。
 ---
 
@@ -73,18 +73,19 @@ description: >-
 
 | 任务主题 | 读取 |
 | --- | --- |
-| 初始化、枚举、比较、属性、`auto`、常量表达式 | `references/01-basics-modern-core.md` |
-| 生命周期、严格别名、类型转换、`variant`、继承与对象切片 | `references/02-lifetime-type-safety.md` |
-| 头文件、链接、模板实例化、命名空间与 C++ 模块 | `references/03-headers-and-linkage.md` |
-| `string_view`、文本编码、`format`、`print`、同步流 | `references/04-strings-and-io.md` |
-| 容器选择、失效规则、`span`/`mdspan`、ranges、生成器 | `references/05-containers-and-ranges.md` |
-| `concept`、`requires`、常量求值、转发、CRTP 与类型擦除 | `references/06-templates-and-concepts.md` |
-| RAII、智能指针、C 句柄、PImpl、PMR、`out_ptr` | `references/07-memory-and-ownership.md` |
-| `expected`、`optional`、异常、诊断与 `noexcept` | `references/08-error-handling.md` |
-| 线程、锁、原子量、取消、条件变量与同步设施 | `references/09-concurrency.md` |
-| 特殊成员、移动、值类别、转发、引用限定符与显式对象形参 | `references/10-move-semantics-and-values.md` |
-| 参数传递、返回类型、前置条件、生命周期与线程契约 | `references/11-api-design-and-contracts.md` |
-| 工具链支持、功能测试宏、ABI、C 边界、序列化与平台扩展 | `references/12-portability-modules-and-abi.md` |
-| 未定义行为、边界检查、性能分析、测试与运行时检测器 | `references/13-safety-performance-and-testing.md` |
+| 规则依据、规范等级与上游来源 | [00-upstream-and-interpretation.md](references/00-upstream-and-interpretation.md) |
+| 初始化、枚举、比较、属性、`auto`、常量表达式 | [01-basics-modern-core.md](references/01-basics-modern-core.md) |
+| 生命周期、严格别名、类型转换、`variant`、继承与对象切片 | [02-lifetime-type-safety.md](references/02-lifetime-type-safety.md) |
+| 头文件、链接、模板实例化、命名空间与 C++ 模块 | [03-headers-and-linkage.md](references/03-headers-and-linkage.md) |
+| `string_view`、文本编码、`format`、`print`、同步流 | [04-strings-and-io.md](references/04-strings-and-io.md) |
+| 容器选择、失效规则、`span`/`mdspan`、ranges、生成器 | [05-containers-and-ranges.md](references/05-containers-and-ranges.md) |
+| `concept`、`requires`、常量求值、转发、CRTP 与类型擦除 | [06-templates-and-concepts.md](references/06-templates-and-concepts.md) |
+| RAII、智能指针、C 句柄、PImpl、PMR、`out_ptr` | [07-memory-and-ownership.md](references/07-memory-and-ownership.md) |
+| `expected`、`optional`、异常、诊断与 `noexcept` | [08-error-handling.md](references/08-error-handling.md) |
+| 线程、锁、原子量、取消、条件变量、协程与同步设施 | [09-concurrency.md](references/09-concurrency.md) |
+| 特殊成员、移动、值类别、转发、引用限定符与显式对象形参 | [10-move-semantics-and-values.md](references/10-move-semantics-and-values.md) |
+| 参数传递、返回类型、前置条件、生命周期与线程契约 | [11-api-design-and-contracts.md](references/11-api-design-and-contracts.md) |
+| 工具链支持、功能测试宏、ABI、C 边界、序列化与平台扩展 | [12-portability-modules-and-abi.md](references/12-portability-modules-and-abi.md) |
+| 未定义行为、边界检查、性能分析、测试与运行时检测器 | [13-safety-performance-and-testing.md](references/13-safety-performance-and-testing.md) |
 
 一次只读取当前任务所需的引用文件，避免把所有主题同时加载到上下文。
