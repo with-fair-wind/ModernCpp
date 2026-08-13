@@ -1,0 +1,311 @@
+name: Forward compatibility
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+# 该工作流用于提前发现 runner、工具链和依赖管理器的上游漂移，不属于分支保护的
+# required checks。vcpkg main 与最新 Conan 2.x 都覆盖 Linux、macOS、Windows；
+# 放宽依赖版本的检查只在 Linux 跑一次，避免重复验证同一解析策略。
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  vcpkg-main:
+    name: Latest vcpkg (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    container: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-24.04
+            container: archlinux:base-devel
+            preset: gcc-relwithdebinfo
+            build-preset: gcc-relwithdebinfo
+            test-preset: gcc-relwithdebinfo
+            cc: gcc
+            cxx: g++
+          - name: macOS
+            os: macos-latest
+            preset: clang-relwithdebinfo
+            build-preset: clang-relwithdebinfo
+            test-preset: clang-relwithdebinfo
+            cc: clang
+            cxx: clang++
+          - name: Windows
+            # 前向检查有意使用浮动标签；required CI 使用显式的
+            # windows-2025-vs2026 固定受控基线。
+            os: windows-latest
+            preset: ninja-mc-msvc
+            build-preset: ninja-mc-msvc-relwithdebinfo
+            test-preset: ninja-mc-msvc-relwithdebinfo
+
+    steps:
+      - name: Install toolchain (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          pacman -Syu --noconfirm --needed \
+            git ca-certificates \
+            gcc cmake ninja make \
+            curl zip unzip tar pkgconf
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Mark workspace as git safe.directory (Linux)
+        if: runner.os == 'Linux'
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Install Ninja (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      - name: Install Ninja (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ninja -y
+
+      - name: Setup MSVC dev environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
+        with:
+          arch: x64
+
+      - name: Checkout and bootstrap latest vcpkg (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          git clone --depth=1 https://github.com/microsoft/vcpkg.git "$RUNNER_TEMP/vcpkg"
+          "$RUNNER_TEMP/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+
+      - name: Checkout and bootstrap latest vcpkg (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          git clone --depth=1 https://github.com/microsoft/vcpkg.git "$env:RUNNER_TEMP\vcpkg"
+          & "$env:RUNNER_TEMP\vcpkg\bootstrap-vcpkg.bat" -disableMetrics
+
+      - name: Advance manifest baseline (Linux / macOS)
+        if: runner.os != 'Windows'
+        env:
+          VCPKG_ROOT: ${{ runner.temp }}/vcpkg
+        run: |
+          "$VCPKG_ROOT/vcpkg" x-update-baseline --add-initial-baseline
+
+      - name: Advance manifest baseline (Windows)
+        if: runner.os == 'Windows'
+        env:
+          VCPKG_ROOT: ${{ runner.temp }}/vcpkg
+        shell: pwsh
+        run: '& "$env:VCPKG_ROOT\vcpkg.exe" x-update-baseline --add-initial-baseline'
+
+      - name: Configure, build and test (Linux / macOS)
+        if: runner.os != 'Windows'
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+          VCPKG_ROOT: ${{ runner.temp }}/vcpkg
+        run: |
+          cmake --preset ${{ matrix.preset }}
+          cmake --build --preset ${{ matrix.build-preset }} --parallel
+          ctest --preset ${{ matrix.test-preset }} --parallel 4
+
+      - name: Configure, build and test (Windows)
+        if: runner.os == 'Windows'
+        env:
+          VCPKG_ROOT: ${{ runner.temp }}/vcpkg
+        shell: pwsh
+        run: |
+          cmake --preset ${{ matrix.preset }} -DCMAKE_CONFIGURATION_TYPES=RelWithDebInfo
+          cmake --build --preset ${{ matrix.build-preset }} --parallel
+          ctest --preset ${{ matrix.test-preset }} --parallel 4
+
+  conan-latest:
+    name: Latest Conan 2.x (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    container: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-24.04
+            container: archlinux:base-devel
+            preset: gcc-relwithdebinfo-conan
+            build-preset: gcc-relwithdebinfo-conan
+            test-preset: gcc-relwithdebinfo-conan
+            profile: linux-gcc
+            cc: gcc
+            cxx: g++
+          - name: macOS
+            os: macos-latest
+            preset: clang-relwithdebinfo-conan
+            build-preset: clang-relwithdebinfo-conan
+            test-preset: clang-relwithdebinfo-conan
+            profile: macos-clang
+            cc: clang
+            cxx: clang++
+          - name: Windows
+            os: windows-latest
+            preset: ninja-mc-msvc-conan
+            build-preset: ninja-mc-msvc-relwithdebinfo-conan
+            test-preset: ninja-mc-msvc-relwithdebinfo-conan
+            profile: msvc
+
+    steps:
+      - name: Install toolchain (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          pacman -Syu --noconfirm --needed \
+            git ca-certificates \
+            gcc cmake ninja make \
+            python python-pip
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Mark workspace as git safe.directory (Linux)
+        if: runner.os == 'Linux'
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Setup Python (macOS / Windows)
+        if: runner.os != 'Linux'
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ninja (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      - name: Install Ninja (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ninja -y
+
+      - name: Setup MSVC dev environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
+        with:
+          arch: x64
+
+      - name: Install latest Conan (Linux)
+        if: runner.os == 'Linux'
+        run: pip install --upgrade --break-system-packages "conan>=2,<3"
+
+      - name: Install latest Conan (macOS / Windows)
+        if: runner.os != 'Linux'
+        run: python -m pip install --upgrade "conan>=2,<3"
+
+      - name: Resolve repository lockfile (Linux / macOS)
+        if: runner.os != 'Windows'
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          if [[ "${{ matrix.profile }}" == "linux-gcc" ]]; then
+            compiler_major="$(gcc -dumpfullversion -dumpversion | cut -d. -f1)"
+          else
+            compiler_major="$(clang --version | sed -nE 's/.*clang version ([0-9]+).*/\1/p' | head -n 1)"
+          fi
+          test -n "${compiler_major}"
+          conan install . \
+            --lockfile=conan.lock \
+            --profile:all=./conan/profiles/${{ matrix.profile }} \
+            --output-folder=build/${{ matrix.preset }} \
+            --build=missing \
+            -s:a compiler.version="${compiler_major}" \
+            -s build_type=RelWithDebInfo
+
+      - name: Resolve repository lockfile (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $compilerOutput = (& cl 2>&1 | Out-String)
+          $compilerMatch = [regex]::Match($compilerOutput, 'Version 19\.(\d{2})')
+          if (!$compilerMatch.Success) {
+            throw "无法从 cl.exe 输出识别 MSVC 版本：$compilerOutput"
+          }
+          $compilerMinor = [int]$compilerMatch.Groups[1].Value
+          $compilerVersion = "19$([math]::Floor($compilerMinor / 10))"
+          conan install . `
+            --lockfile=conan.lock `
+            --profile:all=./conan/profiles/${{ matrix.profile }} `
+            --output-folder=build/${{ matrix.preset }} `
+            --build=missing `
+            -c "tools.cmake.cmaketoolchain:generator=Ninja Multi-Config" `
+            -s:a compiler.version="$compilerVersion" `
+            -s build_type=RelWithDebInfo
+
+      - name: Configure, build and test (Linux / macOS)
+        if: runner.os != 'Windows'
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          cmake --preset ${{ matrix.preset }}
+          cmake --build --preset ${{ matrix.build-preset }} --parallel
+          ctest --preset ${{ matrix.test-preset }} --parallel 4
+
+      - name: Configure, build and test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cmake --preset ${{ matrix.preset }} -DCMAKE_CONFIGURATION_TYPES=RelWithDebInfo
+          cmake --build --preset ${{ matrix.build-preset }} --parallel
+          ctest --preset ${{ matrix.test-preset }} --parallel 4
+
+  conan-dependencies:
+    name: Pinned Conan + latest compatible gtest recipe (Linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    container: archlinux:base-devel
+    env:
+      CONAN_VERSION: "2.31.2"
+
+    steps:
+      - name: Install toolchain
+        run: |
+          pacman -Syu --noconfirm --needed \
+            git ca-certificates \
+            gcc cmake ninja make \
+            python python-pip
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Mark workspace as git safe.directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Install pinned Conan
+        run: pip install --upgrade --break-system-packages "conan==${CONAN_VERSION}"
+
+      - name: Relax gtest only in the disposable checkout
+        run: sed -i 's#^gtest/1\.17\.0$#gtest/[>=1.17.0 <2]#' conanfile.txt
+
+      - name: Resolve latest compatible gtest and recipe revisions
+        env:
+          CC: gcc
+          CXX: g++
+        run: |
+          compiler_major="$(gcc -dumpfullversion -dumpversion | cut -d. -f1)"
+          conan install . \
+            --lockfile="" \
+            --update \
+            --profile:all=./conan/profiles/linux-gcc \
+            --output-folder=build/gcc-relwithdebinfo-conan \
+            --build=missing \
+            -s:a compiler.version="${compiler_major}" \
+            -s build_type=RelWithDebInfo
+
+      - name: Configure, build and test
+        env:
+          CC: gcc
+          CXX: g++
+        run: |
+          cmake --preset gcc-relwithdebinfo-conan
+          cmake --build --preset gcc-relwithdebinfo-conan --parallel
+          ctest --preset gcc-relwithdebinfo-conan --parallel 4

@@ -39,27 +39,40 @@ ModernCpp/
 
 ## 前置 / Prerequisites
 
-- CMake ≥ 3.25
+- CMake ≥ 3.25；使用 `msvc` / `msvc-conan` 的 VS 2026 generator 时需 CMake ≥ 4.2
 - Ninja
-- 任一编译器：GCC ≥ 13、Clang ≥ 16、MSVC (VS 2022 17.8+)（为完整 C++23 支持）
+- 完整模块集推荐 GCC ≥ 15，或 Clang 配合具备相应 C++23 API 的标准库；Windows 基线为
+  MSVC 19.5 / v145（VS 2026）
 - **vcpkg** 或 **Conan** 任一（用于拉 GoogleTest）
+
+### 版本策略 / Version policy
+
+仓库把版本配置明确分为两类：
+
+| 类别 | 包含内容 | 策略 |
+| --- | --- | --- |
+| 滚动工具链 | Arch 容器中的 GCC、Clang、LLVM、clang-format、clang-tidy、CMake、Ninja | 使用无版本后缀命令并跟随 Arch 当前稳定包，用于尽早发现上游兼容性问题 |
+| 受控基线 | C++ / CMake 最低要求、CI runner 主版本、vcpkg release commit、依赖版本、CI Conan 版本、Conan profile / lockfile | 在仓库中明确记录并按计划更新；能精确固定的使用版本、commit 或 digest，避免依赖解析和二进制 ABI 无意漂移 |
+
+Conan CI 是两类策略的衔接点：profile 保存默认 ABI 元数据快照，`conan.lock` 固定依赖
+recipe revision；workflow 在滚动 Linux/macOS 环境中读取实际编译器主版本，保证 Conan
+package ID 与真实工具链一致。每周的 `forward-compat.yml` 在 Linux、macOS、Windows
+分别验证最新 vcpkg 与 Conan，但不参与分支保护门禁。
 
 ---
 
 ## 快速开始 / Quickstart
 
-### Linux (Ubuntu 25.10+ / Debian trixie+)
+### Linux（推荐 Arch 或其他提供新工具链的滚动发行版）
 
-部分模块用到的 C++23 ranges/generator API 需要 GCC 15 / libstdc++-15，所以推荐
-Ubuntu 25.10 或更新（apt 默认仓库就带 g++-15、clang-20）。Ubuntu 24.04 LTS 上的 g++-13
-跑模块 0–5 没问题，但 06 起的 ranges/generator demo 会缺 API。CI 在 `archlinux:base-devel`
-容器里跑（滚动发行版，当前 GCC 15.x / Clang 22.x），本地想完全对齐可用同款 Arch 容器，
-或者给 Ubuntu 24.04 加 `ubuntu-toolchain-r` ppa。
+部分模块使用较新的 C++23 ranges / generator API，需要 GCC 15+ 及配套 libstdc++，
+或具备相应标准库支持的 Clang。CI 在 `archlinux:base-devel` 容器中使用当前稳定工具链；
+本地使用 Arch 可以直接采用相同的无版本后缀命令。Ubuntu / Debian 用户也可安装满足
+上述最低要求的工具链，并确保 `gcc`、`g++`、`clang`、`clang++` 指向准备使用的版本。
 
 ```bash
-# 1) 工具链（Ubuntu 25.10+）
-sudo apt update
-sudo apt install -y build-essential g++-15 ninja-build cmake git
+# 1) 工具链（Arch Linux）
+sudo pacman -Syu --needed base-devel gcc clang llvm cmake ninja git
 
 # 2) vcpkg（一次性）
 git clone https://github.com/microsoft/vcpkg ~/vcpkg
@@ -68,14 +81,13 @@ echo 'export VCPKG_ROOT=$HOME/vcpkg' >> ~/.bashrc
 source ~/.bashrc
 
 # 3) 构建 + 测试
-export CC=gcc-15 CXX=g++-15
 cmake --preset gcc-relwithdebinfo
 cmake --build --preset gcc-relwithdebinfo --parallel
 ctest   --preset gcc-relwithdebinfo
 ```
 
-切 Clang：把 `gcc-` 换成 `clang-`，并 `apt install -y clang-20 lld-20`（C++23 库依赖
-`libstdc++-15`，已被 g++-15 包带入）。
+切换到 Clang 时使用对应的 `clang-*` preset；Linux 上 Clang 默认使用系统 libstdc++，
+因此仍需安装满足 C++23 API 要求的 GCC / libstdc++ 包。
 
 ARM64 Linux（Raspberry Pi、AWS Graviton 等）同样可用 —— vcpkg 会自动选 `arm64-linux`
 triplet，无需额外配置。
@@ -106,7 +118,7 @@ vcpkg 会根据主机自动选 `x64-osx`（Intel）或 `arm64-osx`（Apple Silic
 ### Windows (MSVC / clang-cl)
 
 ```powershell
-# 在 "x64 Native Tools Command Prompt for VS 2022" 或 Developer PowerShell 中：
+# 在 "x64 Native Tools Command Prompt for VS 2026" 或 Developer PowerShell 中：
 $env:VCPKG_ROOT = "D:\path\to\vcpkg"
 cmake --preset msvc                                  # 多配置：configure 一次
 cmake --build --preset msvc-relwithdebinfo --parallel
@@ -115,6 +127,9 @@ ctest   --preset msvc-relwithdebinfo
 
 > `msvc` 是多配置 preset：configure 一次后，`msvc-{debug,release,relwithdebinfo,minsizerel}`
 > 四个 buildPreset 共享同一份工程，按需切换无需重 configure。
+
+从 VS 2022 preset 升级后若已有 `build/msvc`，需先删除该旧构建目录再重新 configure；
+CMake 不允许在同一构建树中把 generator 从 VS 17 切换为 VS 18。
 
 clang-cl 同上，preset 改成 `clang-cl-relwithdebinfo`（单配置 Ninja，每个 build type
 一个 preset）。
@@ -155,7 +170,7 @@ vcpkg 默认猜 `x64-windows`，MinGW 用户需手动覆盖。
 | **Clang**        | macOS Intel / Apple Silicon | `x64-osx` / `arm64-osx` | `clang-*` | vcpkg 自动检测；preset 在 Linux / macOS 主机上可见 |
 | **Clang**        | Windows (MinGW)  | `x64-mingw-clang-dynamic` | `mingw-clang-*`| preset 内已固化 overlay triplet；需要 MSYS2 CLANG64 环境 |
 | **clang-cl**     | Windows (LLVM)   | `x64-windows`         | `clang-cl-*`| preset 内已固化；LLVM 官方分发，需在 VS Developer Prompt 中跑 |
-| **MSVC**         | Windows          | `x64-windows`         | `msvc-*`    | preset 内已固化；VS 2022 multi-config |
+| **MSVC**         | Windows          | `x64-windows`         | `msvc-*`    | preset 内已固化；VS 2026 multi-config（CMake 4.2+） |
 
 > **为什么这样设计**：详见 [`docs/vcpkg-guide.md §5 triplet：ABI 的命名空间`](docs/vcpkg-guide.md#5-tripletabi-的命名空间)。
 
@@ -215,23 +230,21 @@ MSVC 到这里就好了，零额外配置。
 仓库提供与 vcpkg 平行的一组 `*-conan` preset，直接读 Conan 生成的 toolchain，
 无需手动 `-DCMAKE_TOOLCHAIN_FILE=`。仓库还内置了 `conan/profiles/`：把每个常见
 平台 / 工具链的 ABI（compiler / version / libcxx / runtime …）固化成 profile 文件，
-让"哪个 preset 用哪份 profile"在仓库里就是 reproducible 的，不依赖 `conan profile detect`
+让“哪个 preset 用哪份 profile”成为受版本控制的构建输入，不依赖 `conan profile detect`
 在不同机器上嗅探的结果。
 
 ```bash
-# 1) 安装 Conan 2.x
-pip install --upgrade conan
+# 1) 安装与 CI 一致的 Conan
+pip install "conan==2.31.2"
 
-# 2) 首次：初始化 Conan home 的默认 build profile（构建工具用，与 host profile 不同）
-conan profile detect --force
-
-# 3) 用仓库内置的 host profile 装依赖到与 preset 同名的目录
-conan install . -pr=./conan/profiles/linux-gcc \
+# 2) 用仓库内置 profile 同时描述 host / build ABI，装到与 preset 同名的目录
+conan install . --profile:all=./conan/profiles/linux-gcc \
+    --lockfile=conan.lock \
     -s build_type=Debug \
     --output-folder=build/gcc-debug-conan \
     --build=missing
 
-# 4) 直接用 conan preset 配置（toolchain 自动取自 build/<preset>/conan_toolchain.cmake）
+# 3) 直接用 conan preset 配置（toolchain 自动取自 build/<preset>/conan_toolchain.cmake）
 cmake --preset gcc-debug-conan
 cmake --build --preset gcc-debug-conan
 ctest --preset gcc-debug-conan
@@ -247,9 +260,9 @@ ctest --preset gcc-debug-conan
 
 | profile | 目标场景 | 配套 preset 前缀 |
 | --- | --- | --- |
-| `conan/profiles/linux-gcc`     | Linux + GCC 15（Ubuntu 25.10 / Debian trixie）     | `gcc-*-conan` |
-| `conan/profiles/linux-clang`   | Linux + Clang 20 + libstdc++-15（Ubuntu 25.10）    | `clang-*-conan` |
-| `conan/profiles/macos-clang`   | macOS + apple-clang 16+ / libc++（Xcode 16+）      | `clang-*-conan` |
+| `conan/profiles/linux-gcc`     | Linux + GCC 默认快照；CI 按实际主版本覆盖          | `gcc-*-conan` |
+| `conan/profiles/linux-clang`   | Linux + 当前 Clang 基线 + 系统 libstdc++           | `clang-*-conan` |
+| `conan/profiles/macos-clang`   | macOS ARM64 + Apple Clang 17 / libc++（`macos-15`） | `clang-*-conan` |
 | `conan/profiles/msvc`          | Windows + MSVC ABI（cl.exe 或 clang-cl）           | `msvc-conan` / `ninja-mc-msvc-conan` / `clang-cl-*-conan` |
 | `conan/profiles/mingw-ucrt64`  | Windows + MSYS2 **UCRT64** GCC（仓库官方支持的 MinGW 入口） | `mingw-gcc-*-conan` |
 | `conan/profiles/mingw-clang64` | Windows + MSYS2 **CLANG64** Clang + libc++          | `mingw-clang-*-conan` |
@@ -261,8 +274,8 @@ ctest --preset gcc-debug-conan
 
 ```bash
 # 在 MSYS2 UCRT64 shell 里：
-conan profile detect --force      # 仅首次
-conan install . -pr=./conan/profiles/mingw-ucrt64 \
+conan install . --profile:all=./conan/profiles/mingw-ucrt64 \
+    --lockfile=conan.lock \
     -s build_type=RelWithDebInfo \
     --output-folder=build/mingw-gcc-relwithdebinfo-conan \
     --build=missing
@@ -310,7 +323,7 @@ CLANG64 把 `mingw-ucrt64` profile 名 + `mingw-gcc-*-conan` preset 名同时换
 | clang-cl     | Ninja（单配置，仅 Windows）      | 同上：`clang-cl-debug` / `clang-cl-release` / `clang-cl-relwithdebinfo` / `clang-cl-minsizerel` |
 | MinGW GCC    | Ninja（单配置，仅 Windows）      | 同上：`mingw-gcc-{debug,release,relwithdebinfo,minsizerel}` |
 | MinGW Clang  | Ninja（单配置，仅 Windows）      | 同上：`mingw-clang-{debug,release,relwithdebinfo,minsizerel}` |
-| MSVC (VS)    | Visual Studio 17 2022（多配置）  | 单一 configurePreset `msvc`，buildPreset 选 `msvc-{debug,release,relwithdebinfo,minsizerel}` |
+| MSVC (VS)    | Visual Studio 18 2026（多配置）  | 单一 configurePreset `msvc`，buildPreset 选 `msvc-{debug,release,relwithdebinfo,minsizerel}` |
 | MSVC (NMC)   | Ninja Multi-Config（多配置）     | 单一 configurePreset `ninja-mc-msvc`，buildPreset 选 `ninja-mc-msvc-{debug,release,...}` |
 
 > **Ninja Multi-Config 是什么**：CMake 4 自带的多配置生成器，跟 VS 一样能"一次 configure 出 4 种 build
@@ -338,7 +351,7 @@ ctest --preset gcc-debug
 
 切 build type / 切编译器只需换 preset 名。
 
-MSVC 举例（需在 **x64 Native Tools Command Prompt for VS 2022** 或 Developer PowerShell 里跑）：
+MSVC 举例（需在 **x64 Native Tools Command Prompt for VS 2026** 或 Developer PowerShell 里跑）：
 
 ```powershell
 cmake --preset msvc                      # 只 configure 一次，生成 4 种 config 的工程
@@ -361,7 +374,8 @@ ctest --preset msvc-release
 
 ### 格式化 / Formatting
 
-仓库根的 `.clang-format` 控制 C/C++ 风格，CI 用 `clang-format --dry-run --Werror`（Arch rolling，当前 LLVM 22.x）校验。
+仓库根的 `.clang-format` 控制 C/C++ 风格，CI 使用 Arch 当前稳定版的
+`clang-format --dry-run --Werror` 校验。
 本地一键修复 / 校验：
 
 ```bash
@@ -369,7 +383,10 @@ cmake --build --preset gcc-debug --target format        # 原地修复全部 .cp
 cmake --build --preset gcc-debug --target format-check  # 仅 dry-run，与 CI 行为一致
 ```
 
-需要 `clang-format`（推荐 22+，与 CI 的 Arch rolling LLVM 对齐）在 PATH 中；CMake 配置时 `find_program` 检测不到就跳过这两个 target。
+需要无版本后缀的 `clang-format` 在 `PATH` 中；CMake 配置时会输出实际路径和版本，
+检测不到时跳过这两个 target。`find_program` 的结果会写入 CMake cache；切换工具链后可删除
+对应 build 目录，或重新配置时添加
+`-U MCPP_CLANG_FORMAT_EXECUTABLE -U MCPP_CLANG_TIDY_EXECUTABLE` 以重新查找。
 非 C/C++ 文件（CMake、JSON、YAML、Markdown）的缩进由根目录 `.editorconfig` 兜底，VS Code / JetBrains
 等主流 IDE 会自动识别。
 
@@ -413,22 +430,27 @@ mcpp_add_test(NAME test_my_topic SOURCES tests/test_my_topic.cpp)
 
 ## 持续集成 / CI
 
-GitHub Actions（`.github/workflows/ci.yml`）在每次 push 与 PR 上跑一个 9 路 build/test 矩阵 + 一个 lint job：
+GitHub Actions（`.github/workflows/ci.yml`）在每次 push 与 PR 上跑一个 11 路 build/test
+矩阵、一个 lint job 和一个聚合门禁 job：
 
 | Job | 平台 | 内容 |
 | --- | --- | --- |
-| `linux-gcc`        | ubuntu-24.04 host + `archlinux:base-devel` container | GCC（rolling，当前 15.x）+ vcpkg + `gcc-relwithdebinfo` |
-| `linux-clang`      | ubuntu-24.04 host + `archlinux:base-devel` container | Clang（rolling，当前 22.x）+ libstdc++ + `clang-relwithdebinfo` |
+| `linux-gcc`        | ubuntu-24.04 host + `archlinux:base-devel` container | Arch 当前稳定 GCC + vcpkg + `gcc-relwithdebinfo` |
+| `linux-clang`      | ubuntu-24.04 host + `archlinux:base-devel` container | Arch 当前稳定 Clang + libstdc++ + `clang-relwithdebinfo` |
 | `linux-gcc-asan`   | ubuntu-24.04 host + `archlinux:base-devel` container | GCC + `gcc-debug` + `MCPP_ENABLE_SANITIZERS=ON`（ASan + UBSan） |
 | `linux-gcc-conan`  | ubuntu-24.04 host + `archlinux:base-devel` container | GCC + Conan 2.x + `gcc-relwithdebinfo-conan` |
-| `windows-msvc`     | windows-2022 | MSVC (VS 2022) + `msvc-relwithdebinfo` |
-| `windows-clang-cl` | windows-2022 | LLVM clang-cl + `clang-cl-relwithdebinfo` |
-| `windows-msvc-asan`| windows-2022 | MSVC + `msvc-debug` + `MCPP_ENABLE_SANITIZERS=ON`（MSVC ASan） |
-| `windows-mingw-gcc`| windows-2022 | MSYS2 UCRT64 GCC + `mingw-gcc-relwithdebinfo`（验证非-MSVC ABI 路径 + `x64-mingw-dynamic` triplet） |
-| `macos-clang`      | macos-14     | Apple Clang + `clang-relwithdebinfo`（验证 `_clang` preset 的 Darwin 分支） |
-| `lint`             | ubuntu-24.04 host + `archlinux:base-devel` container | `clang-format --dry-run --Werror` + `clang-tidy`（target `format-check` / `tidy-check`，LLVM rolling，当前 22.x） |
+| `windows-msvc`     | windows-2025-vs2026 | MSVC 19.5 / v145（VS 2026）+ `msvc-relwithdebinfo` |
+| `windows-msvc-conan` | windows-2025-vs2026 | cl.exe + Conan + `ninja-mc-msvc-conan`，仅驱动 RelWithDebInfo |
+| `windows-clang-cl` | windows-2025-vs2026 | LLVM clang-cl + `clang-cl-relwithdebinfo` |
+| `windows-msvc-asan`| windows-2025-vs2026 | MSVC + `msvc-debug` + `MCPP_ENABLE_SANITIZERS=ON`（MSVC ASan） |
+| `windows-mingw-gcc`| windows-2025-vs2026 | MSYS2 UCRT64 GCC + `mingw-gcc-relwithdebinfo`（验证非-MSVC ABI 路径 + `x64-mingw-dynamic` triplet） |
+| `macos-clang`      | macos-15 ARM64 | Apple Clang + `clang-relwithdebinfo`（验证 `_clang` preset 的 Darwin 分支） |
+| `macos-clang-conan` | macos-15 ARM64 | Apple Clang + Conan + `clang-relwithdebinfo-conan` |
+| `lint`             | ubuntu-24.04 host + `archlinux:base-devel` container | `clang-format --dry-run --Werror` + `clang-tidy`（target `format-check` / `tidy-check`，跟随 Arch 当前稳定 LLVM） |
 
-任一 job 失败即阻止 PR 合并。该矩阵不仅覆盖三种主流编译器，还把 sanitizer、Conan、MinGW、clang-cl、macOS 都纳入主线，避免某条路径"名义支持但长期未跑"。
+任一 required job 失败都会让 `required-ci` 失败并阻止 PR 合并。Linux、Windows、macOS
+各有一条 Conan 通道；每周前向兼容工作流在三平台各跑最新 vcpkg 与 Conan，只用于预警，
+不作为 required check。
 
 详细使用与配置说明：[`docs/ci-guide.md`](docs/ci-guide.md) —— CI 完整指南（触发、matrix、缓存、调试、分支保护、扩展功能）。
 

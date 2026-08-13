@@ -6,7 +6,7 @@
 # 上它是 no-op，但链接 imported target 没有副作用。
 #
 # std::jthread / std::stop_token 需要 libstdc++ 11+ / MSVC STL 17.0+ /
-# libc++ 18+（macos-14 上的 Apple Clang 仍然附带老版 libc++，没有这些设施）。
+# libc++ 18+（某些 Apple Clang / libc++ 组合仍没有这些设施）。
 # 探测一下，缺就跳过 —— 与 11_error_handling 中 <expected> 的守卫同模式。
 
 include(CheckCXXSourceCompiles)

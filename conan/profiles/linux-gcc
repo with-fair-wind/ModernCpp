@@ -1,12 +1,15 @@
 # Linux + GCC profile for ModernCpp.
 #
 # Pairs with the gcc-{debug,release,relwithdebinfo,minsizerel}-conan presets.
-# Pinned to GCC 15 to match the CI baseline (ubuntu:25.10 container,
-# default-apt g++-15). On older distros (Ubuntu 24.04 LTS still ships
-# gcc-13) override on the CLI: `-s compiler.version=13`.
+# Conan requires compiler.version in a complete profile, so the checked-in
+# value is only a local default snapshot. The Arch CI follows its rolling GCC
+# package and overrides this field from `gcc -dumpfullversion`, ensuring that
+# Conan's package ID matches the compiler that actually builds the dependency.
+# Override it locally whenever your GCC major version differs.
 #
 # Usage:
-#   conan install . -pr=./conan/profiles/linux-gcc \
+#   conan install . --profile:all=./conan/profiles/linux-gcc \
+#       --lockfile=conan.lock \
 #       -s build_type=RelWithDebInfo \
 #       --output-folder=build/gcc-relwithdebinfo-conan \
 #       --build=missing
@@ -15,7 +18,7 @@
 os=Linux
 arch=x86_64
 compiler=gcc
-compiler.version=15
+compiler.version=16
 compiler.cppstd=23
 compiler.libcxx=libstdc++11
 build_type=Release

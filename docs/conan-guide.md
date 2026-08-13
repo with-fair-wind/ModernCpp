@@ -9,7 +9,7 @@
 > 配套阅读：
 > - [`docs/cmake-presets-guide.md`](cmake-presets-guide.md) —— preset 与 toolchain hook 机制
 > - [`docs/vcpkg-guide.md`](vcpkg-guide.md) —— 平行的另一种方案
-> - [`docs/ci-guide.md`](ci-guide.md) —— CI 当前未集成 Conan，本文 §9 说明原因
+> - [`docs/ci-guide.md`](ci-guide.md) —— CI 中的 Conan 覆盖、版本策略与缓存
 
 ---
 
@@ -23,7 +23,7 @@
 6. [本仓库工作流](#6-本仓库工作流)
 7. [编译器矩阵下的 preset 设计](#7-编译器矩阵下的-preset-设计)
 8. [profile 进阶](#8-profile-进阶)
-9. [与 CI 的集成（前瞻）](#9-与-ci-的集成前瞻)
+9. [与 CI 的集成](#9-与-ci-的集成)
 10. [内置 profile（`conan/profiles/`）](#10-内置-profileconanprofiles)
 11. [常见问题与排查](#11-常见问题与排查)
 
@@ -72,7 +72,7 @@ package_id 的二进制，没有才本地 build。
 
 ```bash
 # pip 是官方推荐方式
-pip install --upgrade conan
+pip install "conan==2.31.2"
 
 # 验证版本（必须 ≥ 2.0）
 conan --version
@@ -154,7 +154,7 @@ host/build profile 做交叉编译，可分 compiler.libcxx 与 libcxx ABI 等�
 [requires]
 # Keep this version aligned with vcpkg.json's `version>=` floor so the two
 # package managers don't disagree about which gtest gets shipped.
-gtest/1.15.0
+gtest/1.17.0
 
 [generators]
 CMakeDeps
@@ -172,13 +172,13 @@ CMakeToolchain
 
 ```ini
 [requires]
-gtest/1.15.0
+gtest/1.17.0
 fmt/[>=10.0 <11.0]
 boost/1.84.0
 ```
 
 - 一行一个依赖，格式 `name/version`
-- 版本可以是精确版本（`1.15.0`）或范围（`[>=10.0 <11.0]`、`[*]`）
+- 版本可以是精确版本（`1.17.0`）或范围（`[>=10.0 <11.0]`、`[*]`）
 - 不写 version Conan 会拒绝（与 vcpkg 不同，vcpkg 不写就用 baseline 默认）
 
 #### `[generators]`：CMake 集成 generator
@@ -236,8 +236,8 @@ vcpkg 用一份 `vcpkg.cmake` 同时干"toolchain 注入"和"find_package 路径
 
 ```cmake
 # 生成的，不是手写
-set(CMAKE_C_COMPILER "/usr/bin/gcc-15" CACHE FILEPATH "")
-set(CMAKE_CXX_COMPILER "/usr/bin/g++-15" CACHE FILEPATH "")
+set(CMAKE_C_COMPILER "/usr/bin/gcc" CACHE FILEPATH "")
+set(CMAKE_CXX_COMPILER "/usr/bin/g++" CACHE FILEPATH "")
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "")
 set(CMAKE_CXX_STANDARD 23)
 # 把 Conan 的 install 目录加进 CMAKE_PREFIX_PATH
@@ -491,7 +491,7 @@ _base + _conan → _gcc-conan         → gcc-{debug,release,relwithdebinfo,mins
               → _clang-cl-conan     → clang-cl-{debug,release,relwithdebinfo,minsizerel}-conan
               → _mingw-gcc-conan    → mingw-gcc-{debug,release,relwithdebinfo,minsizerel}-conan
               → _mingw-clang-conan  → mingw-clang-{debug,release,relwithdebinfo,minsizerel}-conan
-              → msvc-conan          (VS 2022 multi-config)
+              → msvc-conan          (VS 2026 multi-config)
                   build/test: msvc-{debug,release,relwithdebinfo,minsizerel}-conan
               → ninja-mc-msvc-conan (Ninja Multi-Config + cl.exe)
                   build/test: ninja-mc-msvc-{debug,release,relwithdebinfo,minsizerel}-conan
@@ -516,19 +516,21 @@ vcpkg 下仓库为 MinGW 提供专门的 `mingw-{gcc,clang}-*` preset 固化 tri
 
 ```bash
 # UCRT64 GCC：
-conan install . -pr=./conan/profiles/mingw-ucrt64 \
+conan install . --profile:all=./conan/profiles/mingw-ucrt64 \
+    --lockfile=conan.lock \
     -s build_type=RelWithDebInfo \
     --output-folder=build/mingw-gcc-relwithdebinfo-conan --build=missing
 cmake --preset mingw-gcc-relwithdebinfo-conan
 
 # CLANG64 Clang：
-conan install . -pr=./conan/profiles/mingw-clang64 \
+conan install . --profile:all=./conan/profiles/mingw-clang64 \
+    --lockfile=conan.lock \
     -s build_type=RelWithDebInfo \
     --output-folder=build/mingw-clang-relwithdebinfo-conan --build=missing
 cmake --preset mingw-clang-relwithdebinfo-conan
 ```
 
-`-pr=` 指定 profile（`-pr` 是 `--profile:host=` 的简写）；`--output-folder` 必须与目标
+`--profile:all=` 在本机构建中同时指定 host 与 build profile；`--output-folder` 必须与目标
 preset 名一致；`-s build_type=` 必须与 preset 后缀的 build type 一致。
 
 ### Ninja Multi-Config 是什么
@@ -662,26 +664,32 @@ conan install . \
 
 ### 当前状态
 
-CI（[.github/workflows/ci.yml](../.github/workflows/ci.yml)）的 9 路矩阵里有
-**一条独立的 Conan 通道**：`linux-gcc-conan` —— GCC 15 + `linux-gcc` host profile +
-`gcc-relwithdebinfo-conan` preset，串起 `conan install` → `cmake --preset` → `ctest`
-全流程。其它 8 个 job 仍走 vcpkg 路径。
+CI（[.github/workflows/ci.yml](../.github/workflows/ci.yml)）为三个操作系统各保留一条
+required Conan 通道：
+
+| Job | ABI / profile | preset |
+| --- | --- | --- |
+| `linux-gcc-conan` | Arch 当前 GCC / `linux-gcc` | `gcc-relwithdebinfo-conan` |
+| `windows-msvc-conan` | x64 MSVC ABI / `msvc` | `ninja-mc-msvc-conan`，仅 RelWithDebInfo |
+| `macos-clang-conan` | macOS 15 ARM64 / `macos-clang` | `clang-relwithdebinfo-conan` |
+
+三条路径都串起 `conan install` → `cmake --preset` → build → `ctest`，并读取同一份
+`conan.lock`。Linux/macOS job 从实际 driver 提取编译器主版本，覆盖 profile 默认值，确保
+Conan package ID 与 runner 上真正执行的编译器一致。Windows profile 固定 MSVC 19.5 / v145 ABI。
 
 ### 为什么不把所有 job 都翻倍成 vcpkg + Conan
 
-- **GHA 时间和配额**：现在 9 个 job 的全矩阵已经够长，全翻倍到 18 个会让 PR 反馈周期翻倍
-- **风险已能被代表性地覆盖到**：Conan 与 vcpkg 都走 `find_package(GTest CONFIG)`，让
-  其中一条 Conan 通道把"CMakeDeps + build_type 一致性"这条最容易出问题的路径常态化跑通，
-  足以暴露 Conan-only 的回归（CMakeDeps 改版、profile 与 preset 漂移、build_type 失配）
-- **本地多 preset 的便利没受影响**：Conan preset 在所有平台仍可用，开发者本地切到
-  `*-conan` preset 即可
+- **代表性覆盖**：每个 OS 验证一条主流 ABI 的 Conan 路径，足以发现 profile、CMakeDeps、
+  build_type、系统标准库和 runner 架构差异
+- **控制反馈时间**：sanitizer、clang-cl 与 MinGW 等专项 job 继续走 vcpkg，避免矩阵机械翻倍
+- **本地入口不减少**：其余 `*-conan` preset 仍可由开发者按需运行
 
-### 如果未来要扩
-
-如果想把 Conan 通道从 1 条扩到多条（比如再加 `windows-msvc-conan`、`macos-clang-conan`），
-照着现有 `linux-gcc-conan` 的做法增量扩 matrix 即可。它在 `ci.yml` 里的真实写法是：
+### workflow 关键配置
 
 ```yaml
+env:
+  CONAN_VERSION: "2.31.2"
+
 # matrix include
 - name: linux-gcc-conan
   os: ubuntu-24.04
@@ -695,36 +703,72 @@ CI（[.github/workflows/ci.yml](../.github/workflows/ci.yml)）的 9 路矩阵�
 
 # steps（仅 uses-conan 为 true 的 job 跑这几个）
 - name: Setup Python (Conan)
-  if: matrix.uses-conan
-  uses: actions/setup-python@v5
+  if: matrix.uses-conan && runner.os != 'Linux'
+  uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
   with: { python-version: '3.12' }
 
-- name: Install Conan
-  if: matrix.uses-conan
-  run: pip install --upgrade conan && conan profile detect --force
+- name: Install Conan (Arch)
+  if: matrix.uses-conan && runner.os == 'Linux'
+  run: pip install --upgrade --break-system-packages "conan==${{ env.CONAN_VERSION }}"
 
 - name: Conan install
   if: matrix.uses-conan
   env: { CC: ${{ matrix.cc }}, CXX: ${{ matrix.cxx }} }
   run: |
+    compiler_major="$(gcc -dumpfullversion -dumpversion | cut -d. -f1)"
     conan install . \
-      --profile:host=./conan/profiles/${{ matrix.conan-profile }} \
+      --lockfile=conan.lock \
+      --profile:all=./conan/profiles/${{ matrix.conan-profile }} \
       --output-folder=build/${{ matrix.preset }} \
       --build=missing \
+      -s:a compiler.version="${compiler_major}" \
       -s build_type=${{ matrix.build-type }}
 
 # vcpkg setup is gated to skip Conan jobs
 - name: Setup vcpkg
   if: '!matrix.uses-conan'
-  uses: lukka/run-vcpkg@v11
-  with: { vcpkgGitCommitId: '5ee5eee0d3e9c6098b24d263e9099edcdcef6631' }
+  uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11
+  with: { vcpkgGitCommitId: '9e593bb18ea69cc5095e012465dcd675a822ed0d' }
 ```
+
+Windows 使用等价的 PowerShell 命令；macOS 使用 `clang --version` 提取 Apple Clang 主版本。
+`windows-msvc-conan` 通过 `-DCMAKE_CONFIGURATION_TYPES=RelWithDebInfo` 将多配置 generator
+收窄为 Conan 已生成依赖信息的单一配置，并在 `conan install` 中显式传入
+`-c "tools.cmake.cmaketoolchain:generator=Ninja Multi-Config"`，避免 MSVC profile 默认生成的
+Visual Studio platform 元数据与 Ninja preset 冲突。
+
+### `conan.lock`：固定 recipe revision
+
+`conanfile.txt` 中的 `gtest/1.17.0` 只固定包版本；Conan 默认仍会选择该版本最新的 recipe
+revision。仓库提交 `conan.lock`，同时固定 gtest recipe revision 及其解析出的 build
+requirements，使同一仓库 commit 不会因 ConanCenter 更新 recipe 而改变构建逻辑。
+
+正常安装只读取锁文件，不应在 required CI 中写回：
+
+```bash
+conan install . --lockfile=conan.lock \
+    --profile:all=./conan/profiles/linux-gcc \
+    -s build_type=RelWithDebInfo \
+    --output-folder=build/gcc-relwithdebinfo-conan \
+    --build=missing
+```
+
+需要受审查地升级依赖图时，显式忽略旧锁并重新生成：
+
+```bash
+conan lock create . --lockfile="" --update \
+    --profile:all=./conan/profiles/linux-gcc \
+    --lockfile-out=conan.lock --lockfile-clean
+```
+
+然后审查 `conan.lock` diff，并运行 Linux、Windows、macOS 三条 Conan CI。
 
 进一步可以做的优化：
 
 - **Conan cache**：`~/.conan2/p/` 走 `actions/cache@v4` 加速二次构建
-- **profile 一致性**：仓库已经把 `--profile:host` 指向 `conan/profiles/`，CI 与本地共用同
-  一份 ABI 描述；不要让 CI 落到 `conan profile detect` 的嗅探结果上
+- **Conan CLI**：`CONAN_VERSION` 精确固定依赖解析客户端，升级时单独提交并跑完整通道
+- **profile 一致性**：仓库把 `--profile:all` 指向 `conan/profiles/`，并只从实际编译器
+  动态覆盖 `compiler.version`；不要让 CI 落到完整的 `conan profile detect` 嗅探结果上
 - **matrix 扩展**：新增独立 `*-conan` 行（推荐），不要在同一 job 里串两遍 ——
   Conan 与 vcpkg 用同一个 `build/<preset>` 容易互相污染
 
@@ -741,9 +785,9 @@ CI（[.github/workflows/ci.yml](../.github/workflows/ci.yml)）的 9 路矩阵�
 
 | profile | 目标场景 | 配套 preset 前缀 |
 | --- | --- | --- |
-| `linux-gcc`     | Linux + GCC 15（Ubuntu 25.10 / Debian trixie）     | `gcc-*-conan` |
-| `linux-clang`   | Linux + Clang 20 + libstdc++-15（Ubuntu 25.10）    | `clang-*-conan` |
-| `macos-clang`   | macOS + apple-clang 16+ / libc++（Xcode 16+）      | `clang-*-conan` |
+| `linux-gcc`     | Linux + GCC 默认快照；CI 按实际主版本覆盖          | `gcc-*-conan` |
+| `linux-clang`   | Linux + Clang 默认快照 + 系统 libstdc++            | `clang-*-conan` |
+| `macos-clang`   | macOS 15 ARM64 + Apple Clang 17 / libc++           | `clang-*-conan` |
 | `msvc`          | Windows + MSVC ABI（cl.exe 或 clang-cl）            | `msvc-conan` / `ninja-mc-msvc-conan` / `clang-cl-*-conan` |
 | `mingw-ucrt64`  | Windows + MSYS2 **UCRT64** GCC                      | `mingw-gcc-*-conan` |
 | `mingw-clang64` | Windows + MSYS2 **CLANG64** Clang + libc++          | `mingw-clang-*-conan` |
@@ -751,20 +795,16 @@ CI（[.github/workflows/ci.yml](../.github/workflows/ci.yml)）的 9 路矩阵�
 用法：
 
 ```bash
-conan install . -pr=./conan/profiles/<name> \
+conan install . --profile:all=./conan/profiles/<name> \
+    --lockfile=conan.lock \
     -s build_type=<必须与 preset 后缀一致> \
     --output-folder=build/<presetName> \
     --build=missing
 ```
 
-**首次还需要：** `conan profile detect --force` —— 这会创建一个 _default_ profile
-作为 build profile（用于编译 cmake/ninja 等构建工具）。`-pr=` 只设了
-`--profile:host`，`--profile:build` 默认指向 `default`，所以这一步不能省略。
-如果你想完全脱离 detect，把上面的命令改成同时传两个 profile：
-
-```bash
-conan install . -pr:h=./conan/profiles/<name> -pr:b=./conan/profiles/<name> ...
-```
+`--profile:all` 同时设置 host 与 build profile，因此不依赖本机的 default profile，也无需
+预先执行 `conan profile detect`。本仓库当前都是本机构建；如果以后增加交叉编译，应改为
+分别传入 `--profile:host` 和 `--profile:build`，准确描述目标与构建机工具链。
 
 ### 为什么 MinGW profile 要写 `tools.build:compiler_executables`
 
@@ -788,8 +828,8 @@ of def file` + `collect2.exe: error: ld returned 5 exit status`。
 toolchain 文件，跨 PATH 污染都拿到正确的编译器。
 
 > **Linux / macOS profile 没加是因为：** 这些环境一般 PATH 干净（系统 gcc / 系统
-> clang / brew LLVM 不会三个同时撞），CI 也是用 `CC=gcc-15 CXX=g++-15` 这种带版本
-> 后缀的环境变量驱动。如果你的 Linux 机器上确实多个编译器混装，可以照葫芦画瓢
+> clang / brew LLVM 不会三个同时撞），CI 在 Arch 容器中用 `CC=gcc CXX=g++` 这种无版本
+> 后缀的环境变量驱动当前稳定工具链。如果你的 Linux 机器上确实多个编译器混装，可以照葫芦画瓢
 > 在对应 profile 里加 `[conf]` 段。
 
 ### MSYS2 多环境共存的 cache aliasing
@@ -830,16 +870,16 @@ output-folder 必须也是 `build/gcc-debug-conan`，不是 `build/gcc-debug`。
 ### profile 与编译器版本不匹配
 
 ```
-ERROR: Missing prebuilt package for 'gtest/1.15.0'
+ERROR: Missing prebuilt package for 'gtest/1.17.0'
 ... compiler.version=14 ...
 You can try:
     'conan install ... --build=missing'
 ```
 
-远端 binary repo 没有当前 profile 对应的二进制。两个方向：
+先确认 profile 的 `compiler.version` 与实际编译器主版本一致，再处理远端二进制可用性：
 
-- 加 `--build=missing` 让 Conan 本地 build（最常见）
-- 改 profile 的 `compiler.version` 与远端有的对齐（节省 build 时间）
+- `gcc -dumpfullversion` / `clang --version` 查看真实版本；不能为了命中缓存而伪报 ABI
+- 加 `--build=missing` 让 Conan 为真实 profile 本地构建（最常见）
 
 ### libcxx ABI 链接错乱（GCC 5+ 的双 ABI）
 

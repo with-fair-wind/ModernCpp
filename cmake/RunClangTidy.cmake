@@ -10,7 +10,7 @@
 # 加速策略：
 #   优先调用 LLVM 自带的 run-clang-tidy（根据 ${CLANG_TIDY} 同目录推断），
 #   它内部会按 -j 并发派发多个 clang-tidy 子进程；找不到则 fallback 串行。
-#   apt 装的 clang-tidy-20 通常带 /usr/bin/run-clang-tidy-20。
+#   工具链提供的 clang-tidy 通常会配套同目录下的 run-clang-tidy。
 #
 # 待分析的源文件列表交由 run-clang-tidy 从 compile_commands.json 推导（用
 # 一个 path-prefix 正则限制到 ${SOURCE_DIR}/modules/ 下）。configure 阶段
@@ -38,7 +38,7 @@ endif()
 
 # ----------------------------------------------------------------------
 # 试图找到与 ${CLANG_TIDY} 同版本的 run-clang-tidy 包装。
-# 例如 /usr/bin/clang-tidy-20 → /usr/bin/run-clang-tidy-20。
+# 例如 /usr/bin/clang-tidy → /usr/bin/run-clang-tidy。
 # ----------------------------------------------------------------------
 get_filename_component(_clang_tidy_dir  "${CLANG_TIDY}" DIRECTORY)
 get_filename_component(_clang_tidy_name "${CLANG_TIDY}" NAME)

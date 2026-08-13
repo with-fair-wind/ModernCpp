@@ -9,7 +9,8 @@ Modern C++ 学习仓库。`modules/NN_shortname/` 下的每个"模块"都是自�
 `CMakeLists.txt` 会自动 glob `modules/*/CMakeLists.txt` —— **新增模块无需改动顶层
 文件**，直接创建 `modules/NN_*/CMakeLists.txt` 即可。
 
-基线：C++23、CMake ≥ 3.25、Ninja（Linux / clang-cl）或 VS 17 2022 多配置（MSVC）。
+基线：C++23、CMake ≥ 3.25（VS 2026 generator 需 4.2+）、Ninja（Linux / clang-cl）或
+VS 18 2026 多配置（MSVC 19.5 / v145）。
 GoogleTest 是唯一的第三方依赖，通过 vcpkg 或 Conan 拉取（绝不使用 FetchContent）。
 
 ## 构建 / 测试（仅用 preset）
@@ -88,24 +89,26 @@ mcpp_add_test(NAME test_x SOURCES tests/test_x.cpp
 
 ## CI
 
-`.github/workflows/ci.yml` 在每次 push/PR 上跑一个 9 路 build/test 矩阵 + 一个 lint
+`.github/workflows/ci.yml` 在每次 push/PR 上跑一个 11 路 build/test 矩阵 + 一个 lint
 job + 一个聚合门禁 job：
 
 - **build-test 矩阵**（`fail-fast: false`，任一失败即阻 merge）：
-  - `linux-gcc`、`linux-clang`、`linux-gcc-asan`（`-DMCPP_ENABLE_SANITIZERS=ON`）、
-    `linux-gcc-conan`（vcpkg 路径外的唯一 Conan 覆盖）
-  - `windows-msvc`、`windows-clang-cl`、`windows-msvc-asan`、
+  - `linux-gcc`、`linux-clang`、`linux-gcc-asan`
+    （`-DMCPP_ENABLE_SANITIZERS=ON`）、`linux-gcc-conan`
+  - `windows-msvc`、`windows-msvc-conan`、`windows-clang-cl`、`windows-msvc-asan`、
     `windows-mingw-gcc`（MSYS2 UCRT64）
-  - `macos-clang`（Apple Clang，验证 `clang-*` preset 的 Darwin 分支）
+  - `macos-clang`、`macos-clang-conan`（macOS 15 ARM64 / Apple Clang）
 - **lint** job：`clang-format --dry-run --Werror`（`format-check` target）+
   `clang-tidy`（`tidy-check` target），都跑在 `clang-relwithdebinfo` configure
   之上。Linux jobs 在 `archlinux:base-devel` 容器里跑，pacman 滚动提供 GCC / Clang
-  / clang-format / clang-tidy（当前 GCC 15.x、Clang 22.x，与本地 LLVM 22+ 一致）。
+  / clang-format / clang-tidy 的当前稳定包；工具统一使用无版本后缀命令。
 - **required-ci** 聚合门禁：`needs: [build-test, lint]` + `if: always()`，把整个
   矩阵的成功/失败汇总成单一稳定状态，分支保护规则只需 require 这一个就够。
 
 vcpkg 的二进制产物通过 `x-gha` 缓存（每个 vcpkg job 都启用 `VCPKG_BINARY_SOURCES`）。
-Conan 路径不走 vcpkg cache。完整指南见 `docs/ci-guide.md`。
+Conan 路径不走 vcpkg cache，并统一读取已提交的 `conan.lock`。独立的
+`.github/workflows/forward-compat.yml` 每周在 Linux/macOS/Windows 滚动验证最新
+vcpkg/Conan，不属于 required checks。完整指南见 `docs/ci-guide.md`。
 
 ## 需要保留的约定
 
@@ -129,7 +132,7 @@ Conan 路径不走 vcpkg cache。完整指南见 `docs/ci-guide.md`。
 ## 提交流程（针对 C++ 源文件改动）
 
 CI 的 lint job 用 `archlinux:base-devel` 容器里 pacman 滚动的 clang-format / clang-tidy
-（当前 LLVM 22.x）跑 `--target format-check` + `--target tidy-check`，且 clang-tidy 用
+跑 `--target format-check` + `--target tidy-check`，且 clang-tidy 用
 `--warnings-as-errors=*` —— 任何 warning 都会让 PR 红。**修改 `modules/**/*.cpp` 或
 `modules/**/*.h*` 后，commit 之前必须本地依次跑下面三条命令，全部 exit 0 才提交**：
 
@@ -139,13 +142,10 @@ cmake --build --preset <你的 preset> --target format-check  # 复核
 cmake --build --preset <你的 preset> --target tidy-check    # 静态检查
 ```
 
-为了让本地 clang-format / clang-tidy 输出与 CI 一致：
-- Windows：`scoop install llvm@22.1.4`（或更高 22.x patch）
-- macOS：`brew install llvm@22`
-- Linux：用 Arch / Tumbleweed 等滚动发行版；或 apt.llvm.org 装 22
-
-低于 22 的版本会出现"本地通过 / CI 失败"的版本错配（默认值随 LLVM 大版本会变 ——
-如 `IndentPPDirectives`、`AlignTrailingComments`，以及 21+ 新增的 lint check）。
+为了让本地 clang-format / clang-tidy 输出与 CI 尽量一致，应通过 Scoop、Homebrew、Arch
+等包管理器安装当前稳定 LLVM，并让无版本后缀的 `clang-format` / `clang-tidy` 位于
+`PATH` 前部。LLVM 跨大版本可能调整格式默认值或增加 lint check，因此升级后应重新执行
+format-check / tidy-check。
 
 **不需要跑这一套的场景**：只改文档（`*.md`）/ CI yml / CMakeLists / .clang-* 配置时
 （这些都不在 format-check / tidy-check 的输入集里）—— 但如果同时改了 `.clang-format`
