@@ -64,6 +64,15 @@ if(NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 endif()
 
+# MinGW 动态 triplet 会在每次链接后调用 vcpkg 的 z-applocal 部署运行库。
+# 多个 Ninja 链接边同时执行时，Windows 偶尔会短暂锁定刚生成的可执行文件，
+# 导致 z-applocal 报“文件正由另一进程使用”。只串行化链接边（包含其部署命令），
+# 编译仍保持并行，从而消除竞争而不显著拖慢构建。
+if(MINGW AND CMAKE_GENERATOR MATCHES "Ninja")
+    set_property(GLOBAL APPEND PROPERTY JOB_POOLS mcpp_mingw_link_pool=1)
+    set(CMAKE_JOB_POOL_LINK mcpp_mingw_link_pool)
+endif()
+
 # ----------------------------------------------------------------------------
 # 顶层选项
 # ----------------------------------------------------------------------------

@@ -125,7 +125,11 @@ function(mcpp_add_test)
         FOLDER "modules/${_module}/tests")
     _mcpp_apply_standard(${_target} "${ARG_STANDARD}")
 
+    # 把测试枚举推迟到 CTest 启动阶段。POST_BUILD 会让多个测试程序在并行构建中
+    # 同时生成发现结果；部分平台上可能读到尚未完整写入的 JSON。PRE_TEST 会串行
+    # 完成枚举，同时避免在“仅构建”时运行目标程序。
     gtest_discover_tests(${_target}
+        DISCOVERY_MODE PRE_TEST
         TEST_PREFIX "${_module}."
         PROPERTIES LABELS "${_module}")
 endfunction()
