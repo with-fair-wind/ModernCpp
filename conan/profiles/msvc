@@ -4,19 +4,19 @@
 # (all of which target the MSVC ABI / MSVC STL).
 #
 # compiler.version mapping (Conan 2):
-#   192 -> VS 2019
-#   193 -> VS 2022 17.0 - 17.9
-#   194 -> VS 2022 17.10+ (recommended; matches windows-2022 GH runners and
-#                          the 17.10+ C++23 library improvements this repo
-#                          relies on under /std:c++latest)
-# Override on the CLI if your Visual Studio is older: `-s compiler.version=193`.
+#   193 -> VS 2022 17.0 - 17.9（v143 / MSVC 19.3）
+#   194 -> VS 2022 17.10+（v143 / MSVC 19.4）
+#   195 -> VS 2026（v145 / MSVC 19.5；本仓库受控 Windows 基线）
+# 使用旧版 Visual Studio 时可通过 CLI 覆盖，例如：`-s compiler.version=194`；同时应从
+# 对应的 Developer Prompt 使用 `ninja-mc-msvc-conan`，因为 `msvc-conan` 明确生成 VS 2026 工程。
 #
-# compiler.runtime=dynamic + runtime_type matching build_type produces MD/MDd
-# linkage, which is what the bundled vcpkg `x64-windows` triplet uses too —
-# so binaries from either ecosystem are interchangeable.
+# compiler.runtime=dynamic 配合与 build_type 对应的 runtime_type，可生成 /MD 或 /MDd
+# 链接方式，与仓库使用的 vcpkg `x64-windows` triplet 的 CRT 链接策略一致。这能够降低
+# 运行库不匹配风险，但不保证不同包生态生成的二进制具备 ABI 兼容性。
 #
 # Usage (in an x64 Native Tools Command Prompt or Developer PowerShell):
-#   conan install . -pr=./conan/profiles/msvc ^
+#   conan install . --profile:all=./conan/profiles/msvc ^
+#       --lockfile=conan.lock ^
 #       -s build_type=RelWithDebInfo ^
 #       --output-folder=build/clang-cl-relwithdebinfo-conan ^
 #       --build=missing
@@ -25,7 +25,7 @@
 os=Windows
 arch=x86_64
 compiler=msvc
-compiler.version=194
+compiler.version=195
 compiler.cppstd=23
 compiler.runtime=dynamic
 build_type=Release

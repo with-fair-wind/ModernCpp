@@ -6,6 +6,7 @@ on:
 jobs:
   format:
     runs-on: ubuntu-24.04
+    timeout-minutes: 45
     container: archlinux:base-devel
     # Skip if the last commit was made by the bot (prevents infinite loop)
     if: github.event.head_commit.author.name != 'github-actions[bot]'
@@ -15,24 +16,24 @@ jobs:
       contents: write
     steps:
       - name: Export GitHub Actions cache env
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
       - name: Install git + toolchain
-        run: pacman -Sy --noconfirm --needed git ca-certificates clang lld llvm cmake ninja curl zip unzip tar pkgconf
+        run: pacman -Syu --noconfirm --needed git ca-certificates clang lld llvm cmake ninja curl zip unzip tar pkgconf
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Git safe directory
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
+        uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11
         with:
-          vcpkgGitCommitId: '5ee5eee0d3e9c6098b24d263e9099edcdcef6631'
+          vcpkgGitCommitId: '9e593bb18ea69cc5095e012465dcd675a822ed0d'
 
       - name: Configure
         env:
@@ -52,6 +53,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No formatting changes needed."
           else
-            git commit -m "style: auto-format with CI clang-format (Arch LLVM 22)"
+            git commit -m "style: auto-format with Arch clang-format"
             git push
           fi

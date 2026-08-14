@@ -67,7 +67,6 @@ conan_toolchain.cmake
 conan_provider.cmake
 conanbuildinfo*
 graph_info.json
-conan.lock
 
 # clangd / LSP cache
 .cache/

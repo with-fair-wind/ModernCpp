@@ -391,7 +391,7 @@ CMake Error: No such preset in CMakePresets.json: "gcc-debug"
 
 $ cmake --list-presets
 Available configure presets:
-  "msvc"            - MSVC (VS 2022, multi-config)
+  "msvc"            - MSVC (VS 2026, multi-config)
   "clang-cl-debug"  - clang-cl Debug
   ...
 # 注意：gcc-* 与 clang-* 都不会出现
@@ -438,12 +438,15 @@ mingw-clang）× 4 个 build types × 2 套依赖管理器（vcpkg / Conan）就
 ```json
 {
     "name": "msvc",
-    "displayName": "MSVC (VS 2022, multi-config)",
-    "generator": "Visual Studio 17 2022",
+    "displayName": "MSVC (VS 2026, multi-config)",
+    "generator": "Visual Studio 18 2026",
     "architecture": { "value": "x64", "strategy": "set" },
     "cacheVariables": { "VCPKG_TARGET_TRIPLET": "x64-windows" }
 }
 ```
+
+`Visual Studio 18 2026` generator 从 CMake 4.2 起提供；项目其余 Ninja preset 仍保持
+CMake 3.25 的通用最低要求。
 
 ```bash
 cmake --preset msvc                          # configure 一次（生成 .sln 工程）

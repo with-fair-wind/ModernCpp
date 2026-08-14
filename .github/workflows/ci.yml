@@ -12,12 +12,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build-test:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
     # Linux jobs run inside an archlinux:base-devel container so the matrix
-    # tracks LLVM/GCC 上游（rolling release，当前 GCC 15.x / Clang 22.x），
+    # tracks LLVM/GCC 上游的当前稳定包（rolling release），
     # 与本地 scoop / Homebrew / Arch 的版本一致 —— 减少 lint/format 与本地的
     # 版本错配。host runner 保持 ubuntu-24.04（容器里跑实际工具链就行）。
     # base-devel 镜像已自带 base-devel group（gcc + make 等）。
@@ -65,14 +69,27 @@ jobs:
             build-type: RelWithDebInfo
 
           - name: windows-msvc
-            os: windows-2022
+            os: windows-2025-vs2026
             preset: msvc
             build-preset: msvc-relwithdebinfo
             test-preset:  msvc-relwithdebinfo
 
+          # 使用 cl.exe + Ninja Multi-Config 验证 Windows/MSVC ABI 的 Conan
+          # 路径；把配置集合收窄到 RelWithDebInfo，避免 Conan 单配置依赖与
+          # 多配置 generator 的其余配置不匹配。
+          - name: windows-msvc-conan
+            os: windows-2025-vs2026
+            preset: ninja-mc-msvc-conan
+            build-preset: ninja-mc-msvc-relwithdebinfo-conan
+            test-preset:  ninja-mc-msvc-relwithdebinfo-conan
+            uses-conan: true
+            conan-profile: msvc
+            build-type: RelWithDebInfo
+            extra-config: -DCMAKE_CONFIGURATION_TYPES=RelWithDebInfo
+
           # clang-cl on Windows is otherwise unverified.
           - name: windows-clang-cl
-            os: windows-2022
+            os: windows-2025-vs2026
             preset: clang-cl-relwithdebinfo
             build-preset: clang-cl-relwithdebinfo
             test-preset:  clang-cl-relwithdebinfo
@@ -80,7 +97,7 @@ jobs:
           # MSVC + ASan: catches Windows-specific UB / heap issues that the
           # Linux ASan job can't see (different allocator, different ABI).
           - name: windows-msvc-asan
-            os: windows-2022
+            os: windows-2025-vs2026
             preset: msvc
             build-preset: msvc-debug
             test-preset:  msvc-debug
@@ -90,7 +107,7 @@ jobs:
           # family, which targets a non-MSVC ABI (needs the x64-mingw-dynamic
           # vcpkg triplet, pinned in the preset).
           - name: windows-mingw-gcc
-            os: windows-2022
+            os: windows-2025-vs2026
             preset: mingw-gcc-relwithdebinfo
             build-preset: mingw-gcc-relwithdebinfo
             test-preset:  mingw-gcc-relwithdebinfo
@@ -104,17 +121,29 @@ jobs:
           # use those features should `try_compile`-gate them rather than
           # relying on this job to validate them.
           - name: macos-clang
-            os: macos-14
+            os: macos-15
             preset: clang-relwithdebinfo
             cc: clang
             cxx: clang++
 
+          - name: macos-clang-conan
+            os: macos-15
+            preset: clang-relwithdebinfo-conan
+            cc: clang
+            cxx: clang++
+            uses-conan: true
+            conan-profile: macos-clang
+            build-type: RelWithDebInfo
+
     env:
       VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+      # Conan CLI 属于依赖解析基础设施，固定版本以避免同一 commit 因客户端升级
+      # 产生不同的 package ID、生成文件或命令行为。
+      CONAN_VERSION: "2.31.2"
 
     steps:
       - name: Export GitHub Actions cache env (vcpkg binary cache)
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
@@ -123,13 +152,14 @@ jobs:
       # actions/checkout 在容器里跑：若 PATH 上没有 git，它会走 REST API
       # fallback 拉 tarball（没有 .git 目录）。`format` / `tidy` target 用
       # `EXISTS ${CMAKE_SOURCE_DIR}/.git` 守卫，缺 .git 会让 target 静默
-      # 不注册。Arch base-devel 镜像不含 git —— 单独 pacman 装一份。
+      # 不注册。Arch base-devel 镜像不含 git —— checkout 前先完整升级系统并安装。
+      # 后续安装步骤只用 pacman -S，避免 Arch 不支持的 partial upgrade。
       - name: Pre-install git (Arch container)
         if: runner.os == 'Linux'
         run: |
-          pacman -Sy --noconfirm --needed git ca-certificates
+          pacman -Syu --noconfirm --needed git ca-certificates
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       # actions/checkout 自己也跑过 safe.directory，但它用了临时 HOME，写完就失效。
       # 后续 step（format/tidy target 里调 `git ls-files`）以容器 root 身份跑，
@@ -154,7 +184,7 @@ jobs:
       - name: Install toolchain (Arch container)
         if: runner.os == 'Linux'
         run: |
-          pacman -Sy --noconfirm --needed \
+          pacman -S --noconfirm --needed \
             gcc clang lld llvm \
             cmake ninja make ccache \
             curl zip unzip tar pkgconf \
@@ -175,14 +205,14 @@ jobs:
       # toolchain that's awkward to wire up.
       - name: Setup ccache (Linux/macOS)
         if: runner.os == 'Linux' || runner.os == 'macOS'
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639 # v1.2
         with:
           key: ${{ matrix.name }}-${{ matrix.preset }}
           max-size: 500M
 
       - name: Setup MSVC dev environment
         if: runner.os == 'Windows' && !matrix.uses-msys2
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
         with:
           arch: x64
 
@@ -192,7 +222,7 @@ jobs:
       # the msys2 shell so the UCRT64 bin dir takes precedence.
       - name: Setup MSYS2 (UCRT64)
         if: matrix.uses-msys2
-        uses: msys2/setup-msys2@v2
+        uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2
         with:
           msystem: UCRT64
           update: false
@@ -206,32 +236,55 @@ jobs:
       # ------------------------------------------------------------------
       - name: Setup Python (Conan)
         if: matrix.uses-conan && runner.os != 'Linux'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
-      - name: Install Conan
-        if: matrix.uses-conan
+      - name: Install Conan (Arch)
+        if: matrix.uses-conan && runner.os == 'Linux'
         run: |
-          pip install --upgrade --break-system-packages conan
-          # 不再调 `conan profile detect` —— 它把 default profile 写成宿主当前
-          # 编译器（在 Arch 上是 GCC 16），而 conan 2.28.1 settings.yml 最高
-          # 只承认到 15.2 → "Invalid setting '16'". 后续 install 用
-          # --profile:all 把 host + build profile 同时指向 conan/profiles/...，
-          # 完全绕开 default profile，所以 detect 这步可以省。
+          pip install --upgrade --break-system-packages "conan==${{ env.CONAN_VERSION }}"
+          # 不调用 `conan profile detect`：后续用 --profile:all 将 host 与 build
+          # profile 都指向仓库内受版本控制的 ABI 描述。
 
-      - name: Conan install
-        if: matrix.uses-conan
+      - name: Install Conan (Windows / macOS)
+        if: matrix.uses-conan && runner.os != 'Linux'
+        run: python -m pip install --upgrade "conan==${{ env.CONAN_VERSION }}"
+
+      - name: Conan install (Linux / macOS)
+        if: matrix.uses-conan && runner.os != 'Windows'
         env:
           CC:  ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
         run: |
           # --profile:all 同时设 host & build profile —— 避免 build profile
           # fallback 到 default（detect 写的、可能含 conan 还不认识的版本号）。
+          # 滚动 runner 的编译器版本可能超过 profile 默认值；从实际 driver
+          # 提取主版本，确保 Conan package ID / ABI 元数据与真实编译器一致。
+          if [[ "${{ matrix.conan-profile }}" == "linux-gcc" ]]; then
+            compiler_major="$(gcc -dumpfullversion -dumpversion | cut -d. -f1)"
+          else
+            compiler_major="$(clang --version | sed -nE 's/.*clang version ([0-9]+).*/\1/p' | head -n 1)"
+          fi
+          test -n "${compiler_major}"
           conan install . \
+            --lockfile=conan.lock \
             --profile:all=./conan/profiles/${{ matrix.conan-profile }} \
             --output-folder=build/${{ matrix.preset }} \
             --build=missing \
+            -s:a compiler.version="${compiler_major}" \
+            -s build_type=${{ matrix.build-type }}
+
+      - name: Conan install (Windows)
+        if: matrix.uses-conan && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          conan install . `
+            --lockfile=conan.lock `
+            --profile:all=./conan/profiles/${{ matrix.conan-profile }} `
+            --output-folder=build/${{ matrix.preset }} `
+            --build=missing `
+            -c "tools.cmake.cmaketoolchain:generator=Ninja Multi-Config" `
             -s build_type=${{ matrix.build-type }}
 
       # ------------------------------------------------------------------
@@ -240,9 +293,9 @@ jobs:
       # ------------------------------------------------------------------
       - name: Setup vcpkg
         if: '!matrix.uses-conan'
-        uses: lukka/run-vcpkg@v11
+        uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11
         with:
-          vcpkgGitCommitId: '5ee5eee0d3e9c6098b24d263e9099edcdcef6631'
+          vcpkgGitCommitId: '9e593bb18ea69cc5095e012465dcd675a822ed0d'
 
       # Triplet selection is pinned in CMakePresets.json on Windows; on Linux
       # vcpkg auto-detects from the host (x64-linux). No env override needed.
@@ -315,7 +368,7 @@ jobs:
       # which cases failed without scrolling through the raw build log.
       - name: Upload ctest JUnit results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ctest-results-${{ matrix.name }}
           path: ${{ github.workspace }}/build/${{ matrix.preset }}/ctest-results.xml
@@ -324,8 +377,9 @@ jobs:
   lint:
     name: clang-format + clang-tidy
     runs-on: ubuntu-24.04
+    timeout-minutes: 45
     # Arch（rolling release）容器：clang-format / clang-tidy 始终跟 LLVM 上游
-    # 对齐（当前是 22.x），与 scoop / Homebrew / Arch 本地的 LLVM 版本一致，
+    # 对齐，与 scoop / Homebrew / Arch 本地的当前 LLVM 版本一致，
     # 避免本地 fmt 完 push 上来 CI 还报 format 不一致的版本错配。代价是：
     # LLVM 升大版本时偶尔需要跟着 reformat 一遍 —— 通常每年一两次的事。
     container: archlinux:base-devel
@@ -333,7 +387,7 @@ jobs:
       VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
     steps:
       - name: Export GitHub Actions cache env (vcpkg binary cache)
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
@@ -342,12 +396,12 @@ jobs:
       # 关键：在 actions/checkout 之前先装 git，否则 checkout 走 REST API
       # 不带 .git 目录，`format` / `tidy` target 的 `EXISTS .git` 守卫失败
       # 会导致 target 静默不注册。Arch 镜像 base-devel 已含 base-devel group，
-      # 但默认不带 git / ca-certificates —— 单独装一遍。
+      # 但默认不带 git / ca-certificates —— checkout 前完整升级并安装它们。
       - name: Pre-install git (Arch container)
         run: |
-          pacman -Sy --noconfirm --needed git ca-certificates
+          pacman -Syu --noconfirm --needed git ca-certificates
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       # 同 build-test：注册 workspace 为 safe.directory，否则容器 root 跑
       # `git ls-files`（format/tidy 都依赖）会被 dubious ownership 拒绝。
@@ -362,16 +416,16 @@ jobs:
       # `env: 'python3': No such file or directory`。
       - name: Install toolchain (Arch — clang/clang-format/clang-tidy + cmake/ninja)
         run: |
-          pacman -Sy --noconfirm --needed \
+          pacman -S --noconfirm --needed \
             clang lld llvm \
             cmake ninja make \
             curl zip unzip tar pkgconf \
             python
 
       - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
+        uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11
         with:
-          vcpkgGitCommitId: '5ee5eee0d3e9c6098b24d263e9099edcdcef6631'
+          vcpkgGitCommitId: '9e593bb18ea69cc5095e012465dcd675a822ed0d'
 
       # Configure + a no-op build: configure produces compile_commands.json,
       # the format-check / tidy-check targets read it. We don't need to build
@@ -392,6 +446,7 @@ jobs:
   required-ci:
     name: required-ci
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     if: ${{ always() }}
     needs:
       - build-test
