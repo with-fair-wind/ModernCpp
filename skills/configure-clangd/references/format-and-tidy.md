@@ -91,7 +91,7 @@ Diagnostics:
 - clangd 会合并 `.clang-tidy` 与 `.clangd` 中的 clang-tidy 设置；冲突时 `.clangd` 优先，同一 clangd 配置中的 `Remove` 优先于 `Add`。
 - `FastCheckFilter: Strict` 在当前 clangd 中是默认值；仅在核对目标版本后，为明确记录团队意图或调整策略而显式设置。某些检查不能或不适合在 clangd 中运行。
 - 团队规则应集中在 `.clang-tidy`，便于 CLI 和 CI 复用；`.clangd` 只保留编辑器性能或路径范围所需的差异。
-- `CheckOptions` 两种文件的 YAML 形态不同，复制时应参照当前 clangd 与 clang-tidy 文档。
+- `.clangd` 的 `Diagnostics.ClangTidy.CheckOptions` 使用映射；`.clang-tidy` 接受的表示形式会随 LLVM 版本变化，当前文档使用映射，旧版本还可能接受由 `key`/`value` 组成的序列。不要在两种文件间盲目复制；用目标版本的文档、`clang-tidy --dump-config` 和受支持的 `--verify-config` 确认最终形态。
 
 ## 分层与例外
 

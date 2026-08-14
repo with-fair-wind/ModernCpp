@@ -35,7 +35,7 @@ description: 为现有 C/C++ 项目设计、生成、审查和排查 clangd 工�
 
 优先解决 `compile_commands.json`。读取其中代表性翻译单元，核对工作目录、编译器、目标三元组（target triple）、语言标准、宏和头文件搜索路径是否与成功构建一致。
 
-- CMake + Ninja/Makefiles：启用 `CMAKE_EXPORT_COMPILE_COMMANDS`，使用项目既有的配置（configure）入口生成编译命令数据库。
+- CMake + Ninja/Makefiles：启用 `CMAKE_EXPORT_COMPILE_COMMANDS`，使用项目既有的配置（configure）入口生成编译命令数据库。正式构建使用不导出数据库的生成器时，再建立语义一致的工具专用配置。
 - 其他构建系统：优先使用其原生导出器；没有原生支持时再考虑 Bear 等构建捕获工具。
 - 所有文件确实共享相同参数的简单项目：可使用 `compile_flags.txt`，并说明它不能向后台索引提供完整源文件清单。
 - 多配置、多 Preset 或多目标项目：明确一个当前使用的编译命令数据库，或按源码范围拆分配置；不要无条件合并互相冲突的命令。
@@ -51,8 +51,8 @@ clangd 默认会从源文件目录向父目录搜索编译命令数据库，并�
 - 用 `CompilationDatabase` 修正编译命令数据库位置；默认 `Ancestors` 能工作时省略。
 - 用 `Add` 或 `Remove` 修复已复现的命令兼容问题，不复制构建系统的策略。
 - 仅在编译器驱动程序识别错误时设置 `Compiler`；它会影响参数解析和目标三元组推断。
-- 默认保留后台索引；对生成代码或第三方树使用条件片段跳过。
-- 在解析正确后再启用 `MissingIncludes`、`UnusedIncludes` 和 clang-tidy。
+- 默认保留后台索引；需要跳过特定翻译单元时使用条件片段，并说明这不会阻止其头文件被其他翻译单元索引，也不会禁用已打开文件的动态索引。
+- 在解析正确后再按目标 clangd 版本确认 Include Cleaner 默认值，并显式启用需要的 `MissingIncludes`、`UnusedIncludes` 与 clang-tidy 策略。
 - 将内联提示（inlay hints）、全作用域补全等视为体验选项，不与正确性配置混在一起。
 
 创建或修改具体片段时读取 [configuration-patterns.md](references/configuration-patterns.md)。
@@ -106,7 +106,7 @@ clang-tidy --help
 - 项目内与标准库头可解析，跳转和补全指向正确工具链；
 - `.clang-format` 和 `.clang-tidy` 没有未知选项；
 - 编辑器实时诊断与命令行/CI 的差异有明确原因；
-- 新配置没有让第三方代码或生成目录进入不必要的诊断、静态检查或后台索引范围。
+- 路径条件对直接打开文件、直接翻译单元和被包含头文件的作用符合预期，没有把第三方代码或生成目录误纳入不必要的诊断与静态检查范围。
 
 ### 7. 按证据排障
 

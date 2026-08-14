@@ -8,6 +8,7 @@
 - [Include Cleaner](#include-cleaner)
 - [按路径拆分](#按路径拆分)
 - [多个构建目录](#多个构建目录)
+- [CMake 生成器与 Unity Build](#cmake-生成器与-unity-build)
 - [GCC、MinGW 与交叉编译器](#gccmingw-与交叉编译器)
 - [clang-cl 与 MSVC 风格参数](#clang-cl-与-msvc-风格参数)
 - [仅有统一参数的简单项目](#仅有统一参数的简单项目)
@@ -27,7 +28,9 @@ CompileFlags:
 
 ## Include Cleaner
 
-在编译命令准确、项目能无误解析后启用：
+先确认目标版本的默认值。clangd 17 及更高版本默认使用 `UnusedIncludes: Strict`，而 `MissingIncludes` 默认仍为 `None`。排查解析或编译命令问题时，可以暂时把 `UnusedIncludes` 设为 `None`；解析稳定后恢复默认值，或显式记录团队策略。
+
+需要同时报告缺失和未使用的直接包含时，使用：
 
 ```yaml
 Diagnostics:
@@ -35,7 +38,7 @@ Diagnostics:
   UnusedIncludes: Strict
 ```
 
-对聚合头文件（umbrella header）、宏密集框架和平台头文件出现误报时，先使用 IWYU pragma 或当前 clangd 支持的 `Diagnostics.Includes` 过滤能力，不要全局关闭全部诊断。
+不要仅为重复默认值而增加配置。对聚合头文件（umbrella header）、宏密集框架和平台头文件出现误报时，先使用 IWYU pragma 或当前 clangd 支持的 `Diagnostics.Includes` 过滤能力，不要全局关闭全部诊断。
 
 ## 按路径拆分
 
@@ -50,7 +53,9 @@ Diagnostics:
   Suppress: '*'
 ```
 
-只在仓库确实包含并直接打开这些文件时加入排除片段。依赖的系统头文件通常不需要复制到项目树或全局抑制。
+`PathMatch` 匹配当前应用配置的文件。`Index.Background: Skip` 只跳过该范围内作为翻译单元的后台索引；这些文件作为头文件被范围外翻译单元包含时仍可能进入索引，已打开文件也仍会建立动态索引。`Diagnostics.Suppress` 同样不是“永不解析该目录”的边界。
+
+只在仓库确实包含这些文件，并需要抑制直接打开时的诊断或跳过直接翻译单元的后台索引时加入该片段。依赖的系统头文件通常不需要复制到项目树或全局抑制。
 
 ## 多个构建目录
 
@@ -63,6 +68,12 @@ Diagnostics:
 5. 只有源码树能按路径明确映射到不同构建目标时，才用多个 `If.PathMatch` + `CompilationDatabase` 片段。
 
 不要直接编辑生成的 JSON。合并编译命令数据库时必须定义同一源文件出现多条命令时的选择规则，否则 clangd 实际采用的配置不可预测。
+
+## CMake 生成器与 Unity Build
+
+`CMAKE_EXPORT_COMPILE_COMMANDS` 主要由 Makefile 和 Ninja 生成器实现，Visual Studio 与 Xcode 生成器会忽略它。正式构建使用这类生成器时，优先通过项目既有的 Preset 或包装入口增加一个工具专用的 Ninja/Makefiles 配置；让它使用同一编译器、工具链文件、依赖配置、构建类型、功能开关和 ABI 相关选项。在 Windows 上，Ninja 配置仍可在正确的开发者环境中驱动 MSVC 或 clang-cl。
+
+CMake 明确说明编译命令数据库不能良好表达 `UNITY_BUILD`。工具专用配置应关闭 Unity Build，使数据库为独立源文件生成命令，并抽查宏、生成头文件路径、目标选项和 ABI 标志与正式构建一致。不要为了得到数据库而创建语义不同的“近似构建”。
 
 ## GCC、MinGW 与交叉编译器
 

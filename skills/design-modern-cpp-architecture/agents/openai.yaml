@@ -1,0 +1,4 @@
+interface:
+  display_name: "现代 C++ 架构设计"
+  short_description: "设计与评审基于 C++23 的系统架构、模式和可复用框架"
+  default_prompt: "使用 $design-modern-cpp-architecture 为此 C++23 项目提出可验证的架构设计与模式选型。"
