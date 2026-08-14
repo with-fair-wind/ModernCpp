@@ -60,7 +60,7 @@
 - vcpkg 路径下能编译，Conan 路径下可能因 build_type 不一致直接炸链接
 - 修了一处可能引入静态检查/格式问题
 
-**CI 是这种多环境项目的"保险丝"**。本仓库的 9 路 build/test 矩阵 + 1 个 lint job 就是
+**CI 是这种多环境项目的"保险丝"**。本仓库的 11 路 build/test 矩阵 + 1 个 lint job 就是
 为这个目标量身设计的。
 
 ---
@@ -78,10 +78,10 @@ GitHub 自家的 CI/CD 平台。开公开仓库**完全免费**，私有仓库**
 | **Workflow** | 一个 .yml 文件 = 一个工作流 | `.github/workflows/ci.yml` |
 | **Job** | Workflow 里的独立任务，跑在自己的虚拟机 | `build-test`、`lint` |
 | **Step** | Job 里的一步命令（脚本或 action 调用） | "Configure"、"Build" 等 |
-| **Runner** | 跑 job 的虚拟机 | `ubuntu-24.04` / `windows-2022` |
-| **Action** | 别人写好的可复用步骤 | `actions/checkout@v4` 等 |
-| **Matrix** | 让一个 job 用不同参数并行跑 N 次 | linux-gcc / linux-clang / linux-gcc-asan / linux-gcc-conan / windows-msvc / windows-clang-cl / windows-msvc-asan / windows-mingw-gcc / macos-clang |
-| **Artifact** | 跑完后保留的文件（二进制、报告） | 本项目暂未使用 |
+| **Runner** | 跑 job 的虚拟机 | `ubuntu-24.04` / `windows-2025-vs2026` |
+| **Action** | 别人写好的可复用步骤 | `actions/checkout@<完整 commit SHA>` 等 |
+| **Matrix** | 让一个 job 用不同参数并行跑 N 次 | 滚动 Linux 工具链、三平台 Conan、Windows 专项和 macOS ARM64 等 11 路入口 |
+| **Artifact** | 跑完后保留的文件（二进制、报告） | 各矩阵入口上传的 CTest JUnit XML |
 | **Secret** | 加密存储的密钥（API token 等） | 本项目暂未使用 |
 
 ### 2.3 文件位置约定
@@ -92,7 +92,7 @@ GitHub 自家的 CI/CD 平台。开公开仓库**完全免费**，私有仓库**
     └── workflows/
         ├── ci.yml          ← 必须在这个目录下，文件名任意
         ├── release.yml     ← 一个仓库可以有多个 workflow
-        └── nightly.yml
+        └── forward-compat.yml
 ```
 
 GitHub 自动扫描 `.github/workflows/*.yml`，每个文件独立的 workflow。
@@ -188,18 +188,26 @@ strategy:
           preset: gcc-relwithdebinfo-conan,
           cc: gcc, cxx: g++, uses-conan: true,
           conan-profile: linux-gcc, build-type: RelWithDebInfo }
-      - { name: windows-msvc,      os: windows-2022, preset: msvc,
+      - { name: windows-msvc,      os: windows-2025-vs2026, preset: msvc,
           build-preset: msvc-relwithdebinfo, test-preset: msvc-relwithdebinfo }
-      - { name: windows-clang-cl,  os: windows-2022, preset: clang-cl-relwithdebinfo,
+      - { name: windows-msvc-conan, os: windows-2025-vs2026, preset: ninja-mc-msvc-conan,
+          build-preset: ninja-mc-msvc-relwithdebinfo-conan,
+          test-preset: ninja-mc-msvc-relwithdebinfo-conan,
+          uses-conan: true, conan-profile: msvc, build-type: RelWithDebInfo,
+          extra-config: -DCMAKE_CONFIGURATION_TYPES=RelWithDebInfo }
+      - { name: windows-clang-cl,  os: windows-2025-vs2026, preset: clang-cl-relwithdebinfo,
           build-preset: clang-cl-relwithdebinfo, test-preset: clang-cl-relwithdebinfo }
-      - { name: windows-msvc-asan, os: windows-2022, preset: msvc,
+      - { name: windows-msvc-asan, os: windows-2025-vs2026, preset: msvc,
           build-preset: msvc-debug, test-preset: msvc-debug,
           extra-config: -DMCPP_ENABLE_SANITIZERS=ON }
-      - { name: windows-mingw-gcc, os: windows-2022, preset: mingw-gcc-relwithdebinfo,
+      - { name: windows-mingw-gcc, os: windows-2025-vs2026, preset: mingw-gcc-relwithdebinfo,
           build-preset: mingw-gcc-relwithdebinfo, test-preset: mingw-gcc-relwithdebinfo,
           uses-msys2: true }
-      - { name: macos-clang,       os: macos-14,     preset: clang-relwithdebinfo,
+      - { name: macos-clang,       os: macos-15,     preset: clang-relwithdebinfo,
           cc: clang, cxx: clang++ }
+      - { name: macos-clang-conan, os: macos-15, preset: clang-relwithdebinfo-conan,
+          cc: clang, cxx: clang++, uses-conan: true,
+          conan-profile: macos-clang, build-type: RelWithDebInfo }
 ```
 
 > **为什么 Linux jobs 走 `container: archlinux:base-devel`？**
@@ -207,39 +215,45 @@ strategy:
 > C++23 ranges/generator API（`std::ranges::to`、`<generator>`、`views::chunk` /
 > `zip` / `stride` / `cartesian_product` 等）需要 GCC 15+ / libstdc++ 15+、Clang 20+。
 > 升 Ubuntu 24.04 host runner 不可行（GitHub-hosted runners 不主动跟最新非 LTS 版本），
-> 所以 Linux 4 路全部跑在 `archlinux:base-devel` 容器中——Arch 是滚动发行版，
-> pacman 默认仓库的 gcc / clang / clang-format / clang-tidy 始终跟 LLVM/GCC
-> 上游对齐（当前 GCC 15.x / Clang 22.x），与本地 scoop / Homebrew / Arch 的版本
+> 所以滚动 Linux jobs 跑在 `archlinux:base-devel` 容器中——Arch 是滚动发行版，
+> pacman 默认仓库的 gcc / clang / clang-format / clang-tidy 持续跟随 LLVM/GCC
+> 上游当前稳定版，与本地 Scoop / Homebrew / Arch 的版本
 > 一致，**避免「本地 format/tidy 通过、CI 失败」的版本错配**。host 仍是
 > `ubuntu-24.04` 因为 GitHub 不直接提供 Arch runner。Windows / macOS 不走容器。
 >
 > 折中：rolling release 意味着 LLVM 升大版本时偶尔要跟着 reformat / 调整 lint
 > 规则一次（通常一年一两次的事，每次几十分钟工作量）。
 - `fail-fast: false`：一个 job 挂了，不取消其它，方便一次拿到全部失败信息
-- `include`：显式列举 9 组参数（比组合写法 `os: [...] compiler: [...]` 更直观；这个矩阵
-  里组合是稀疏的 —— 比如 `clang-cl` 只在 windows-2022 上有意义，所以走 include 不走笛卡尔积）
+- `include`：显式列举 11 组参数（比组合写法 `os: [...] compiler: [...]` 更直观；这个矩阵
+  里组合是稀疏的 —— 比如 `clang-cl` 只在 Windows 上有意义，所以走 include 不走笛卡尔积）
 
 每一行对应一类风险来源；缺哪一行，对应那条路径就只有"名义支持"而没人替你跑。
 为什么要这么多行：
 
 | Job | 防的是哪一类回归 |
 | --- | --- |
-| `linux-gcc` / `linux-clang` | 主流 Linux 工具链的基础正确性 |
+| `linux-gcc` / `linux-clang` | 滚动 Linux 工具链的基础正确性 |
 | `linux-gcc-asan` | C++ UB / 内存错误（仅 Linux ASan + UBSan 能查的那一类） |
 | `linux-gcc-conan` | Conan 与 vcpkg 路径分歧（CMakeDeps、build_type 一致性） |
 | `windows-msvc` | MSVC 标准库 + ABI 路径，主流 Windows 桌面场景 |
+| `windows-msvc-conan` | Windows/MSVC ABI 下的 Conan profile、lockfile 与 CMakeDeps |
 | `windows-clang-cl` | LLVM clang-cl 的 MSVC ABI 路径（与 MSVC 同 ABI 但前端不同） |
 | `windows-msvc-asan` | Windows-only UB / heap 错误（不同 allocator、不同 ABI，Linux ASan 看不到） |
 | `windows-mingw-gcc` | 非-MSVC ABI 的 Windows 路径 + `x64-mingw-dynamic` triplet |
 | `macos-clang` | Apple libc++ 与 libstdc++ 的偏差（`_clang` preset 的 Darwin 分支） |
+| `macos-clang-conan` | macOS ARM64 下的 Conan ABI 元数据与依赖生成路径 |
 
 ### 3.6 vcpkg 二进制缓存环境
 
 ```yaml
 env:
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+  CONAN_VERSION: "2.31.2"
 ```
-告诉 vcpkg：**把已编译好的库（如 gtest）缓存到 GitHub Actions 缓存系统中**。第二次跑直接拉缓存，从 5 分钟变 30 秒。
+- `VCPKG_BINARY_SOURCES` 告诉 vcpkg：**把已编译好的库（如 gtest）缓存到 GitHub
+  Actions 缓存系统中**。第二次运行可直接复用缓存。
+- `CONAN_VERSION` 固定 CI 的 Conan CLI；它参与依赖解析、package ID 计算和 CMake
+  生成文件生产，不能随每次 `pip install` 无计划漂移。
 
 ### 3.7 steps 详解
 
@@ -247,7 +261,7 @@ env:
 
 ```yaml
 - name: Export GitHub Actions cache env (vcpkg binary cache)
-  uses: actions/github-script@v7
+  uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
   with:
     script: |
       core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
@@ -255,13 +269,21 @@ env:
 ```
 把 GitHub 内部的两个 token 导出为环境变量，vcpkg 拿这两个值才能读写缓存。属于 boilerplate。
 
-#### Step 2：clone 代码
+#### Step 2：准备 Arch 容器并 clone 代码
 
 ```yaml
-- uses: actions/checkout@v4
+- name: Pre-install git (Arch container)
+  if: runner.os == 'Linux'
+  run: pacman -Syu --noconfirm --needed git ca-certificates
+
+- uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 ```
+- 在 Arch 容器中先执行一次完整系统升级并安装 git，避免 partial upgrade，也避免
+  `actions/checkout` 因找不到 git 而退化为不含 `.git` 目录的 REST 下载
 - 把仓库 clone 到 `${{ github.workspace }}`（默认 `/home/runner/work/<repo>/<repo>`）
-- `@v4` 钉一个大版本，自动拿 patch 修复
+- 完整 40 位 commit SHA 是不可变引用，避免上游移动标签后悄然改变 CI 执行代码
+- 行尾的 `# v4` 保留便于识别的版本信息；`.github/dependabot.yml` 每周检查并提交
+  Action SHA 升级 PR，在安全性与可维护性之间形成闭环
 
 #### Step 3：装编译器
 
@@ -269,7 +291,7 @@ env:
 - name: Install toolchain (Arch container)
   if: runner.os == 'Linux'
   run: |
-    pacman -Sy --noconfirm --needed \
+    pacman -S --noconfirm --needed \
       gcc clang lld llvm \
       cmake ninja make ccache \
       curl zip unzip tar pkgconf \
@@ -277,9 +299,10 @@ env:
 ```
 - 在 `archlinux:base-devel` 容器里跑（容器已是 root，**不需要 sudo**；`base-devel`
   group 已含 `gcc` + `make` + 其他 build 工具，但仍显式写出便于阅读）
+- Step 2 已刷新仓库数据库并完整升级，因此这里只执行 `pacman -S`
 - 一次性把 4 个 Linux job 共用的工具装齐——Arch 的 `clang` 包**同时**提供
-  `clang-format` / `clang-tidy` / `clangd`（不像 Ubuntu 拆成 `clang-format-20` 这种
-  -NN 子包），全部走无版本名 → 与 `_clang` preset 里 `CMAKE_C_COMPILER=clang`
+  `clang-format` / `clang-tidy` / `clangd`，全部走无版本名 → 与 `_clang` preset 里
+  `CMAKE_C_COMPILER=clang`
   完全对得上，**不再需要 `update-alternatives`**
 - `curl zip unzip tar pkgconf` 是 vcpkg 与 Conan 的运行期依赖
 - `python python-pip` 留给 Conan job；同时 `python` 也是 lint job `run-clang-tidy`
@@ -293,7 +316,7 @@ macOS 与 MSYS2 各自有专属安装 step（`brew install ninja` / `msys2/setup
 Clang 自己**不带 C++ 标准库**，它通过 `-stdlib=libstdc++` 或 `-stdlib=libc++` 选挂
 哪一份。本仓库的 `clang-*` preset 没有显式指定 `-stdlib`，所以 Clang 用系统默认
 （Linux 上是 libstdc++）。Arch 的 `gcc` 包同时提供 g++ 编译器与匹配版本的
-libstdc++ 头与库（`/usr/include/c++/15/...`），**它带的 `std::generator` /
+libstdc++ 头与库，**它带的 `std::generator` /
 `std::ranges::to` / 第二批 ranges 等 C++23 库特性是 demos 用到的**。换言之，clang
 job 必须 `pacman -S gcc`，不是用来"运行 g++"，而是用来**提供匹配版本的 libstdc++ 头与库**。
 也可以用 libc++ 替代，但当前 Arch 的 libc++ 在 C++23 库覆盖度上仍略弱于 libstdc++，
@@ -304,7 +327,7 @@ job 必须 `pacman -S gcc`，不是用来"运行 g++"，而是用来**提供匹�
 ```yaml
 - name: Setup MSVC dev environment
   if: runner.os == 'Windows' && !matrix.uses-msys2
-  uses: ilammy/msvc-dev-cmd@v1
+  uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
   with:
     arch: x64
 ```
@@ -318,39 +341,48 @@ shell，不需要也不应该叠 MSVC 环境（两种 ABI 不能混）。
 ```yaml
 - name: Setup vcpkg
   if: '!matrix.uses-conan'
-  uses: lukka/run-vcpkg@v11
+  uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11
   with:
-    vcpkgGitCommitId: '5ee5eee0d3e9c6098b24d263e9099edcdcef6631'
+    vcpkgGitCommitId: '9e593bb18ea69cc5095e012465dcd675a822ed0d'
 ```
 - 装 vcpkg 到 `${{ github.workspace }}/vcpkg`
-- **钉 commit ID 保证可重现**——不要写 `master`，否则 vcpkg 升级会让你的 CI 历史前后不一致
-- `!matrix.uses-conan` 跳过 `linux-gcc-conan` 这种 job，因为它走 Conan 路径不需要 vcpkg
+- **钉官方 2026.07.29 release 的 commit ID 保证可重现**——不要写 `master`，否则
+  vcpkg 升级会让你的 CI 历史前后不一致
+- `!matrix.uses-conan` 跳过三平台 Conan jobs，因为它们不使用 vcpkg
 
 走 Conan 路径的 job 多两个步骤：装 Python + Conan、跑 `conan install`：
 
 ```yaml
 - name: Setup Python (Conan)
-  if: matrix.uses-conan
-  uses: actions/setup-python@v5
+  if: matrix.uses-conan && runner.os != 'Linux'
+  uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
   with: { python-version: '3.12' }
 
-- name: Install Conan
-  if: matrix.uses-conan
-  run: |
-    pip install --upgrade conan
-    conan profile detect --force
+- name: Install Conan (Arch)
+  if: matrix.uses-conan && runner.os == 'Linux'
+  run: pip install --upgrade --break-system-packages "conan==${{ env.CONAN_VERSION }}"
 
 - name: Conan install
   if: matrix.uses-conan
   env: { CC: ${{ matrix.cc }}, CXX: ${{ matrix.cxx }} }
   run: |
+    compiler_major="$(gcc -dumpfullversion -dumpversion | cut -d. -f1)"
     conan install . \
-      --profile:host=./conan/profiles/${{ matrix.conan-profile }} \
+      --lockfile=conan.lock \
+      --profile:all=./conan/profiles/${{ matrix.conan-profile }} \
       --output-folder=build/${{ matrix.preset }} \
       --build=missing \
+      -s:a compiler.version="${compiler_major}" \
       -s build_type=${{ matrix.build-type }}
 ```
-- `--profile:host` 用仓库内置的 host profile（见 `conan/profiles/`），保证 ABI 设置在 CI 与本地一致
+- `--profile:all` 用仓库内置 profile（见 `conan/profiles/`）同时描述 host 与 build；当前
+  job 是本机构建，因此两者使用同一份 ABI 基线，也无需生成不受版本控制的 default profile
+- Linux/macOS 编译器是 runner 输入，workflow 从真实 driver 提取主版本并通过 `-s:a`
+  同时覆盖 host / build，保证 Conan package ID 与实际编译器一致；Windows 使用 profile
+  固定的 MSVC 19.5 / v145 ABI
+- `--lockfile=conan.lock` 固定 gtest recipe revision；required CI 只读锁文件，不写回
+- Windows Conan job 显式设置 `tools.cmake.cmaketoolchain:generator=Ninja Multi-Config`，
+  保证 Conan toolchain 与仓库 preset 的 generator 一致
 - `-s build_type=` **必须**与 preset 后缀对齐（`*-relwithdebinfo-conan` ↔ `RelWithDebInfo`），
   CMakeDeps 只为请求的 build_type 生成 per-config 文件，不一致会让构建期炸 `gtest/gtest.h`。
   `cmake/Dependencies.cmake` 在配置期就拦下来。
@@ -388,18 +420,20 @@ lint:
   runs-on: ubuntu-24.04
   container: archlinux:base-devel
   steps:
-    - uses: actions/checkout@v4
+    - name: Pre-install git (Arch container)
+      run: pacman -Syu --noconfirm --needed git ca-certificates
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
     - name: Install toolchain (Arch — clang + clang-format + clang-tidy + cmake/ninja)
       run: |
-        pacman -Sy --noconfirm --needed \
+        pacman -S --noconfirm --needed \
           clang lld llvm \
           cmake ninja make \
           curl zip unzip tar pkgconf \
           python
     - name: Setup vcpkg
-      uses: lukka/run-vcpkg@v11
+      uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11
       with:
-        vcpkgGitCommitId: '5ee5eee0d3e9c6098b24d263e9099edcdcef6631'
+        vcpkgGitCommitId: '9e593bb18ea69cc5095e012465dcd675a822ed0d'
     - name: Configure
       env: { CC: clang, CXX: clang++, VCPKG_ROOT: ${{ github.workspace }}/vcpkg }
       run: cmake --preset clang-relwithdebinfo
@@ -453,8 +487,8 @@ lint:
 
 ### 5.1 为什么用 Matrix
 
-本项目要在 9 路环境下验证（5 个编译器家族 + 3 个 OS + ASan/Conan/MinGW 等附加路径）。
-如果不用 matrix，要写 9 段几乎一样的 job 配置，重复且难维护。
+本项目要在 11 路环境下验证（滚动 Linux 工具链、3 个 OS、三平台 Conan、
+ASan/MinGW 等附加路径）。如果不用 matrix，要写 11 段几乎一样的 job 配置，重复且难维护。
 
 Matrix 让一段 job 自动复制 N 份并行跑，每份用不同变量。
 
@@ -469,7 +503,7 @@ matrix:
       os: ubuntu-24.04
       preset: gcc-relwithdebinfo
     - name: windows-msvc
-      os: windows-2022
+      os: windows-2025-vs2026
       preset: msvc
 ```
 - 适合**参数差异较大、组合稀疏**的场景
@@ -478,7 +512,7 @@ matrix:
 
 ```yaml
 matrix:
-  os: [ubuntu-24.04, windows-2022]
+  os: [ubuntu-24.04, windows-2025-vs2026]
   build_type: [Debug, Release, RelWithDebInfo]
   # 自动生成 2 × 3 = 6 个 job
 ```
@@ -520,7 +554,7 @@ env:
 ### 6.2 通用 actions/cache
 
 ```yaml
-- uses: actions/cache@v4
+- uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
   with:
     path: |
       ~/.ccache
@@ -536,7 +570,7 @@ env:
 ### 6.3 ccache（可选加速）
 
 ```yaml
-- uses: hendrikmuhs/ccache-action@v1.2
+- uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639 # v1.2
 - run: |
     cmake --preset gcc-debug \
       -DCMAKE_C_COMPILER_LAUNCHER=ccache \
@@ -548,7 +582,7 @@ env:
 ### 6.4 actions/checkout 加速
 
 ```yaml
-- uses: actions/checkout@v4
+- uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
   with:
     fetch-depth: 1   # 只拉最新一次 commit（默认就是 1）
 ```
@@ -597,7 +631,7 @@ CI 的设计哲学：**对开发者完全透明**。
 
 ### 8.1 PR 页面
 
-PR 页面底部一栏（9 路矩阵 + 1 个 lint，简化展示其中几行）：
+PR 页面底部会显示 11 路矩阵、lint 与聚合门禁，简化展示如下：
 
 ```
 Some checks haven't completed yet
@@ -606,14 +640,18 @@ Some checks haven't completed yet
   🟡 CI / linux-gcc-asan                 Running...
   🟡 CI / linux-gcc-conan                Running...
   🟡 CI / windows-msvc                   Running...
+  🟡 CI / windows-msvc-conan             Running...
   🟡 CI / windows-clang-cl               Running...
   🟡 CI / windows-msvc-asan              Running...
   🟡 CI / windows-mingw-gcc              Running...
   🟡 CI / macos-clang                    Running...
+  🟡 CI / macos-clang-conan              Running...
   ✅ CI / clang-format + clang-tidy      Successful in 1m
+  🟡 CI / required-ci                    Waiting...
 ```
 
-10 个 check 都 ✅ 才允许 merge。点任意一行 **Details** 跳到 job 详情页。
+所有上游 job 成功后 `required-ci` 才会变绿。分支保护只需要求这个稳定聚合状态；点任意
+矩阵行的 **Details** 可以查看具体平台日志。
 
 ### 8.2 Actions 总览页
 
@@ -703,7 +741,7 @@ push 跑完看完信息再删掉。
 ```yaml
 - name: Setup tmate session
   if: failure()
-  uses: mxschmitt/action-tmate@v3
+  uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113 # v3
   timeout-minutes: 30
 ```
 - `if: failure()` 仅失败时启动
@@ -765,7 +803,7 @@ ctest --preset gcc-relwithdebinfo
 ### 11.1 上传产物
 
 ```yaml
-- uses: actions/upload-artifact@v4
+- uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
   with:
     name: linux-gcc-binaries
     path: build/gcc-relwithdebinfo/bin/
@@ -780,7 +818,7 @@ ctest --preset gcc-relwithdebinfo
 - name: Test (Linux)
   run: ctest --preset gcc-relwithdebinfo --output-junit test-results.xml
 
-- uses: actions/upload-artifact@v4
+- uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
   if: always()        # 失败时也上传
   with:
     name: test-results-${{ matrix.name }}
@@ -796,7 +834,7 @@ ctest --preset gcc-relwithdebinfo
     ctest --preset gcc-debug
     gcovr --xml -o coverage.xml
 
-- uses: codecov/codecov-action@v4
+- uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
   with:
     files: coverage.xml
 ```
@@ -812,9 +850,9 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - run: cmake --preset gcc-release && cmake --build --preset gcc-release
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: build/gcc-release/bin/*
 ```
@@ -824,7 +862,7 @@ jobs:
 ### 11.5 自动 PR 评论
 
 ```yaml
-- uses: actions/github-script@v7
+- uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
   with:
     script: |
       github.rest.issues.createComment({
@@ -843,7 +881,7 @@ on:
     - cron: '0 2 * * *'     # 每天凌晨 2 点 UTC
 ```
 
-跑 nightly build、依赖更新检查、安全扫描。
+跑定时前向兼容、依赖更新检查或安全扫描。
 
 ---
 
@@ -862,17 +900,7 @@ CI 跑出红叉但开发者强行点 merge？**没有强制检查就会发生**�
      - Required approvals: `1`（需要 N 人 approve）
    - ✅ **Require status checks to pass before merging**
      - Require branches to be up to date before merging（可选）
-     - 在搜索框逐个选中下面 10 个 check：
-       - `CI / linux-gcc`
-       - `CI / linux-clang`
-       - `CI / linux-gcc-asan`
-       - `CI / linux-gcc-conan`
-       - `CI / windows-msvc`
-       - `CI / windows-clang-cl`
-       - `CI / windows-msvc-asan`
-       - `CI / windows-mingw-gcc`
-       - `CI / macos-clang`
-       - `CI / clang-format + clang-tidy`
+     - 在搜索框选中稳定的聚合检查：`CI / required-ci`
    - ✅ **Require conversation resolution before merging**（PR 评论必须解决）
    - ✅ **Do not allow bypassing the above settings**（连 admin 也不能绕过）
 
@@ -923,6 +951,18 @@ permissions:
 
 默认 token 权限较宽，**正式项目建议显式收紧**。
 
+### 13.4 Action 固定与自动升级
+
+仓库内可执行 workflow 的第三方 Action 全部固定到完整 40 位 commit SHA，行尾保留
+`# vN` 版本注释；`.github/dependabot.yml` 使用 `github-actions` ecosystem 每周一检查
+上游标签并把全部 Action 更新合并为一个 PR。这样主分支不会因可移动标签无审查漂移，
+同时安全修复和 Node 运行时升级也不会长期停留在旧 SHA。
+
+Dependabot 只解析 `.github/workflows/` 中的可执行引用，不更新 Markdown。本文代码块是撰写时
+经过验证的安全示例快照；升级 PR 应以 workflow 变更为准，文档示例在相关维护提交中同步复核。
+CI、前向检查和一次性格式化任务均设置 `timeout-minutes`，以限制包管理器或网络异常时的
+runner 占用时间。
+
 ---
 
 ## 14. 费用与配额
@@ -968,7 +1008,8 @@ permissions:
 99% 的原因：
 
 - 你装了某个 vcpkg 全局库 / 系统包，CI 没有
-- 你 CMake/编译器版本和 CI 不一致（Linux jobs 跑在 `archlinux:base-devel` 容器里，pacman 滚动 GCC / Clang，本地建议装 LLVM 22+）
+- 你 CMake/编译器版本和 CI 不一致（Linux jobs 跑在 `archlinux:base-devel` 容器里，
+  pacman 滚动 GCC / Clang；本地应让无版本后缀工具指向准备使用的当前版本）
 - 路径分隔符问题（`\` vs `/`）
 - 文件名大小写（你 Windows 不区分，Linux 区分）
 - 隐藏的 `.gitignore` 文件没提交，CI 拿不到
@@ -1065,12 +1106,17 @@ matrix 自动复制成 N 个并行 job
 全绿 → 允许合并；红 → 拦截合并
 ```
 
-**CI 一旦配好，开发者就该忘了它的存在**——它只在出错时跳出来提醒你。本项目这套 9 路 build/test 矩阵 + lint job 专为支持"5 编译器家族 × vcpkg/Conan × Linux/Windows/macOS + ASan + MinGW"这一组合目标而设计，是当前框架最关键的"质量保险栓"。
+**CI 一旦配好，开发者就该忘了它的存在**——它只在出错时跳出来提醒你。本项目这套
+11 路 build/test 矩阵 + lint job 专为支持滚动工具链、三平台 Conan、ASan、MinGW
+与多 ABI 验证而设计，是当前框架最关键的“质量保险栓”。
 
 需要进一步扩展的方向：
 - 加测试覆盖率上传（codecov）
 - 加 sanitizer job（开 ASan/UBSan 跑测试）
 - 加 release workflow（打 tag 自动出二进制）
-- 加 nightly job（每晚跑一次 vcpkg head 跟踪上游变更）
+- `.github/workflows/forward-compat.yml` 已每周在 Linux、macOS、Windows 分别验证最新
+  vcpkg 与最新版 Conan 2.x 对固定锁文件的兼容性；固定 Conan 对最新兼容
+  GoogleTest/recipe 的解析保留 Linux 单路，避免三平台重复同一依赖解析检查。后续可接入
+  issue/通知自动化或升级 PR
 
 把这套机制内化，下次你给任何 C++ 项目做 CI 都能直接复用。

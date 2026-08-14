@@ -1,13 +1,14 @@
 # Linux + Clang profile for ModernCpp.
 #
 # Pairs with the clang-{debug,release,relwithdebinfo,minsizerel}-conan presets.
-# Pinned to Clang 20 to match the CI baseline (ubuntu:25.10 container,
-# default-apt clang-20). Clang links against libstdc++ from g++-15 to get
-# the C++23 stdlib (libc++ on apt still lags). Override compiler.version /
-# libcxx if your host setup differs.
+# Conan requires compiler.version in a complete profile, so the checked-in
+# value is only a local default snapshot. Clang links against the system
+# libstdc++ to get the C++23 library surface. Override compiler.version /
+# libcxx when your host toolchain differs.
 #
 # Usage:
-#   conan install . -pr=./conan/profiles/linux-clang \
+#   conan install . --profile:all=./conan/profiles/linux-clang \
+#       --lockfile=conan.lock \
 #       -s build_type=RelWithDebInfo \
 #       --output-folder=build/clang-relwithdebinfo-conan \
 #       --build=missing
@@ -16,7 +17,7 @@
 os=Linux
 arch=x86_64
 compiler=clang
-compiler.version=20
+compiler.version=22
 compiler.cppstd=23
 compiler.libcxx=libstdc++11
 build_type=Release

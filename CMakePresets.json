@@ -26,7 +26,7 @@
         {
             "name": "_conan",
             "hidden": true,
-            "description": "Run `conan install . --output-folder=build/<preset> --build=missing` first; this preset then picks up the conan_toolchain.cmake that Conan writes directly under <output-folder>/. (conanfile.txt intentionally has no [layout] — see comment there.)",
+            "description": "Run `conan install . --lockfile=conan.lock --output-folder=build/<preset> --build=missing` first; this preset then picks up the conan_toolchain.cmake that Conan writes directly under <output-folder>/. (conanfile.txt intentionally has no [layout] — see comment there.)",
             "cacheVariables": {
                 "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/${presetName}/conan_toolchain.cmake"
             }
@@ -99,10 +99,10 @@
 
         {
             "name": "msvc",
-            "displayName": "MSVC (VS 2022, multi-config)",
-            "description": "Visual Studio 17 2022 generator, x64. Pick Debug/Release/RelWithDebInfo/MinSizeRel at build time via --config.",
+            "displayName": "MSVC (VS 2026, multi-config)",
+            "description": "Visual Studio 18 2026 generator (requires CMake 4.2+), x64. Pick Debug/Release/RelWithDebInfo/MinSizeRel at build time via --config.",
             "inherits": ["_vcpkg", "_base"],
-            "generator": "Visual Studio 17 2022",
+            "generator": "Visual Studio 18 2026",
             "architecture": { "value": "x64", "strategy": "set" },
             "cacheVariables": {
                 "VCPKG_TARGET_TRIPLET": "x64-windows"
@@ -284,10 +284,10 @@
 
         {
             "name": "msvc-conan",
-            "displayName": "MSVC (VS 2022, Conan)",
-            "description": "VS 2022 multi-config + Conan. NOTE: Conan generates a per-build-type toolchain file; running `conan install` for a 2nd build_type OVERWRITES the previous one. So in practice this preset only supports ONE build_type at a time. For independent build types under MSVC ABI + Conan, use clang-cl-*-conan (single-config Ninja, 4 separate build dirs) or ninja-mc-msvc-conan (Ninja Multi-Config, same caveat).",
+            "displayName": "MSVC (VS 2026, Conan)",
+            "description": "VS 2026 multi-config + Conan (requires CMake 4.2+). NOTE: Conan generates a per-build-type toolchain file; running `conan install` for a 2nd build_type OVERWRITES the previous one. So in practice this preset only supports ONE build_type at a time. For independent build types under MSVC ABI + Conan, use clang-cl-*-conan (single-config Ninja, 4 separate build dirs) or ninja-mc-msvc-conan (Ninja Multi-Config, same caveat).",
             "inherits": ["_conan", "_base"],
-            "generator": "Visual Studio 17 2022",
+            "generator": "Visual Studio 18 2026",
             "architecture": { "value": "x64", "strategy": "set" },
             "condition": {
                 "type": "equals",

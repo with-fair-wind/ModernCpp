@@ -186,15 +186,16 @@ vcpkg 默认按 vcpkg root 当前 commit 决定包版本（commit 即 baseline�
 {
     "name": "moderncpp",
     "dependencies": [ "gtest" ],
-    "builtin-baseline": "5ee5eee0d3e9c6098b24d263e9099edcdcef6631"
+    "builtin-baseline": "9e593bb18ea69cc5095e012465dcd675a822ed0d"
 }
 ```
 
 或单独建 `vcpkg-configuration.json` 指定 registry baseline。
 
-**本仓库未启用 baseline**，原因：教学项目用最新版有助于体验新特性；CI 通过
-[`lukka/run-vcpkg@v11`](../.github/workflows/ci.yml#L86) 的 `vcpkgGitCommitId` 已经固定
-vcpkg 版本，等效于 baseline。
+**本仓库已经启用 baseline**，并把它与 CI 中
+[`lukka/run-vcpkg@v11`](../.github/workflows/ci.yml) 的 `vcpkgGitCommitId` 固定为同一
+官方 release commit。这样本地 manifest 解析与 CI 使用同一套 port 版本和 vcpkg 脚本；
+升级时必须同步修改两处。
 
 ### 与 classic 模式的差异
 
@@ -600,8 +601,8 @@ binary cache（[§7](#7-binary-cache加速重复构建)）后，重装是从 cac
 
 ### 升级 vcpkg 后版本意外变化
 
-vcpkg 的"包版本"由 vcpkg root 的 commit 决定。`git pull` 一下 vcpkg root，gtest 可能
-就从 1.15.0 跳到 1.16.0。要锁版本：
+vcpkg 的“包版本”由 vcpkg root 的 commit 决定。未设置 baseline 时，更新 vcpkg root
+可能让同一份 manifest 解析到新的 gtest 版本。要锁版本：
 
 - 设 `builtin-baseline` 在 `vcpkg.json` 里
 - 或 CI 用 `lukka/run-vcpkg@v11` 的 `vcpkgGitCommitId` 锁 vcpkg commit

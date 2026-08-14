@@ -22,12 +22,12 @@
 # This repo officially recommends UCRT64 only. The legacy MINGW64 environment
 # is not supported.
 #
-# compiler.version is pinned to the MSYS2 UCRT64 default (gcc 15 as of late
-# 2025/early 2026). Override on the CLI (`-s compiler.version=14`) if your
-# local pacman snapshot is older.
+# compiler.version records the current MSYS2 UCRT64 GCC baseline. Override it
+# on the CLI if your local pacman snapshot differs.
 #
 # Usage:
-#   conan install . -pr=./conan/profiles/mingw-ucrt64 \
+#   conan install . --profile:all=./conan/profiles/mingw-ucrt64 \
+#       --lockfile=conan.lock \
 #       -s build_type=RelWithDebInfo \
 #       --output-folder=build/mingw-gcc-relwithdebinfo-conan \
 #       --build=missing
@@ -36,7 +36,7 @@
 os=Windows
 arch=x86_64
 compiler=gcc
-compiler.version=15
+compiler.version=16
 compiler.cppstd=23
 compiler.libcxx=libstdc++11
 # MSYS2 UCRT64 gcc is built with posix threads + SEH unwinding. Setting these

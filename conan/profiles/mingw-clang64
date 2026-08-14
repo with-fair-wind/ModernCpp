@@ -19,8 +19,12 @@
 # specifically. The aliasing risk is between UCRT64 and the legacy MINGW64
 # (both gcc, both libstdc++11), which this repo does not support.
 #
+# compiler.version records the current MSYS2 CLANG64 baseline. Override it on
+# the CLI if your local pacman snapshot differs.
+#
 # Usage (in MSYS2 CLANG64 shell):
-#   conan install . -pr=./conan/profiles/mingw-clang64 \
+#   conan install . --profile:all=./conan/profiles/mingw-clang64 \
+#       --lockfile=conan.lock \
 #       -s build_type=RelWithDebInfo \
 #       --output-folder=build/mingw-clang-relwithdebinfo-conan \
 #       --build=missing
@@ -29,7 +33,7 @@
 os=Windows
 arch=x86_64
 compiler=clang
-compiler.version=18
+compiler.version=22
 compiler.cppstd=23
 compiler.libcxx=libc++
 build_type=Release

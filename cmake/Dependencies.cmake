@@ -30,7 +30,8 @@ if(MCPP_BUILD_TESTS)
             "Install it via one of:\n"
             "  * vcpkg:  add to vcpkg.json and pass "
             "-DCMAKE_TOOLCHAIN_FILE=<vcpkg>/scripts/buildsystems/vcpkg.cmake\n"
-            "  * Conan:  conan install . --output-folder=build/<preset> --build=missing "
+            "  * Conan:  conan install . --lockfile=conan.lock "
+            "--output-folder=build/<preset> --build=missing "
             "then pass -DCMAKE_TOOLCHAIN_FILE=build/<preset>/conan_toolchain.cmake\n"
             "See README.md for details. "
             "To skip tests entirely pass -DMCPP_BUILD_TESTS=OFF.")

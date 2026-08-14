@@ -64,6 +64,15 @@ if(NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 endif()
 
+# Windows 上的 vcpkg 动态 triplet 会在每次链接后调用 z-applocal 部署运行库。
+# 多个 Ninja 链接边同时执行时，系统偶尔会短暂锁定刚生成的可执行文件，导致
+# z-applocal 报“文件正由另一进程使用”或“拒绝访问”。只串行化链接边（包含其
+# 部署命令），编译仍保持并行，从而消除竞争而不显著拖慢构建。
+if(WIN32 AND CMAKE_GENERATOR MATCHES "^Ninja" AND DEFINED VCPKG_TARGET_TRIPLET)
+    set_property(GLOBAL APPEND PROPERTY JOB_POOLS mcpp_vcpkg_applocal_link_pool=1)
+    set(CMAKE_JOB_POOL_LINK mcpp_vcpkg_applocal_link_pool)
+endif()
+
 # ----------------------------------------------------------------------------
 # 顶层选项
 # ----------------------------------------------------------------------------
@@ -92,11 +101,24 @@ endif()
 # 非 git 检出（例如 tarball 发布）下也跳过。
 # ----------------------------------------------------------------------------
 find_program(MCPP_CLANG_FORMAT_EXECUTABLE
-    NAMES clang-format-20 clang-format-19 clang-format-18 clang-format
+    NAMES clang-format
     DOC "clang-format binary used by the `format` target")
 
 if(MCPP_CLANG_FORMAT_EXECUTABLE)
-    message(STATUS "Found clang-format: ${MCPP_CLANG_FORMAT_EXECUTABLE}")
+    execute_process(
+        COMMAND "${MCPP_CLANG_FORMAT_EXECUTABLE}" --version
+        OUTPUT_VARIABLE _mcpp_clang_format_version
+        RESULT_VARIABLE _mcpp_clang_format_version_result
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET)
+    if(_mcpp_clang_format_version_result EQUAL 0)
+        string(REPLACE "\r" " " _mcpp_clang_format_version "${_mcpp_clang_format_version}")
+        string(REPLACE "\n" " " _mcpp_clang_format_version "${_mcpp_clang_format_version}")
+        message(STATUS
+            "Found clang-format: ${MCPP_CLANG_FORMAT_EXECUTABLE} (${_mcpp_clang_format_version})")
+    else()
+        message(STATUS "Found clang-format: ${MCPP_CLANG_FORMAT_EXECUTABLE}")
+    endif()
 else()
     message(STATUS "clang-format not found — `format` / `format-check` targets will not be registered")
 endif()
@@ -134,11 +156,24 @@ endif()
 # （多配置生成器不产 compile_commands.json）。
 # ----------------------------------------------------------------------------
 find_program(MCPP_CLANG_TIDY_EXECUTABLE
-    NAMES clang-tidy-20 clang-tidy-19 clang-tidy-18 clang-tidy
+    NAMES clang-tidy
     DOC "clang-tidy binary used by the `tidy` target")
 
 if(MCPP_CLANG_TIDY_EXECUTABLE)
-    message(STATUS "Found clang-tidy: ${MCPP_CLANG_TIDY_EXECUTABLE}")
+    execute_process(
+        COMMAND "${MCPP_CLANG_TIDY_EXECUTABLE}" --version
+        OUTPUT_VARIABLE _mcpp_clang_tidy_version
+        RESULT_VARIABLE _mcpp_clang_tidy_version_result
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET)
+    if(_mcpp_clang_tidy_version_result EQUAL 0)
+        string(REPLACE "\r" " " _mcpp_clang_tidy_version "${_mcpp_clang_tidy_version}")
+        string(REPLACE "\n" " " _mcpp_clang_tidy_version "${_mcpp_clang_tidy_version}")
+        message(STATUS
+            "Found clang-tidy: ${MCPP_CLANG_TIDY_EXECUTABLE} (${_mcpp_clang_tidy_version})")
+    else()
+        message(STATUS "Found clang-tidy: ${MCPP_CLANG_TIDY_EXECUTABLE}")
+    endif()
 else()
     message(STATUS "clang-tidy not found — `tidy` / `tidy-check` targets will not be registered")
 endif()

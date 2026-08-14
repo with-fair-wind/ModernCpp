@@ -1,0 +1,11 @@
+{
+    "version": "0.5",
+    "requires": [
+        "gtest/1.17.0#43201cc96e5d35332662ce8890cceb27%1786446850.202"
+    ],
+    "build_requires": [
+        "cmake/4.3.2#5bae0b181463ca4dc3e924a981367ee6%1779785720.872"
+    ],
+    "python_requires": [],
+    "config_requires": []
+}
