@@ -4,6 +4,7 @@
 // 不与「保护其他非原子数据」混用——本 demo 只统计计数，不当作发布/获取屏障。
 
 #include <atomic>
+#include <functional>
 #include <iostream>
 #include <thread>
 #include <vector>
