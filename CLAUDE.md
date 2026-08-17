@@ -129,6 +129,21 @@ vcpkg/Conan，不属于 required checks。完整指南见 `docs/ci-guide.md`。
 - 文档文件（`*.md`）保留中英双语版本（`docs/zh-CN.md` / `docs/en-US.md`）的现有规则不变。
 - 引用标准库术语、错误信息、第三方接口名时可保留原文（例如 `std::expected`、`gtest_discover_tests`），但围绕它们的解释用中文
 
+## 分支与 PR 流程
+
+- **master 受分支保护**：required check 为 `required-ci`，并禁用 force-push 与分支
+  删除。新提交直接 push 到 master 会因缺少 required check 状态而被拒，因此**所有
+  改动一律走 feature 分支 + PR**：切分支 → 提交 → push → 开 PR → `required-ci`
+  变绿后合并。管理员理论上可绕过保护（未勾选 enforce administrators），但约定上
+  同样不要直接 push master，保持每次改动都有 PR 记录与完整 CI 历史。
+- 分支命名与 conventional commit 前缀对应：`feat/<主题>` / `fix/<主题>` /
+  `ci/<主题>` / `docs/<主题>`，主题用短 kebab-case（例如
+  `fix/forward-compat-baseline`）。
+- 本地 master 只做快进同步（`git pull --ff-only`），**不要在 master 上直接开发或
+  提交**；若已误提交，先 `git switch -c <branch>` 把提交挪走，再
+  `git reset --hard origin/master` 还原本地 master。
+- PR 合并后删除远端 feature 分支，保持分支列表干净。
+
 ## 提交流程（针对 C++ 源文件改动）
 
 CI 的 lint job 用 `archlinux:base-devel` 容器里 pacman 滚动的 clang-format / clang-tidy
