@@ -95,14 +95,17 @@ jobs:
         env:
           VCPKG_ROOT: ${{ runner.temp }}/vcpkg
         run: |
-          "$VCPKG_ROOT/vcpkg" x-update-baseline --add-initial-baseline
+          # 不带 --add-initial-baseline：manifest 已有 baseline，加该 flag 会变成
+          # 空操作；裸 x-update-baseline 才会把 baseline 真正推进到克隆的 HEAD，
+          # 使浅克隆（--depth=1）也能解析出全部 port git tree。
+          "$VCPKG_ROOT/vcpkg" x-update-baseline
 
       - name: Advance manifest baseline (Windows)
         if: runner.os == 'Windows'
         env:
           VCPKG_ROOT: ${{ runner.temp }}/vcpkg
         shell: pwsh
-        run: '& "$env:VCPKG_ROOT\vcpkg.exe" x-update-baseline --add-initial-baseline'
+        run: '& "$env:VCPKG_ROOT\vcpkg.exe" x-update-baseline'
 
       - name: Configure, build and test (Linux / macOS)
         if: runner.os != 'Windows'
